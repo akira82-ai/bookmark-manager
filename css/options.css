@@ -1,0 +1,526 @@
+/* 
+ * options.css 
+ * 设置页面的样式定义
+ */
+
+/* 基本布局样式 */
+body {
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #202124;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* 设置页面标题区域 */
+.settings-header {
+  padding: 24px 0;
+  border-bottom: 1px solid #dadce0;
+  margin-bottom: 32px;
+}
+
+.settings-header h1 {
+  font-size: 28px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: #202124;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #5f6368;
+  margin: 0;
+}
+
+/* 设置主内容区域 */
+.settings-content {
+  display: flex;
+  margin-bottom: 32px;
+}
+
+/* 侧边导航 */
+.settings-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  margin-right: 32px;
+}
+
+.settings-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.settings-nav li {
+  margin-bottom: 2px;
+}
+
+.settings-nav a {
+  display: block;
+  padding: 12px 16px;
+  color: #5f6368;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.settings-nav a:hover {
+  background-color: rgba(66, 133, 244, 0.08);
+  color: #1a73e8;
+}
+
+.settings-nav a.active {
+  background-color: rgba(66, 133, 244, 0.12);
+  color: #1a73e8;
+  font-weight: 500;
+}
+
+/* 设置表单容器 */
+.settings-form-container {
+  flex: 1;
+}
+
+/* 设置区块样式 */
+.settings-section {
+  display: none;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3),
+              0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.settings-section.active {
+  display: block;
+}
+
+.settings-section h2 {
+  font-size: 20px;
+  font-weight: 500;
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: #202124;
+}
+
+.settings-section h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 24px 0 16px 0;
+  color: #202124;
+}
+
+/* 表单元素样式 */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #202124;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+select,
+textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  color: #202124;
+  transition: border-color 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #4285f4;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.25);
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.helper-text {
+  font-size: 12px;
+  color: #5f6368;
+  margin-top: 4px;
+}
+
+/* 按钮样式 */
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background-color: #1a73e8;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.btn:hover {
+  background-color: #1765cc;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.5);
+}
+
+.btn-primary {
+  background-color: #1a73e8;
+  color: #fff;
+}
+
+.btn-secondary {
+  background-color: #f1f3f4;
+  color: #202124;
+}
+
+.btn-secondary:hover {
+  background-color: #e8eaed;
+}
+
+.btn-danger {
+  background-color: #ea4335;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background-color: #d93025;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn:disabled {
+  background-color: #dadce0;
+  color: #9aa0a6;
+  cursor: not-allowed;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* 分类规则样式 */
+.category-rules-container {
+  margin-bottom: 16px;
+}
+
+.category-rule {
+  background-color: #f8f9fa;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.category-rule .delete-rule {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+/* 文件输入样式 */
+.file-input-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.file-input {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.file-input + label {
+  cursor: pointer;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+#selectedFile {
+  margin-left: 8px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+/* 危险区域样式 */
+.danger-zone {
+  border-top: 1px solid #ea4335;
+  padding-top: 16px;
+  margin-top: 32px;
+}
+
+.danger-zone h3 {
+  color: #ea4335;
+}
+
+/* 底部操作区域 */
+.settings-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  border-top: 1px solid #dadce0;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.footer-info {
+  color: #5f6368;
+  font-size: 14px;
+}
+
+/* 显示存储用量样式 */
+.storage-usage {
+  font-size: 14px;
+  color: #5f6368;
+  white-space: nowrap;
+}
+
+/* 验证错误提示样式 */
+.error-message {
+  color: #ea4335;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+  border-color: #ea4335;
+}
+
+/* 设置分隔符 */
+.separator {
+  margin: 0 8px;
+  color: #dadce0;
+}
+
+/* 通知样式 */
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #323232;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.notification.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.notification.success {
+  background-color: #34a853;
+}
+
+.notification.error {
+  background-color: #ea4335;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+  .settings-content {
+    flex-direction: column;
+  }
+  
+  .settings-sidebar {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
+  
+  .settings-nav {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  
+  .settings-nav ul {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  
+  .settings-nav li {
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+  
+  .settings-footer {
+    flex-direction: column;
+  }
+  
+  .footer-actions {
+    margin-bottom: 16px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .settings-header h1 {
+    font-size: 24px;
+  }
+  
+  .settings-section {
+    padding: 16px;
+  }
+  
+  .form-group-inline {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .button-group button {
+    width: 100%;
+  }
+  
+  .footer-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .footer-actions button {
+    width: 100%;
+  }
+}
+
+/* 暗黑模式支持 */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #202124;
+    color: #e8eaed;
+  }
+  
+  .settings-header {
+    border-bottom-color: #3c4043;
+  }
+  
+  .settings-section {
+    background-color: #292a2d;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3),
+                0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+  
+  .settings-nav a {
+    color: #9aa0a6;
+  }
+  
+  .settings-nav a:hover {
+    background-color: rgba(138, 180, 248, 0.08);
+    color: #8ab4f8;
+  }
+  
+  .settings-nav a.active {
+    background-color: rgba(138, 180, 248, 0.12);
+    color: #8ab4f8;
+  }
+  
+  .settings-header h1,
+  .settings-section h2,
+  .settings-section h3,
+  label {
+    color: #e8eaed;
+  }
+  
+  .subtitle,
+  .helper-text,
+  .storage-usage,
+  .footer-info {
+    color: #9aa0a6;
+  }
+  
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  select,
+  textarea {
+    background-color: #303134;
+    border-color: #5f6368;
+    color: #e8eaed;
+  }
+  
+  .category-rule {
+    background-color: #303134;
+    border-color: #5f6368;
+  }
+  
+  .btn-secondary {
+    background-color: #3c4043;
+    color: #e8eaed;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #5f6368;
+  }
+  
+  .settings-footer {
+    border-top-color: #3c4043;
+  }
+}

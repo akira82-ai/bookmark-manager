@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书签管理与智能收藏提示</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部导航栏 -->
+        <header class="header">
+            <div class="header-title">
+                <h1>我的书签</h1>
+            </div>
+            <div class="header-controls">
+                <button id="refreshBtn" title="刷新" class="control-btn">
+                    <span class="icon">⟳</span>
+                </button>
+                <button id="minimizeBtn" title="最小化" class="control-btn">
+                    <span class="icon">_</span>
+                </button>
+                <button id="fullscreenBtn" title="切换全屏" class="control-btn">
+                    <span class="icon">⛶</span>
+                </button>
+                <button id="newPageBtn" title="在新页面打开" class="control-btn">
+                    <span class="icon">⎘</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- 主体内容区域 -->
+        <main class="content">
+            <!-- 左侧书签文件夹树形菜单 -->
+            <aside class="folder-tree">
+                <div class="folder-tree-header">
+                    <h2>文件夹</h2>
+                </div>
+                <div class="folder-tree-content" id="folderTree">
+                    <!-- 文件夹树将通过JavaScript动态加载 -->
+                    <div class="loading-indicator">正在加载书签文件夹...</div>
+                </div>
+            </aside>
+            
+            <!-- 右侧书签列表展示区域 -->
+            <section class="bookmark-list">
+                <div class="bookmark-list-header">
+                    <h2 id="currentFolderName">全部书签</h2>
+                    <div class="search-container">
+                        <input type="text" id="searchBookmark" placeholder="搜索书签...">
+                        <button id="searchBtn" class="search-btn">搜索</button>
+                    </div>
+                </div>
+                <div class="bookmark-list-content" id="bookmarkList">
+                    <!-- 书签列表将通过JavaScript动态加载 -->
+                    <div class="loading-indicator">正在加载书签...</div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部操作按钮区域 -->
+        <footer class="footer">
+            <div class="operation-buttons">
+                <button id="checkValidBtn" class="operation-btn">检查网址有效性</button>
+                <button id="deleteBtn" class="operation-btn">删除选中</button>
+                <button id="moveBtn" class="operation-btn">移动到文件夹</button>
+                <button id="exportBtn" class="operation-btn">导出书签</button>
+                <button id="importBtn" class="operation-btn">导入书签</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 状态信息区域 -->
+    <div id="statusBar" class="status-bar">
+        <span id="statusMessage">就绪</span>
+    </div>
+
+    <!-- 右键菜单（会通过JavaScript定位和显示） -->
+    <div id="contextMenu" class="context-menu">
+        <ul>
+            <li id="cmOpen">打开</li>
+            <li id="cmOpenNewTab">在新标签页打开</li>
+            <li id="cmEdit">编辑</li>
+            <li id="cmDelete">删除</li>
+            <li id="cmMove">移动到...</li>
+            <li id="cmCopyUrl">复制链接</li>
+        </ul>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script type="text/javascript" src="popup.js"></script>
+</body>
+</html>

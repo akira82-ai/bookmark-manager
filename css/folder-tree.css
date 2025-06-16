@@ -1,0 +1,264 @@
+/* 
+ * folder-tree.css 
+ * 书签文件夹树的样式定义
+ */
+
+/* 文件夹树容器样式 */
+.folder-tree-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: #f8f9fa;
+  border-right: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.folder-tree-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.folder-tree-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #202124;
+  margin: 0;
+}
+
+.folder-tree-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+/* 文件夹项的基础样式 */
+.folder-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 8px 8px 0;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+/* 文件夹项的缩进和层级视觉效果 */
+.folder-level-0 { padding-left: 16px; }
+.folder-level-1 { padding-left: 32px; }
+.folder-level-2 { padding-left: 48px; }
+.folder-level-3 { padding-left: 64px; }
+.folder-level-4 { padding-left: 80px; }
+.folder-level-5 { padding-left: 96px; }
+.folder-level-6 { padding-left: 112px; }
+.folder-level-7 { padding-left: 128px; }
+.folder-level-8 { padding-left: 144px; }
+.folder-level-9 { padding-left: 160px; }
+
+/* 使用连接线视觉效果增强层级关系 */
+.folder-item::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  height: 100%;
+  border-left: 1px dotted #dadce0;
+  z-index: 0;
+}
+
+.folder-level-0::before {
+  display: none;
+}
+
+/* 悬停和选中状态样式 */
+.folder-item:hover {
+  background-color: #eef2fd;
+}
+
+.folder-item.selected {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  font-weight: 500;
+}
+
+/* 文件夹展开/折叠图标样式 */
+.folder-expand-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  font-size: 10px;
+  color: #5f6368;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.folder-expanded .folder-expand-icon {
+  transform: rotate(90deg);
+}
+
+/* 文件夹图标样式 */
+.folder-icon {
+  margin-right: 8px;
+  color: #5f6368;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.folder-expanded .folder-icon {
+  color: #1a73e8;
+}
+
+/* 文件夹名称样式 */
+.folder-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+/* 文件夹子项容器样式 */
+.folder-children {
+  display: none;
+  /* 默认折叠 */
+}
+
+.folder-expanded + .folder-children {
+  display: block;
+  /* 展开时显示 */
+}
+
+/* 无子文件夹时的样式 */
+.folder-empty .folder-expand-icon {
+  visibility: hidden;
+}
+
+/* 文件夹拖拽状态的视觉反馈 */
+.folder-item.dragging {
+  opacity: 0.5;
+  background-color: #e8f0fe;
+  border: 1px dashed #4285f4;
+}
+
+.folder-item.dragover-top {
+  border-top: 2px solid #4285f4;
+}
+
+.folder-item.dragover-bottom {
+  border-bottom: 2px solid #4285f4;
+}
+
+.folder-item.dragover-inside {
+  background-color: #e8f0fe;
+  box-shadow: inset 0 0 0 2px #4285f4;
+}
+
+/* 文件夹占位符 */
+.folder-placeholder {
+  height: 32px;
+  border: 1px dashed #4285f4;
+  background-color: #e8f0fe;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
+/* 文件夹重命名样式 */
+.folder-rename-input {
+  padding: 2px 4px;
+  border: 1px solid #4285f4;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  background-color: white;
+}
+
+/* 右键菜单样式 */
+.context-menu {
+  position: fixed;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 8px 0;
+  min-width: 180px;
+  z-index: 1000;
+}
+
+.context-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.context-menu li {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #202124;
+  display: flex;
+  align-items: center;
+}
+
+.context-menu li:hover {
+  background-color: #f1f3f4;
+}
+
+.context-menu li.disabled {
+  color: #9aa0a6;
+  cursor: default;
+}
+
+.context-menu li.disabled:hover {
+  background-color: transparent;
+}
+
+.context-menu li .menu-icon {
+  margin-right: 8px;
+  width: 16px;
+  text-align: center;
+}
+
+.context-menu .separator {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 4px 0;
+}
+
+/* 空状态 */
+.folder-tree-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #5f6368;
+}
+
+.folder-tree-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #dadce0;
+}
+
+.folder-tree-empty-text {
+  font-size: 14px;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+  .folder-tree-container {
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .folder-item {
+    padding: 12px 8px 12px 0;
+  }
+  
+  .folder-name {
+    font-size: 15px;
+  }
+}

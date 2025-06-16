@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书签管理与智能收藏提示</title>
+    <!-- 引入CSS文件 -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/folder-tree.css">
+    <link rel="stylesheet" href="css/bookmark-list.css">
+    <link rel="stylesheet" href="css/notification.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 头部区域 -->
+        <header class="app-header">
+            <div class="header-brand">
+                <img src="icons/icon48.png" alt="书签管理器" class="header-logo">
+                <h1 class="header-title">书签管理与智能收藏提示</h1>
+            </div>
+            
+            <!-- 顶部工具栏 -->
+            <div class="header-toolbar">
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="搜索书签...">
+                    <button id="searchBtn" class="btn btn-primary">搜索</button>
+                </div>
+                
+                <div class="filter-container">
+                    <select id="filterSelect" class="form-control">
+                        <option value="all">所有书签</option>
+                        <option value="recent">最近添加</option>
+                        <option value="frequent">经常访问</option>
+                        <option value="suggested">推荐收藏</option>
+                    </select>
+                </div>
+                
+                <div class="toolbar-buttons">
+                    <button id="checkValidityBtn" class="btn btn-secondary" title="检查URL有效性">
+                        <span class="icon">✓</span> 检查有效性
+                    </button>
+                    <button id="refreshBtn" class="btn btn-secondary" title="刷新书签">
+                        <span class="icon">⟳</span> 刷新
+                    </button>
+                    <button id="settingsBtn" class="btn btn-secondary" title="设置">
+                        <span class="icon">⚙</span> 设置
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主体内容区域 -->
+        <main class="app-content">
+            <!-- 左侧书签文件夹导航区域 -->
+            <aside class="folder-tree-container" id="folderTreeContainer">
+                <div class="folder-tree-header">
+                    <h2 class="section-title">文件夹</h2>
+                    <button id="addFolderBtn" class="btn btn-sm btn-secondary" title="新建文件夹">
+                        <span class="icon">+</span>
+                    </button>
+                </div>
+                <div class="folder-tree-content" id="folderTree" draggable="false">
+                    <!-- 文件夹树将通过JavaScript动态加载 -->
+                    <div class="loading-indicator">正在加载文件夹...</div>
+                </div>
+            </aside>
+            
+            <!-- 右侧书签列表区域 -->
+            <section class="bookmark-list-container">
+                <div class="bookmark-list-header">
+                    <div class="bookmark-list-info">
+                        <h2 id="currentFolderName" class="section-title">书签</h2>
+                        <span id="bookmarkCount" class="item-count">0 个项目</span>
+                    </div>
+                    
+                    <div class="bookmark-list-actions">
+                        <button id="addBookmarkBtn" class="btn btn-sm btn-primary" title="添加书签">
+                            <span class="icon">+</span> 添加书签
+                        </button>
+                        <button id="sortBookmarksBtn" class="btn btn-sm btn-secondary" title="排序">
+                            <span class="icon">↕</span>
+                        </button>
+                        <div class="view-mode-toggle">
+                            <button id="listViewBtn" class="btn btn-sm btn-secondary active" title="列表视图">
+                                <span class="icon">≡</span>
+                            </button>
+                            <button id="gridViewBtn" class="btn btn-sm btn-secondary" title="网格视图">
+                                <span class="icon">⊞</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bookmark-list-content" id="bookmarkList" draggable="false">
+                    <!-- 书签列表将通过JavaScript动态加载 -->
+                    <div class="loading-indicator">正在加载书签...</div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部状态栏 -->
+        <footer class="app-footer">
+            <div class="status-bar">
+                <span id="statusMessage" class="status-message">就绪</span>
+            </div>
+            
+            <div class="footer-actions">
+                <button id="exportBtn" class="btn btn-sm btn-link" title="导出书签">
+                    导出
+                </button>
+                <button id="importBtn" class="btn btn-sm btn-link" title="导入书签">
+                    导入
+                </button>
+                <span class="separator">|</span>
+                <button id="helpBtn" class="btn btn-sm btn-link" title="帮助">
+                    帮助
+                </button>
+                <span class="separator">|</span>
+                <span class="version">版本 1.0</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 右键菜单 (通过JavaScript动态定位和显示) -->
+    <div id="contextMenu" class="context-menu">
+        <ul>
+            <li id="cmOpen">打开</li>
+            <li id="cmOpenNewTab">在新标签页打开</li>
+            <li id="cmEdit">编辑</li>
+            <li id="cmDelete">删除</li>
+            <li id="cmMove">移动到...</li>
+            <li class="separator"></li>
+            <li id="cmCopyUrl">复制链接</li>
+        </ul>
+    </div>
+
+    <!-- 文件夹右键菜单 -->
+    <div id="folderContextMenu" class="context-menu">
+        <ul>
+            <li id="fcmCreateFolder">新建文件夹</li>
+            <li id="fcmRename">重命名</li>
+            <li id="fcmDelete">删除</li>
+            <li class="separator"></li>
+            <li id="fcmAddBookmark">添加书签</li>
+        </ul>
+    </div>
+
+    <!-- 对话框 (通过JavaScript动态显示) -->
+    <div id="dialogOverlay" class="dialog-overlay">
+        <div id="dialogContainer" class="dialog-container">
+            <!-- 对话框内容将通过JavaScript动态加载 -->
+        </div>
+    </div>
+
+    <!-- 通知容器 -->
+    <div id="notificationContainer" class="notification-container">
+        <!-- 通知将通过JavaScript动态添加 -->
+    </div>
+
+    <!-- JavaScript 文件 -->
+    <script src="js/main.js" type="module"></script>
+    <script src="js/bookmarkManager.js" type="module"></script>
+    <script src="js/folderTree.js" type="module"></script>
+    <script src="js/dragDrop.js" type="module"></script>
+    <script src="js/urlValidator.js" type="module"></script>
+    <script src="js/visitTracker.js" type="module"></script>
+    <script src="js/suggestionManager.js" type="module"></script>
+</body>
+</html>
