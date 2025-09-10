@@ -1,2 +1,0 @@
-# Command to run when "Run" button clicked
-run_command: 'cd . && browser-sync start --server --no-ui --no-notify --no-open --files "**/*.css, **/*.html, **/*.js"'
