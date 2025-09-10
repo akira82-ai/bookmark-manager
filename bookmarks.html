@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>书签管理器</title>
+  <link rel="stylesheet" href="bookmarks.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-content">
+        <h1>📚 书签管理器</h1>
+        <div class="header-actions">
+          <button id="refresh-btn" class="btn btn-secondary">
+            <span class="btn-icon">🔄</span>
+            刷新
+          </button>
+          <button id="search-toggle-btn" class="btn btn-secondary">
+            <span class="btn-icon">🔍</span>
+            搜索
+          </button>
+        </div>
+      </div>
+      
+      <!-- 搜索栏 -->
+      <div id="search-bar" class="search-bar" style="display: none;">
+        <input type="text" id="search-input" placeholder="搜索书签..." class="search-input">
+        <div class="search-filters">
+          <label class="filter-label">
+            <input type="checkbox" id="search-titles" checked>
+            搜索标题
+          </label>
+          <label class="filter-label">
+            <input type="checkbox" id="search-urls" checked>
+            搜索URL
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <div class="main-content">
+      <!-- 侧边栏 - 书签分类 -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>书签分类</h2>
+          <button id="expand-all-btn" class="btn-icon-btn" title="展开所有">
+            <span>📂</span>
+          </button>
+        </div>
+        
+        <div class="folder-tree" id="folder-tree">
+          <!-- 书签分类树将通过JavaScript动态生成 -->
+        </div>
+        
+        <div class="sidebar-stats">
+          <div class="stat-item">
+            <span class="stat-label">总书签数：</span>
+            <span id="total-bookmarks" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">总分类数：</span>
+            <span id="total-folders" class="stat-value">0</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 主内容区 - 书签列表 -->
+      <main class="content">
+        <!-- 面包屑导航 -->
+        <nav class="breadcrumb" id="breadcrumb">
+          <a href="#" data-path="" class="breadcrumb-item active">🏠 根目录</a>
+        </nav>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <div class="view-options">
+            <button id="view-grid-btn" class="view-btn active" title="网格视图">
+              <span>⊞</span>
+            </button>
+            <button id="view-list-btn" class="view-btn" title="列表视图">
+              <span>☰</span>
+            </button>
+          </div>
+          
+          <div class="sort-options">
+            <select id="sort-select" class="sort-select">
+              <option value="title">按标题排序</option>
+              <option value="date">按日期排序</option>
+              <option value="url">按URL排序</option>
+            </select>
+            <button id="sort-order-btn" class="btn-icon-btn" title="切换排序顺序">
+              <span>↑</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 书签网格 -->
+        <div id="bookmarks-grid" class="bookmarks-grid">
+          <!-- 书签项将通过JavaScript动态生成 -->
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loading" class="loading">
+          <div class="loading-spinner"></div>
+          <p>正在加载书签...</p>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-icon">📁</div>
+          <h3>此文件夹为空</h3>
+          <p>当前文件夹中没有书签</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div id="context-menu" class="context-menu" style="display: none;">
+      <div class="menu-item" data-action="open">
+        <span class="menu-icon">🔗</span>
+        <span class="menu-text">在新标签页打开</span>
+      </div>
+      <div class="menu-item" data-action="edit">
+        <span class="menu-icon">✏️</span>
+        <span class="menu-text">编辑</span>
+      </div>
+      <div class="menu-item" data-action="delete">
+        <span class="menu-icon">🗑️</span>
+        <span class="menu-text">删除</span>
+      </div>
+      <div class="menu-separator"></div>
+      <div class="menu-item" data-action="copy">
+        <span class="menu-icon">📋</span>
+        <span class="menu-text">复制链接</span>
+      </div>
+    </div>
+
+    <!-- 书签编辑模态框 -->
+    <div id="edit-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>编辑书签</h3>
+          <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-title">标题</label>
+            <input type="text" id="edit-title" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="edit-url">URL</label>
+            <input type="url" id="edit-url" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="edit-folder">文件夹</label>
+            <select id="edit-folder" class="form-select">
+              <!-- 文件夹选项将通过JavaScript动态生成 -->
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="save-btn" class="btn btn-primary">保存</button>
+          <button id="cancel-btn" class="btn btn-secondary">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="bookmarks.js"></script>
+</body>
+</html>

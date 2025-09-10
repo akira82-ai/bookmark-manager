@@ -2,11 +2,13 @@
   "manifest_version": 3,
   "name": "Bookmark Manager",
   "version": "1.0",
-  "description": "一个简单的书签管理插件",
+  "description": "一个功能完整的书签管理插件",
   "permissions": [
     "storage",
     "tabs",
-    "bookmarks"
+    "bookmarks",
+    "contextMenus",
+    "notifications"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -25,5 +27,11 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["bookmarks.html", "bookmarks.css", "bookmarks.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

@@ -4,13 +4,6 @@
 chrome.runtime.onInstalled.addListener(function(details) {
   console.log('Bookmark Manager extension installed');
   
-  // 初始化存储
-  chrome.storage.local.get(['bookmarks'], function(result) {
-    if (!result.bookmarks) {
-      chrome.storage.local.set({bookmarks: []});
-    }
-  });
-  
   // 创建右键菜单
   chrome.contextMenus.create({
     id: 'addBookmark',
@@ -46,13 +39,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
 });
 
-// 添加书签函数
-function addBookmark(title, url) {
-  chrome.storage.local.get(['bookmarks'], function(result) {
-    const bookmarks = result.bookmarks || [];
-    
+// 添加书签函数 - 使用Chrome书签API
+async function addBookmark(title, url) {
+  try {
     // 检查是否已存在
-    const exists = bookmarks.some(bookmark => bookmark.url === url);
+    const bookmarks = await chrome.bookmarks.getTree();
+    const exists = await bookmarkExists(bookmarks[0], url);
+    
     if (exists) {
       // 通知用户书签已存在
       chrome.notifications.create({
@@ -64,45 +57,40 @@ function addBookmark(title, url) {
       return;
     }
     
-    bookmarks.push({
-      id: Date.now(),
+    // 添加书签到根目录
+    await chrome.bookmarks.create({
       title: title,
-      url: url,
-      createdAt: new Date().toISOString()
+      url: url
     });
     
-    chrome.storage.local.set({bookmarks: bookmarks}, function() {
-      // 通知用户添加成功
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icons/icon48.png',
-        title: '书签添加成功',
-        message: `"${title}" 已添加到书签管理器`
-      });
+    // 通知用户添加成功
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: '书签添加成功',
+      message: `"${title}" 已添加到书签管理器`
     });
-  });
+    
+  } catch (error) {
+    console.error('添加书签失败:', error);
+  }
 }
 
-// 处理书签导入导出
-function exportBookmarks() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['bookmarks'], function(result) {
-      resolve(result.bookmarks || []);
-    });
-  });
-}
-
-function importBookmarks(bookmarks) {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['bookmarks'], function(result) {
-      const existingBookmarks = result.bookmarks || [];
-      const mergedBookmarks = [...existingBookmarks, ...bookmarks];
-      
-      chrome.storage.local.set({bookmarks: mergedBookmarks}, function() {
-        resolve({success: true, count: bookmarks.length});
-      });
-    });
-  });
+// 检查书签是否已存在
+async function bookmarkExists(node, url) {
+  if (node.url === url) {
+    return true;
+  }
+  
+  if (node.children) {
+    for (let child of node.children) {
+      if (await bookmarkExists(child, url)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 // 处理标签页更新
@@ -115,9 +103,4 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 // 处理插件启动
 chrome.runtime.onStartup.addListener(function() {
   console.log('Bookmark Manager extension started');
-});
-
-// 处理插件唤醒
-chrome.runtime.onSuspend.addListener(function() {
-  console.log('Bookmark Manager extension suspended');
 });
