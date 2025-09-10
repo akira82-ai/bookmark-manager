@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Bookmark Manager</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>书签管理器</h1>
+    
+    <div class="add-bookmark">
+      <input type="text" id="bookmark-title" placeholder="书签标题">
+      <input type="url" id="bookmark-url" placeholder="书签URL">
+      <button id="add-bookmark-btn">添加书签</button>
+    </div>
+    
+    <div class="bookmarks-list">
+      <h2>我的书签</h2>
+      <div id="bookmarks-container"></div>
+    </div>
+    
+    <div class="actions">
+      <button id="export-btn">导出书签</button>
+      <button id="import-btn">导入书签</button>
+      <input type="file" id="import-file" accept=".json" style="display: none;">
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

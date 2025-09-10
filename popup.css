@@ -1,0 +1,150 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.container {
+  width: 350px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  font-size: 24px;
+}
+
+.add-bookmark {
+  margin-bottom: 20px;
+}
+
+.add-bookmark input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.add-bookmark input:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+#add-bookmark-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+#add-bookmark-btn:hover {
+  background-color: #2980b9;
+}
+
+.bookmarks-list {
+  margin-bottom: 20px;
+}
+
+.bookmarks-list h2 {
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+#bookmarks-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.bookmark-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.bookmark-item:last-child {
+  border-bottom: none;
+}
+
+.bookmark-title {
+  color: #3498db;
+  text-decoration: none;
+  font-size: 14px;
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+.bookmark-title:hover {
+  text-decoration: underline;
+}
+
+.delete-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.delete-btn:hover {
+  background-color: #c0392b;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+#export-btn {
+  background-color: #27ae60;
+  color: white;
+}
+
+#export-btn:hover {
+  background-color: #229954;
+}
+
+#import-btn {
+  background-color: #f39c12;
+  color: white;
+}
+
+#import-btn:hover {
+  background-color: #e67e22;
+}
