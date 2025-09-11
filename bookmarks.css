@@ -19,28 +19,6 @@ body {
   overflow: hidden;
 }
 
-/* 头部样式 */
-.header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.header h1 {
-  font-size: 1.8rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 
 
 /* 主要内容区 */
@@ -52,7 +30,7 @@ body {
 
 /* 侧边栏样式 */
 .sidebar {
-  width: 300px;
+  width: 320px;
   background: white;
   border-right: 1px solid #e1e8ed;
   display: flex;
@@ -60,24 +38,40 @@ body {
   overflow: hidden;
 }
 
+/* 侧边栏标题栏 */
 .sidebar-header {
-  padding: 0.5rem;
-  /* 简化侧边栏头部，移除标题 */
-  display: none;
-  /* 隐藏侧边栏头部，直接显示文件夹列表 */
+  background: white;
+  color: #2c3e50;
+  padding: 1rem 0.75rem;
+  text-align: center;
+}
+
+.sidebar-header h1 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .sidebar-search {
   padding: 1rem;
-  border-bottom: 1px solid #e1e8ed;
-  background: #f8f9fa;
+  background: white;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .sidebar-search .search-input {
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
   border: 1px solid #e1e8ed;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.9rem;
   background: white;
   color: #2c3e50;
@@ -87,7 +81,39 @@ body {
 
 .sidebar-search .search-input:focus {
   border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.sidebar-search .search-input::placeholder {
+  color: #adb5bd;
+  font-size: 0.85rem;
+}
+
+.search-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn:hover {
+  color: #6c757d;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.search-btn:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 
@@ -137,8 +163,7 @@ body {
 
 .sidebar-stats {
   padding: 1rem;
-  border-top: 1px solid #e1e8ed;
-  background: #f8f9fa;
+  background: white;
 }
 
 .stat-item {
@@ -159,6 +184,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #f5f7fa;
 }
 
 /* 面包屑导航已移除 */
@@ -167,26 +193,176 @@ body {
 .bookmarks-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 1.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
   align-content: start;
 }
 
+/* 搜索结果分组 */
+.search-result-group {
+  margin-bottom: 2rem;
+}
+
+.search-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.search-group-header:hover {
+  opacity: 0.8;
+}
+
+.search-group-header .folder-icon {
+  font-size: 1.2rem;
+}
+
+.search-group-header .folder-name {
+  flex: 1;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.search-group-header .result-count {
+  color: #6c757d;
+  font-size: 0.85rem;
+  background: #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+}
+
+/* 搜索结果中的书签网格 - 复用标准样式 */
+.bookmarks-grid-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* 搜索分隔线 */
+.search-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: 1.5rem 0;
+}
+
+/* 清空搜索按钮容器 */
+.clear-search-container {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.clear-search-container .clear-search-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-search-container .clear-search-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+/* 搜索空状态 */
+.search-empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6c757d;
+}
+
+.search-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.search-empty-state h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.search-empty-state p {
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* 搜索结果区域 */
+.search-folder-section {
+  margin-bottom: 2rem;
+}
+
+.search-folder-section:last-child {
+  margin-bottom: 0;
+}
+
+/* 搜索文件夹标题 */
+.search-folder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 1rem;
+}
+
+.search-folder-header:hover {
+  border-bottom-color: #667eea;
+}
+
+.search-folder-header .folder-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.search-folder-header .bookmark-count {
+  font-size: 0.9rem;
+  color: #6c757d;
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+}
+
+/* 搜索结果中的书签网格 - 复用标准样式 */
+.bookmarks-grid-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+
 .bookmark-card {
   background: white;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   cursor: pointer;
-  border: 1px solid #e1e8ed;
+  border: 1px solid #e9ecef;
 }
 
 .bookmark-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  border-color: #667eea;
 }
 
 .bookmark-header {

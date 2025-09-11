@@ -32,9 +32,19 @@ class BookmarkManager {
     });
 
     // 搜索相关事件
-    document.getElementById('search-input').addEventListener('input', (e) => {
-      this.searchTerm = e.target.value.toLowerCase();
-      this.filterBookmarks();
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    // 点击搜索按钮进行搜索
+    searchBtn.addEventListener('click', () => {
+      this.performSearch();
+    });
+    
+    // 回车键搜索
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        this.performSearch();
+      }
     });
 
     
@@ -208,17 +218,14 @@ class BookmarkManager {
     const grid = document.getElementById('bookmarks-grid');
     grid.innerHTML = '';
     
+    // 如果有搜索词，显示搜索结果
+    if (this.searchTerm) {
+      this.renderSearchResults();
+      return;
+    }
+    
     // 获取当前文件夹的书签
     let bookmarks = this.bookmarks.filter(b => b.parentId === this.currentFolder);
-    
-    // 应用搜索过滤
-    if (this.searchTerm) {
-      bookmarks = bookmarks.filter(bookmark => {
-        const titleMatch = bookmark.title.toLowerCase().includes(this.searchTerm);
-        const urlMatch = bookmark.url.toLowerCase().includes(this.searchTerm);
-        return titleMatch || urlMatch;
-      });
-    }
     
     // 按标题排序（默认）
     bookmarks = this.sortBookmarksArray(bookmarks);
@@ -234,6 +241,251 @@ class BookmarkManager {
       const card = this.createBookmarkCard(bookmark);
       grid.appendChild(card);
     });
+  }
+
+  renderSearchResults() {
+    const grid = document.getElementById('bookmarks-grid');
+    grid.innerHTML = '';
+    
+    // 全局搜索过滤所有书签
+    const allBookmarks = this.bookmarks.filter(bookmark => {
+      const titleMatch = bookmark.title.toLowerCase().includes(this.searchTerm);
+      const urlMatch = bookmark.url.toLowerCase().includes(this.searchTerm);
+      return titleMatch || urlMatch;
+    });
+    
+    if (allBookmarks.length === 0) {
+      this.showSearchEmptyState();
+      return;
+    }
+    
+    // 按文件夹分组
+    const groupedResults = this.groupBookmarksByFolder(allBookmarks);
+    
+    // 按文件夹名称排序
+    const sortedFolderIds = Object.keys(groupedResults).sort((a, b) => {
+      const folderA = this.folders.find(f => f.id === a);
+      const folderB = this.folders.find(f => f.id === b);
+      const nameA = folderA ? folderA.title : '其他';
+      const nameB = folderB ? folderB.title : '其他';
+      return nameA.localeCompare(nameB, 'zh-CN');
+    });
+    
+    // 渲染每个分组
+    sortedFolderIds.forEach((folderId, index) => {
+      const folder = this.folders.find(f => f.id === folderId);
+      const folderName = folder ? folder.title : '其他';
+      const bookmarks = groupedResults[folderId];
+      
+      // 创建文件夹区域
+      const folderSection = this.createSearchFolderSection(folderId, folderName, bookmarks);
+      grid.appendChild(folderSection);
+      
+      // 如果不是最后一个分类，添加分隔线
+      if (index < sortedFolderIds.length - 1) {
+        const divider = document.createElement('div');
+        divider.className = 'search-divider';
+        grid.appendChild(divider);
+      }
+    });
+  }
+
+  groupBookmarksByFolder(bookmarks) {
+    const grouped = {};
+    
+    bookmarks.forEach(bookmark => {
+      const folderId = bookmark.parentId;
+      if (!grouped[folderId]) {
+        grouped[folderId] = [];
+      }
+      grouped[folderId].push(bookmark);
+    });
+    
+    // 对每个文件夹内的书签按名称排序
+    Object.keys(grouped).forEach(folderId => {
+      grouped[folderId] = this.sortBookmarksArray(grouped[folderId]);
+    });
+    
+    return grouped;
+  }
+
+  createSearchFolderSection(folderId, folderName, bookmarks) {
+    const section = document.createElement('div');
+    section.className = 'search-folder-section';
+    
+    // 创建文件夹标题
+    const header = document.createElement('div');
+    header.className = 'search-folder-header';
+    header.innerHTML = `
+      <span class="folder-name">${this.escapeHtml(folderName)}</span>
+      <span class="bookmark-count">(${bookmarks.length})</span>
+    `;
+    
+    // 点击标题跳转到对应文件夹
+    header.addEventListener('click', () => {
+      this.selectFolder(folderId, folderName);
+    });
+    
+    section.appendChild(header);
+    
+    // 创建书签网格（复用现有样式）
+    const bookmarksGrid = document.createElement('div');
+    bookmarksGrid.className = 'bookmarks-grid-group';
+    
+    bookmarks.forEach(bookmark => {
+      const card = this.createBookmarkCard(bookmark);
+      bookmarksGrid.appendChild(card);
+    });
+    
+    section.appendChild(bookmarksGrid);
+    
+    return section;
+  }
+
+  createSearchResultCard(folderId, folderName, bookmarks) {
+    const card = document.createElement('div');
+    card.className = 'search-result-card';
+    
+    // 创建卡片头部
+    const header = document.createElement('div');
+    header.className = 'search-card-header';
+    header.innerHTML = `
+      <div class="folder-info">
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">${this.escapeHtml(folderName)}</span>
+      </div>
+      <span class="bookmark-count">${bookmarks.length} 个书签</span>
+    `;
+    
+    // 点击头部跳转到该文件夹
+    header.addEventListener('click', () => {
+      this.selectFolder(folderId, folderName);
+    });
+    
+    card.appendChild(header);
+    
+    // 创建书签列表
+    const bookmarksList = document.createElement('div');
+    bookmarksList.className = 'search-bookmarks-list';
+    
+    bookmarks.forEach(bookmark => {
+      const bookmarkItem = this.createSearchBookmarkItem(bookmark);
+      bookmarksList.appendChild(bookmarkItem);
+    });
+    
+    card.appendChild(bookmarksList);
+    
+    return card;
+  }
+
+  createSearchBookmarkItem(bookmark) {
+    const item = document.createElement('div');
+    item.className = 'search-bookmark-item';
+    
+    const favicon = this.getFaviconUrl(bookmark.url);
+    
+    item.innerHTML = `
+      <div class="bookmark-content">
+        <img class="bookmark-favicon" src="${favicon}" alt="favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiByeD0iMyIgZmlsbD0iI0U1RTVFNSIvPgo8cGF0aCBkPSJNOCA3QzUuMjQgNyAzIDkuMjQgMyAxMiAzIDE0Ljc2IDEzIDE3IDEwLjc2IDE3IDhDMTcgNS4yNCAxNC43NiAzIDEyIDNDOS4yNCAzIDcgNS4yNCA3IDhaIiBmaWxsPSIjOTk5OTk5Ii8+Cjwvc3ZnPg=='">
+        <div class="bookmark-text">
+          <div class="bookmark-title">${this.escapeHtml(bookmark.title)}</div>
+          <div class="bookmark-url">${this.escapeHtml(bookmark.url)}</div>
+        </div>
+      </div>
+    `;
+    
+    // 点击整个项目打开书签
+    item.addEventListener('click', () => {
+      this.openBookmark(bookmark.url);
+    });
+    
+    // 右键菜单
+    item.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.showContextMenu(e, bookmark);
+    });
+    
+    return item;
+  }
+
+  addExitSearchButton() {
+    const grid = document.getElementById('bookmarks-grid');
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'exit-search-container';
+    buttonContainer.innerHTML = `
+      <button class="exit-search-btn" id="exit-search-btn">
+        <span class="exit-icon">✖️</span>
+        <span class="exit-text">退出搜索</span>
+      </button>
+    `;
+    
+    // 绑定退出搜索事件
+    buttonContainer.querySelector('.exit-search-btn').addEventListener('click', () => {
+      this.clearSearch();
+    });
+    
+    grid.appendChild(buttonContainer);
+  }
+
+  
+  showSearchEmptyState() {
+    const grid = document.getElementById('bookmarks-grid');
+    const emptyState = document.createElement('div');
+    emptyState.className = 'search-empty-state';
+    emptyState.innerHTML = `
+      <div class="search-empty-icon">🔍</div>
+      <h3>未找到匹配的书签</h3>
+      <p>尝试使用不同的关键词进行搜索</p>
+      <button class="clear-search-btn" id="clear-search-btn">清空搜索</button>
+    `;
+    
+    grid.appendChild(emptyState);
+    
+    // 绑定清空搜索事件
+    document.getElementById('clear-search-btn').addEventListener('click', () => {
+      this.clearSearch();
+    });
+  }
+
+  performSearch() {
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    this.searchTerm = searchInput.value.toLowerCase();
+    this.filterBookmarks();
+    
+    // 给搜索按钮一个反馈效果
+    searchBtn.style.transform = 'translateY(-50%) scale(0.9)';
+    setTimeout(() => {
+      searchBtn.style.transform = 'translateY(-50%) scale(1)';
+    }, 100);
+  }
+
+  createDivider() {
+    const divider = document.createElement('div');
+    divider.className = 'search-divider';
+    return divider;
+  }
+
+  createClearSearchButton() {
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'clear-search-container';
+    buttonContainer.innerHTML = `
+      <button class="clear-search-btn" id="clear-search-btn">清空搜索</button>
+    `;
+    
+    // 绑定清空搜索事件
+    buttonContainer.querySelector('.clear-search-btn').addEventListener('click', () => {
+      this.clearSearch();
+    });
+    
+    return buttonContainer;
+  }
+
+  clearSearch() {
+    this.searchTerm = '';
+    document.getElementById('search-input').value = '';
+    this.renderBookmarks();
   }
 
   createBookmarkCard(bookmark) {

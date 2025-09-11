@@ -8,30 +8,31 @@
 </head>
 <body>
   <div class="container">
-    <!-- 头部 -->
-    <header class="header">
-      <div class="header-content">
-        <h1>📚 书签管理器</h1>
-      </div>
-    </header>
-
     <!-- 主要内容区 -->
     <div class="main-content">
-      <!-- 侧边栏 - 书签分类 -->
+      <!-- 侧边栏 - 包含标题、搜索、文件夹列表 -->
       <aside class="sidebar">
+        <!-- 标题栏 -->
         <div class="sidebar-header">
-          <!-- 移除标题和展开按钮，保持简洁 -->
+          <h1>📚 书签管理器</h1>
         </div>
         
         <!-- 搜索栏 -->
         <div class="sidebar-search">
-          <input type="text" id="search-input" placeholder="搜索书签..." class="search-input">
+          <div class="search-container">
+            <input type="text" id="search-input" placeholder="搜索书签..." class="search-input">
+            <button id="search-btn" class="search-btn" title="搜索">
+              🔍
+            </button>
+          </div>
         </div>
         
+        <!-- 文件夹列表 -->
         <div class="folder-tree" id="folder-tree">
           <!-- 书签分类树将通过JavaScript动态生成 -->
         </div>
         
+        <!-- 统计信息 -->
         <div class="sidebar-stats">
           <div class="stat-item">
             <span class="stat-label">总书签数：</span>
@@ -46,8 +47,6 @@
 
       <!-- 主内容区 - 书签列表 -->
       <main class="content">
-        <!-- 移除面包屑导航 -->
-
         <!-- 书签网格 -->
         <div id="bookmarks-grid" class="bookmarks-grid">
           <!-- 书签项将通过JavaScript动态生成 -->
