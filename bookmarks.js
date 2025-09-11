@@ -3,9 +3,6 @@ class BookmarkManager {
     this.currentFolder = null;
     this.bookmarks = [];
     this.folders = [];
-    this.sortBy = 'title';
-    this.sortOrder = 'asc';
-    this.viewMode = 'grid';
     this.searchTerm = '';
     this.searchTitles = true;
     this.searchUrls = true;
@@ -23,6 +20,23 @@ class BookmarkManager {
     document.getElementById('search-toggle-btn').addEventListener('click', () => {
       this.toggleSearch();
     });
+    
+    // 事件委托：处理书签卡片的按钮点击
+    document.getElementById('bookmarks-grid').addEventListener('click', (e) => {
+      const card = e.target.closest('.bookmark-card');
+      if (!card) return;
+      
+      if (e.target.closest('.open-btn')) {
+        const url = card.dataset.bookmarkUrl;
+        this.openBookmark(url);
+      } else if (e.target.closest('.edit-btn')) {
+        const bookmarkId = card.dataset.bookmarkId;
+        this.editBookmark(bookmarkId);
+      } else if (e.target.closest('.delete-btn')) {
+        const bookmarkId = card.dataset.bookmarkId;
+        this.deleteBookmark(bookmarkId);
+      }
+    });
 
     document.getElementById('search-input').addEventListener('input', (e) => {
       this.searchTerm = e.target.value.toLowerCase();
@@ -39,36 +53,7 @@ class BookmarkManager {
       this.filterBookmarks();
     });
 
-    // 刷新按钮
-    document.getElementById('refresh-btn').addEventListener('click', () => {
-      this.loadBookmarks();
-    });
-
-    // 展开所有按钮
-    document.getElementById('expand-all-btn').addEventListener('click', () => {
-      this.toggleExpandAll();
-    });
-
-    // 视图切换
-    document.getElementById('view-grid-btn').addEventListener('click', () => {
-      this.setViewMode('grid');
-    });
-
-    document.getElementById('view-list-btn').addEventListener('click', () => {
-      this.setViewMode('list');
-    });
-
-    // 排序相关
-    document.getElementById('sort-select').addEventListener('change', (e) => {
-      this.sortBy = e.target.value;
-      this.sortBookmarks();
-    });
-
-    document.getElementById('sort-order-btn').addEventListener('click', () => {
-      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-      document.getElementById('sort-order-btn').innerHTML = this.sortOrder === 'asc' ? '↑' : '↓';
-      this.sortBookmarks();
-    });
+    // 移除展开所有按钮相关代码
 
     // 模态框事件
     document.getElementById('modal-close').addEventListener('click', () => {
@@ -147,15 +132,16 @@ class BookmarkManager {
     const folderTree = document.getElementById('folder-tree');
     folderTree.innerHTML = '';
     
-    // 创建根文件夹
-    const rootFolder = this.createFolderElement({
-      id: '0',
-      title: '🏠 根目录',
-      parentId: null,
-      children: this.folders.filter(f => f.parentId === '0')
-    });
+    // 显示所有文件夹（包括所有层级的文件夹）
+    const allFolders = this.folders.filter(f => f.id !== '0'); // 过滤掉根目录
     
-    folderTree.appendChild(rootFolder);
+    // 按标题排序
+    allFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+    
+    allFolders.forEach(folder => {
+      const folderElement = this.createFolderElement(folder);
+      folderTree.appendChild(folderElement);
+    });
   }
 
   createFolderElement(folder) {
@@ -165,13 +151,13 @@ class BookmarkManager {
     
     const folderIcon = document.createElement('span');
     folderIcon.className = 'folder-icon';
-    folderIcon.textContent = '▶';
+    folderIcon.textContent = '📁';
     
     const folderName = document.createElement('span');
     folderName.className = 'folder-name';
     folderName.textContent = folder.title;
     
-    const childFolders = this.folders.filter(f => f.parentId === folder.id);
+    // 计算该文件夹内的书签数量
     const childBookmarks = this.bookmarks.filter(b => b.parentId === folder.id);
     
     const folderCount = document.createElement('span');
@@ -187,26 +173,6 @@ class BookmarkManager {
       e.stopPropagation();
       this.selectFolder(folder.id, folder.title);
     });
-    
-    // 如果有子文件夹，递归创建
-    if (childFolders.length > 0) {
-      const childContainer = document.createElement('div');
-      childContainer.className = 'folder-children';
-      childContainer.style.display = 'none';
-      
-      childFolders.forEach(childFolder => {
-        const childElement = this.createFolderElement(childFolder);
-        childContainer.appendChild(childElement);
-      });
-      
-      folderElement.appendChild(childContainer);
-      
-      // 双击展开/折叠
-      folderElement.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        this.toggleFolder(folderElement);
-      });
-    }
     
     return folderElement;
   }
@@ -236,67 +202,11 @@ class BookmarkManager {
       selectedFolder.classList.add('active');
     }
     
-    // 更新面包屑导航
-    this.updateBreadcrumb(folderId, folderTitle);
-    
     // 渲染书签
     this.renderBookmarks();
   }
 
-  updateBreadcrumb(folderId, folderTitle) {
-    const breadcrumb = document.getElementById('breadcrumb');
-    breadcrumb.innerHTML = '';
-    
-    // 添加根目录
-    const rootItem = this.createBreadcrumbItem('0', '🏠 根目录');
-    breadcrumb.appendChild(rootItem);
-    
-    // 如果不是根目录，添加路径
-    if (folderId !== '0') {
-      const path = this.getFolderPath(folderId);
-      path.forEach(folder => {
-        const separator = document.createElement('span');
-        separator.className = 'breadcrumb-separator';
-        separator.textContent = ' > ';
-        breadcrumb.appendChild(separator);
-        
-        const item = this.createBreadcrumbItem(folder.id, folder.title);
-        breadcrumb.appendChild(item);
-      });
-    }
-  }
-
-  createBreadcrumbItem(folderId, title) {
-    const item = document.createElement('a');
-    item.href = '#';
-    item.className = 'breadcrumb-item';
-    item.textContent = title;
-    item.dataset.folderId = folderId;
-    
-    item.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.selectFolder(folderId, title);
-    });
-    
-    return item;
-  }
-
-  getFolderPath(folderId) {
-    const path = [];
-    let currentId = folderId;
-    
-    while (currentId && currentId !== '0') {
-      const folder = this.folders.find(f => f.id === currentId);
-      if (folder) {
-        path.unshift(folder);
-        currentId = folder.parentId;
-      } else {
-        break;
-      }
-    }
-    
-    return path;
-  }
+  // 面包屑导航功能已移除
 
   renderBookmarks() {
     const grid = document.getElementById('bookmarks-grid');
@@ -314,7 +224,7 @@ class BookmarkManager {
       });
     }
     
-    // 排序
+    // 按标题排序（默认）
     bookmarks = this.sortBookmarksArray(bookmarks);
     
     if (bookmarks.length === 0) {
@@ -334,6 +244,7 @@ class BookmarkManager {
     const card = document.createElement('div');
     card.className = 'bookmark-card';
     card.dataset.bookmarkId = bookmark.id;
+    card.dataset.bookmarkUrl = bookmark.url;
     
     // 获取favicon
     const favicon = this.getFaviconUrl(bookmark.url);
@@ -345,9 +256,9 @@ class BookmarkManager {
       </div>
       <div class="bookmark-url">${this.escapeHtml(bookmark.url)}</div>
       <div class="bookmark-actions">
-        <button class="bookmark-action-btn" onclick="bookmarkManager.openBookmark('${bookmark.url}')">打开</button>
-        <button class="bookmark-action-btn" onclick="bookmarkManager.editBookmark('${bookmark.id}')">编辑</button>
-        <button class="bookmark-action-btn" onclick="bookmarkManager.deleteBookmark('${bookmark.id}')">删除</button>
+        <button class="bookmark-action-btn open-btn">打开</button>
+        <button class="bookmark-action-btn edit-btn">编辑</button>
+        <button class="bookmark-action-btn delete-btn">删除</button>
       </div>
     `;
     
@@ -509,51 +420,13 @@ class BookmarkManager {
 
   sortBookmarksArray(bookmarks) {
     return bookmarks.sort((a, b) => {
-      let aValue, bValue;
+      const aValue = a.title.toLowerCase();
+      const bValue = b.title.toLowerCase();
       
-      switch (this.sortBy) {
-        case 'title':
-          aValue = a.title.toLowerCase();
-          bValue = b.title.toLowerCase();
-          break;
-        case 'date':
-          aValue = a.dateAdded || 0;
-          bValue = b.dateAdded || 0;
-          break;
-        case 'url':
-          aValue = a.url.toLowerCase();
-          bValue = b.url.toLowerCase();
-          break;
-        default:
-          aValue = a.title.toLowerCase();
-          bValue = b.title.toLowerCase();
-      }
-      
-      if (aValue < bValue) return this.sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return this.sortOrder === 'asc' ? 1 : -1;
+      if (aValue < bValue) return -1;
+      if (aValue > bValue) return 1;
       return 0;
     });
-  }
-
-  sortBookmarks() {
-    this.renderBookmarks();
-  }
-
-  setViewMode(mode) {
-    this.viewMode = mode;
-    
-    // 更新按钮状态
-    document.querySelectorAll('.view-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    
-    if (mode === 'grid') {
-      document.getElementById('view-grid-btn').classList.add('active');
-      document.querySelector('.content').classList.remove('list-view');
-    } else {
-      document.getElementById('view-list-btn').classList.add('active');
-      document.querySelector('.content').classList.add('list-view');
-    }
   }
 
   toggleSearch() {

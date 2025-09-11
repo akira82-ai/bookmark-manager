@@ -9,13 +9,22 @@ body {
   background-color: #f5f7fa;
   color: #2c3e50;
   font-size: 14px;
+  margin: 0;
+  padding: 0;
+  width: 380px;
+  height: 600px;
+  overflow: hidden;
 }
 
 .container {
-  width: 380px;
-  min-height: 500px;
+  width: 100%;
+  height: 100%;
+  max-height: 600px;
   background-color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* 弹出窗口头部 */
@@ -42,8 +51,36 @@ body {
   padding: 20px;
 }
 
+.button-row {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
 .primary-btn {
-  width: 100%;
+  width: 48%;
+  padding: 12px;
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.primary-btn:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.secondary-btn {
+  width: 48%;
   padding: 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -53,42 +90,29 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-bottom: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
 
-.primary-btn:hover {
+.secondary-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-.quick-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.secondary-btn {
-  flex: 1;
-  padding: 10px;
+.primary-btn:disabled {
   background-color: #f8f9fa;
-  color: #495057;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  color: #adb5bd;
+  border-color: #e9ecef;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.secondary-btn:hover {
-  background-color: #e9ecef;
-  border-color: #dee2e6;
+.primary-btn:disabled:hover {
+  background-color: #f8f9fa;
+  border-color: #e9ecef;
+  transform: none;
 }
 
 .btn-icon {
@@ -98,6 +122,10 @@ body {
 /* 最近书签区域 */
 .recent-section {
   padding: 0 20px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .recent-section h3 {
@@ -108,9 +136,10 @@ body {
 }
 
 .recent-list {
-  max-height: 200px;
+  max-height: 180px;
   overflow-y: auto;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+  flex-shrink: 0;
 }
 
 .recent-item {
@@ -118,12 +147,16 @@ body {
   align-items: center;
   padding: 8px;
   border-radius: 6px;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, opacity 0.3s ease, transform 0.3s ease;
   margin-bottom: 6px;
+  cursor: pointer;
+  user-select: none;
 }
 
 .recent-item:hover {
   background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .recent-favicon {
@@ -137,6 +170,7 @@ body {
 .recent-info {
   flex: 1;
   min-width: 0;
+  margin-right: 8px;
 }
 
 .recent-title {
@@ -159,6 +193,7 @@ body {
 .recent-actions {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .action-btn {
@@ -173,10 +208,24 @@ body {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s ease;
+  position: relative;
+  z-index: 10;
 }
 
 .action-btn:hover {
   background-color: #e9ecef;
+}
+
+.action-btn.confirm-delete {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+.action-btn.confirm-delete:hover {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  transform: scale(1.1);
 }
 
 .no-bookmarks {
@@ -191,6 +240,7 @@ body {
   padding: 20px;
   background-color: #f8f9fa;
   border-top: 1px solid #e9ecef;
+  margin-top: auto;
 }
 
 .stats-grid {
@@ -241,6 +291,21 @@ body {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+/* 删除确认提示 */
+.delete-hint {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #dc3545;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
 }
 
 /* 滚动条样式 */

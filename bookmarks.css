@@ -104,16 +104,10 @@ body {
 }
 
 .sidebar-header {
-  padding: 1rem;
-  border-bottom: 1px solid #e1e8ed;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sidebar-header h2 {
-  font-size: 1.1rem;
-  color: #2c3e50;
+  padding: 0.5rem;
+  /* 简化侧边栏头部，移除标题 */
+  display: none;
+  /* 隐藏侧边栏头部，直接显示文件夹列表 */
 }
 
 .folder-tree {
@@ -144,11 +138,7 @@ body {
 
 .folder-icon {
   font-size: 1.2rem;
-  transition: transform 0.2s ease;
-}
-
-.folder-item.expanded .folder-icon {
-  transform: rotate(90deg);
+  /* 移除展开/折叠动画效果 */
 }
 
 .folder-name {
@@ -190,81 +180,12 @@ body {
   overflow: hidden;
 }
 
-.breadcrumb {
-  padding: 1rem;
-  background: white;
-  border-bottom: 1px solid #e1e8ed;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.breadcrumb-item {
-  text-decoration: none;
-  color: #6c757d;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.breadcrumb-item:hover {
-  background: #f8f9fa;
-  color: #495057;
-}
-
-.breadcrumb-item.active {
-  color: #667eea;
-  font-weight: 500;
-}
+/* 面包屑导航已移除 */
 
 .toolbar {
   padding: 1rem;
   background: white;
   border-bottom: 1px solid #e1e8ed;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.view-options {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.view-btn {
-  padding: 0.5rem;
-  border: 1px solid #e1e8ed;
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1rem;
-}
-
-.view-btn:hover {
-  background: #f8f9fa;
-}
-
-.view-btn.active {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-}
-
-.sort-options {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.sort-select {
-  padding: 0.5rem;
-  border: 1px solid #e1e8ed;
-  border-radius: 4px;
-  background: white;
-  font-size: 0.9rem;
-  outline: none;
 }
 
 /* 书签网格样式 */
@@ -559,23 +480,7 @@ body {
   color: #2c3e50;
 }
 
-/* 列表视图样式 */
-.content.list-view .bookmarks-grid {
-  display: block;
-  padding: 0;
-}
-
-.content.list-view .bookmark-card {
-  margin: 0;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-bottom: 1px solid #e1e8ed;
-}
-
-.content.list-view .bookmark-card:last-child {
-  border-bottom: none;
-}
+/* 列表视图样式已移除，仅保留网格视图 */
 
 /* 响应式设计 */
 @media (max-width: 768px) {

@@ -13,10 +13,6 @@
       <div class="header-content">
         <h1>📚 书签管理器</h1>
         <div class="header-actions">
-          <button id="refresh-btn" class="btn btn-secondary">
-            <span class="btn-icon">🔄</span>
-            刷新
-          </button>
           <button id="search-toggle-btn" class="btn btn-secondary">
             <span class="btn-icon">🔍</span>
             搜索
@@ -45,10 +41,7 @@
       <!-- 侧边栏 - 书签分类 -->
       <aside class="sidebar">
         <div class="sidebar-header">
-          <h2>书签分类</h2>
-          <button id="expand-all-btn" class="btn-icon-btn" title="展开所有">
-            <span>📂</span>
-          </button>
+          <!-- 移除标题和展开按钮，保持简洁 -->
         </div>
         
         <div class="folder-tree" id="folder-tree">
@@ -69,32 +62,11 @@
 
       <!-- 主内容区 - 书签列表 -->
       <main class="content">
-        <!-- 面包屑导航 -->
-        <nav class="breadcrumb" id="breadcrumb">
-          <a href="#" data-path="" class="breadcrumb-item active">🏠 根目录</a>
-        </nav>
+        <!-- 移除面包屑导航 -->
 
         <!-- 工具栏 -->
         <div class="toolbar">
-          <div class="view-options">
-            <button id="view-grid-btn" class="view-btn active" title="网格视图">
-              <span>⊞</span>
-            </button>
-            <button id="view-list-btn" class="view-btn" title="列表视图">
-              <span>☰</span>
-            </button>
-          </div>
-          
-          <div class="sort-options">
-            <select id="sort-select" class="sort-select">
-              <option value="title">按标题排序</option>
-              <option value="date">按日期排序</option>
-              <option value="url">按URL排序</option>
-            </select>
-            <button id="sort-order-btn" class="btn-icon-btn" title="切换排序顺序">
-              <span>↑</span>
-            </button>
-          </div>
+          <!-- 工具栏留空，为将来可能的功能预留 -->
         </div>
 
         <!-- 书签网格 -->
