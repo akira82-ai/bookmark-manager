@@ -246,6 +246,181 @@ body {
   width: 100%;
 }
 
+/* 新的搜索结果样式 */
+.search-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.search-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-term {
+  background-color: #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #495057;
+}
+
+/* 可折叠的搜索区域 */
+.search-folder-section {
+  margin-bottom: 1.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.search-folder-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.search-folder-header.collapsible {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.search-folder-header.collapsible:hover {
+  background-color: #e9ecef;
+}
+
+.search-folder-header .folder-icon {
+  font-size: 1.1rem;
+}
+
+.search-folder-header .folder-name {
+  flex: 1;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.search-folder-header .bookmark-count {
+  background-color: #667eea;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.search-folder-header .collapse-icon {
+  font-size: 0.8rem;
+  color: #6c757d;
+  transition: transform 0.2s ease;
+}
+
+.search-folder-section.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.search-bookmarks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: white;
+}
+
+/* 高亮显示样式 */
+.highlight {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* 匹配类型标识 */
+.match-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.match-badge.both {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.match-badge.title {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.match-badge.url {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+/* 搜索为空状态 */
+.search-empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6c757d;
+}
+
+.search-empty-state .empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.search-empty-state h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.search-empty-state p {
+  margin-bottom: 1rem;
+}
+
+.search-empty-state ul {
+  text-align: left;
+  max-width: 300px;
+  margin: 0 auto 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.search-empty-state li {
+  margin-bottom: 0.5rem;
+}
+
+.clear-search-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
 /* 搜索分隔线 */
 .search-divider {
   height: 1px;
