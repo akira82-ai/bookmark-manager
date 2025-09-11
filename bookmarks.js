@@ -3,6 +3,8 @@ class BookmarkManager {
     this.currentFolder = null;
     this.bookmarks = [];
     this.folders = [];
+    this.searchTerm = '';
+    this.searchTimeout = null;
     
     this.init();
   }
@@ -30,6 +32,37 @@ class BookmarkManager {
       }
     });
 
+    // 搜索相关事件
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    // 点击搜索按钮进行搜索
+    searchBtn.addEventListener('click', () => {
+      this.performSearch();
+    });
+    
+    // 回车键搜索
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        this.performSearch();
+      }
+    });
+
+    // 实时搜索（带防抖）
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(this.searchTimeout);
+      const query = e.target.value.trim();
+      
+      if (query === '') {
+        // 如果搜索框为空，清除搜索
+        this.clearSearch();
+      } else {
+        // 防抖处理，400ms后执行搜索
+        this.searchTimeout = setTimeout(() => {
+          this.performSearch();
+        }, 400);
+      }
+    });
     
     // 移除展开所有按钮相关代码
 
@@ -190,6 +223,12 @@ class BookmarkManager {
   renderBookmarks() {
     const grid = document.getElementById('bookmarks-grid');
     grid.innerHTML = '';
+    
+    // 如果有搜索词，显示搜索结果
+    if (this.searchTerm) {
+      this.renderSearchResults();
+      return;
+    }
     
     // 获取当前文件夹的书签
     let bookmarks = this.bookmarks.filter(b => b.parentId === this.currentFolder);
@@ -427,6 +466,354 @@ class BookmarkManager {
   hideEmptyState() {
     document.getElementById('empty-state').style.display = 'none';
     document.getElementById('bookmarks-grid').style.display = 'grid';
+  }
+
+  // 搜索功能方法
+  performSearch() {
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    this.searchTerm = searchInput.value.trim();
+    
+    if (!this.searchTerm) {
+      this.clearSearch();
+      return;
+    }
+    
+    // 给搜索按钮一个反馈效果
+    searchBtn.style.transform = 'translateY(-50%) scale(0.9)';
+    setTimeout(() => {
+      searchBtn.style.transform = 'translateY(-50%) scale(1)';
+    }, 100);
+    
+    this.renderBookmarks();
+  }
+
+  renderSearchResults() {
+    const grid = document.getElementById('bookmarks-grid');
+    grid.innerHTML = '';
+    
+    // 临时移除网格布局，改用flex布局实现水平排列
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.gridTemplateColumns = 'none';
+    
+    // 全局搜索过滤所有书签，添加匹配信息
+    const allBookmarks = this.bookmarks.map(bookmark => {
+      const title = bookmark.title.toLowerCase();
+      const url = bookmark.url.toLowerCase();
+      const searchLower = this.searchTerm.toLowerCase();
+      
+      const titleMatch = title.includes(searchLower);
+      const urlMatch = url.includes(searchLower);
+      
+      if (titleMatch || urlMatch) {
+        return {
+          ...bookmark,
+          matchType: titleMatch && urlMatch ? 'both' : (titleMatch ? 'title' : 'url'),
+          matchScore: this.calculateMatchScore(bookmark.title, bookmark.url, this.searchTerm)
+        };
+      }
+      return null;
+    }).filter(Boolean);
+    
+    if (allBookmarks.length === 0) {
+      this.showSearchEmptyState();
+      return;
+    }
+    
+    // 按匹配度排序
+    allBookmarks.sort((a, b) => b.matchScore - a.matchScore);
+    
+    // 显示搜索统计
+    const statsDiv = document.createElement('div');
+    statsDiv.className = 'search-results-header';
+    statsDiv.innerHTML = `
+      <div class="search-results-title">搜索结果</div>
+      <div class="search-results-meta">
+        <span class="search-results-count">找到 <strong>${allBookmarks.length}</strong> 个结果 "${this.escapeHtml(this.searchTerm)}"</span>
+        <div class="search-results-actions">
+          <button class="clear-search-btn" onclick="bookmarkManager.clearSearch()">清除搜索</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(statsDiv);
+    
+    // 创建水平排列的容器
+    const containerDiv = document.createElement('div');
+    containerDiv.className = 'search-results-container';
+    
+    // 按文件夹分组
+    const groupedResults = this.groupBookmarksByFolder(allBookmarks);
+    
+    // 按文件夹名称排序
+    const sortedFolderIds = Object.keys(groupedResults).sort((a, b) => {
+      const folderA = this.folders.find(f => f.id === a);
+      const folderB = this.folders.find(f => f.id === b);
+      const nameA = folderA ? folderA.title : '其他';
+      const nameB = folderB ? folderB.title : '其他';
+      return nameA.localeCompare(nameB, 'zh-CN');
+    });
+    
+    // 渲染每个分组
+    sortedFolderIds.forEach((folderId, index) => {
+      const folder = this.folders.find(f => f.id === folderId);
+      const folderName = folder ? folder.title : '其他';
+      const bookmarks = groupedResults[folderId];
+      
+      // 创建文件夹区域（可展开/收起）
+      const folderSection = this.createSearchResultSection(folderId, folderName, bookmarks);
+      containerDiv.appendChild(folderSection);
+    });
+    
+    grid.appendChild(containerDiv);
+  }
+
+  groupBookmarksByFolder(bookmarks) {
+    const grouped = {};
+    
+    bookmarks.forEach(bookmark => {
+      const folderId = bookmark.parentId;
+      if (!grouped[folderId]) {
+        grouped[folderId] = [];
+      }
+      grouped[folderId].push(bookmark);
+    });
+    
+    // 对每个文件夹内的书签按匹配度和名称排序
+    Object.keys(grouped).forEach(folderId => {
+      grouped[folderId].sort((a, b) => {
+        // 首先按匹配度排序
+        if (b.matchScore !== a.matchScore) {
+          return b.matchScore - a.matchScore;
+        }
+        // 匹配度相同则按名称排序
+        return a.title.localeCompare(b.title, 'zh-CN');
+      });
+    });
+    
+    return grouped;
+  }
+
+  createSearchResultSection(folderId, folderName, bookmarks) {
+    const section = document.createElement('div');
+    section.className = 'search-result-group';
+    section.dataset.folderId = folderId;
+    
+    // 创建可折叠的文件夹标题
+    const header = document.createElement('div');
+    header.className = 'search-group-header';
+    header.innerHTML = `
+      <div class="folder-info">
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">${this.escapeHtml(folderName)}</span>
+      </div>
+      <div class="result-info">
+        <span class="result-count">${bookmarks.length}</span>
+        <span class="collapse-icon">▼</span>
+      </div>
+    `;
+    
+    // 点击标题展开/收起
+    header.addEventListener('click', () => {
+      this.toggleSearchSection(section);
+    });
+    
+    section.appendChild(header);
+    
+    // 创建书签网格容器
+    const bookmarksGrid = document.createElement('div');
+    bookmarksGrid.className = 'search-bookmarks-grid';
+    
+    // 创建书签网格（横向布局）
+    bookmarks.forEach(bookmark => {
+      const card = this.createSearchResultCard(bookmark);
+      bookmarksGrid.appendChild(card);
+    });
+    
+    section.appendChild(bookmarksGrid);
+    
+    return section;
+  }
+
+  toggleSearchSection(section) {
+    const isCollapsed = section.classList.contains('collapsed');
+    const collapseIcon = section.querySelector('.collapse-icon');
+    const grid = section.querySelector('.search-bookmarks-grid');
+    
+    if (isCollapsed) {
+      section.classList.remove('collapsed');
+      collapseIcon.textContent = '▼';
+      grid.style.display = 'flex';
+    } else {
+      section.classList.add('collapsed');
+      collapseIcon.textContent = '▶';
+      grid.style.display = 'none';
+    }
+  }
+
+  createSearchResultCard(bookmark) {
+    const card = document.createElement('div');
+    card.className = 'search-result-card';
+    card.dataset.bookmarkId = bookmark.id;
+    card.dataset.bookmarkUrl = bookmark.url;
+    
+    const faviconUrl = this.getFaviconUrl(bookmark.url);
+    
+    // 处理标题和URL的高亮显示
+    let titleHtml = this.escapeHtml(bookmark.title);
+    let urlHtml = this.escapeHtml(bookmark.url);
+    
+    if (this.searchTerm) {
+      const searchLower = this.searchTerm.toLowerCase();
+      const lowerTitle = bookmark.title.toLowerCase();
+      const lowerUrl = bookmark.url.toLowerCase();
+      
+      if (lowerTitle.includes(searchLower)) {
+        titleHtml = this.highlightText(bookmark.title, this.searchTerm);
+      }
+      if (lowerUrl.includes(searchLower)) {
+        urlHtml = this.highlightText(bookmark.url, this.searchTerm);
+      }
+    }
+    
+    card.innerHTML = `
+      <div class="search-card-header">
+        <img class="search-card-favicon" src="${faviconUrl}" alt="favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iI0U1RTVFNSIvPgo8cGF0aCBkPSJNMTIgN0M5LjI0IDcgNyA5LjI0IDcgMTJDMiAxNC43NiA5LjI0IDE3IDEyIDE3QzE0Ljc2IDE3IDE3IDE0Ljc2IDE3IDEyQzE3IDkuMjQgMTQuNzYgNyAxMiA3WiIgZmlsbD0iIzk5OTk5OSIvPgo8L3N2Zz4K'">
+        <div class="search-card-title">${titleHtml}</div>
+      </div>
+      <div class="search-card-url">${urlHtml}</div>
+      <div class="search-card-actions">
+        <button class="search-card-action-btn open-btn" title="打开书签">
+          🔗
+        </button>
+        <button class="search-card-action-btn edit-btn" title="编辑书签">
+          ✏️
+        </button>
+        <button class="search-card-action-btn delete-btn" title="删除书签">
+          🗑️
+        </button>
+      </div>
+    `;
+    
+    // 绑定按钮事件
+    const openBtn = card.querySelector('.open-btn');
+    const editBtn = card.querySelector('.edit-btn');
+    const deleteBtn = card.querySelector('.delete-btn');
+    
+    openBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.openBookmark(bookmark.url);
+    });
+    
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.editBookmark(bookmark.id);
+    });
+    
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.deleteBookmark(bookmark.id);
+    });
+    
+    // 右键菜单
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.showContextMenu(e, bookmark);
+    });
+    
+    // 双击打开
+    card.addEventListener('dblclick', () => {
+      this.openBookmark(bookmark.url);
+    });
+    
+    return card;
+  }
+
+  clearSearch() {
+    this.searchTerm = '';
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    
+    // 恢复原来的网格布局
+    const grid = document.getElementById('bookmarks-grid');
+    grid.style.display = '';
+    grid.style.flexDirection = '';
+    grid.style.gridTemplateColumns = '';
+    
+    this.renderBookmarks();
+  }
+
+  showSearchEmptyState() {
+    const grid = document.getElementById('bookmarks-grid');
+    const emptyState = document.createElement('div');
+    emptyState.className = 'search-empty-state';
+    emptyState.innerHTML = `
+      <div class="search-empty-icon">🔍</div>
+      <h3>未找到匹配的书签</h3>
+      <p>尝试使用不同的关键词进行搜索</p>
+      <button class="clear-search-btn" onclick="bookmarkManager.clearSearch()">清空搜索</button>
+    `;
+    
+    grid.appendChild(emptyState);
+  }
+
+  // 高亮文本中的关键词
+  highlightText(text, query) {
+    if (!query) return this.escapeHtml(text);
+    
+    const regex = new RegExp(`(${this.escapeRegExp(query)})`, 'gi');
+    return this.escapeHtml(text).replace(regex, '<mark class="highlight">$1</mark>');
+  }
+
+  // 转义正则表达式特殊字符
+  escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // 计算匹配度分数
+  calculateMatchScore(title, url, query) {
+    const lowerQuery = query.toLowerCase();
+    const lowerTitle = title.toLowerCase();
+    const lowerUrl = url.toLowerCase();
+    
+    let score = 0;
+    
+    // 标题完全匹配
+    if (lowerTitle === lowerQuery) {
+      score += 100;
+    }
+    // 标题开头匹配
+    else if (lowerTitle.startsWith(lowerQuery)) {
+      score += 80;
+    }
+    // 标题包含匹配
+    else if (lowerTitle.includes(lowerQuery)) {
+      score += 60;
+    }
+    
+    // URL完全匹配
+    if (lowerUrl === lowerQuery) {
+      score += 70;
+    }
+    // URL开头匹配
+    else if (lowerUrl.startsWith(lowerQuery)) {
+      score += 50;
+    }
+    // URL包含匹配
+    else if (lowerUrl.includes(lowerQuery)) {
+      score += 30;
+    }
+    
+    // 匹配位置因素（越靠前越相关）
+    const titleMatchIndex = lowerTitle.indexOf(lowerQuery);
+    if (titleMatchIndex !== -1) {
+      score += Math.max(0, 20 - titleMatchIndex);
+    }
+    
+    return score;
   }
 
   escapeHtml(text) {
