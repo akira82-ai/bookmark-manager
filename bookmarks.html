@@ -12,27 +12,6 @@
     <header class="header">
       <div class="header-content">
         <h1>📚 书签管理器</h1>
-        <div class="header-actions">
-          <button id="search-toggle-btn" class="btn btn-secondary">
-            <span class="btn-icon">🔍</span>
-            搜索
-          </button>
-        </div>
-      </div>
-      
-      <!-- 搜索栏 -->
-      <div id="search-bar" class="search-bar" style="display: none;">
-        <input type="text" id="search-input" placeholder="搜索书签..." class="search-input">
-        <div class="search-filters">
-          <label class="filter-label">
-            <input type="checkbox" id="search-titles" checked>
-            搜索标题
-          </label>
-          <label class="filter-label">
-            <input type="checkbox" id="search-urls" checked>
-            搜索URL
-          </label>
-        </div>
       </div>
     </header>
 
@@ -42,6 +21,11 @@
       <aside class="sidebar">
         <div class="sidebar-header">
           <!-- 移除标题和展开按钮，保持简洁 -->
+        </div>
+        
+        <!-- 搜索栏 -->
+        <div class="sidebar-search">
+          <input type="text" id="search-input" placeholder="搜索书签..." class="search-input">
         </div>
         
         <div class="folder-tree" id="folder-tree">
@@ -63,11 +47,6 @@
       <!-- 主内容区 - 书签列表 -->
       <main class="content">
         <!-- 移除面包屑导航 -->
-
-        <!-- 工具栏 -->
-        <div class="toolbar">
-          <!-- 工具栏留空，为将来可能的功能预留 -->
-        </div>
 
         <!-- 书签网格 -->
         <div id="bookmarks-grid" class="bookmarks-grid">

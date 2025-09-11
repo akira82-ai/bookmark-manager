@@ -4,8 +4,6 @@ class BookmarkManager {
     this.bookmarks = [];
     this.folders = [];
     this.searchTerm = '';
-    this.searchTitles = true;
-    this.searchUrls = true;
     
     this.init();
   }
@@ -16,11 +14,6 @@ class BookmarkManager {
   }
 
   bindEvents() {
-    // 搜索相关事件
-    document.getElementById('search-toggle-btn').addEventListener('click', () => {
-      this.toggleSearch();
-    });
-    
     // 事件委托：处理书签卡片的按钮点击
     document.getElementById('bookmarks-grid').addEventListener('click', (e) => {
       const card = e.target.closest('.bookmark-card');
@@ -38,21 +31,13 @@ class BookmarkManager {
       }
     });
 
+    // 搜索相关事件
     document.getElementById('search-input').addEventListener('input', (e) => {
       this.searchTerm = e.target.value.toLowerCase();
       this.filterBookmarks();
     });
 
-    document.getElementById('search-titles').addEventListener('change', (e) => {
-      this.searchTitles = e.target.checked;
-      this.filterBookmarks();
-    });
-
-    document.getElementById('search-urls').addEventListener('change', (e) => {
-      this.searchUrls = e.target.checked;
-      this.filterBookmarks();
-    });
-
+    
     // 移除展开所有按钮相关代码
 
     // 模态框事件
@@ -135,10 +120,21 @@ class BookmarkManager {
     // 显示所有文件夹（包括所有层级的文件夹）
     const allFolders = this.folders.filter(f => f.id !== '0'); // 过滤掉根目录
     
-    // 按标题排序
-    allFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+    // 将「最近收藏」文件夹放在最前面
+    const recentFolder = allFolders.find(f => f.title === '📌 最近收藏');
+    const otherFolders = allFolders.filter(f => f.title !== '📌 最近收藏');
     
-    allFolders.forEach(folder => {
+    // 其他文件夹按标题排序
+    otherFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+    
+    // 先添加最近收藏文件夹（如果存在）
+    if (recentFolder) {
+      const recentFolderElement = this.createFolderElement(recentFolder);
+      folderTree.appendChild(recentFolderElement);
+    }
+    
+    // 然后添加其他文件夹
+    otherFolders.forEach(folder => {
       const folderElement = this.createFolderElement(folder);
       folderTree.appendChild(folderElement);
     });
@@ -218,8 +214,8 @@ class BookmarkManager {
     // 应用搜索过滤
     if (this.searchTerm) {
       bookmarks = bookmarks.filter(bookmark => {
-        const titleMatch = this.searchTitles && bookmark.title.toLowerCase().includes(this.searchTerm);
-        const urlMatch = this.searchUrls && bookmark.url.toLowerCase().includes(this.searchTerm);
+        const titleMatch = bookmark.title.toLowerCase().includes(this.searchTerm);
+        const urlMatch = bookmark.url.toLowerCase().includes(this.searchTerm);
         return titleMatch || urlMatch;
       });
     }
@@ -427,20 +423,6 @@ class BookmarkManager {
       if (aValue > bValue) return 1;
       return 0;
     });
-  }
-
-  toggleSearch() {
-    const searchBar = document.getElementById('search-bar');
-    const isVisible = searchBar.style.display !== 'none';
-    
-    if (isVisible) {
-      searchBar.style.display = 'none';
-      this.searchTerm = '';
-      document.getElementById('search-input').value = '';
-    } else {
-      searchBar.style.display = 'block';
-      document.getElementById('search-input').focus();
-    }
   }
 
   filterBookmarks() {

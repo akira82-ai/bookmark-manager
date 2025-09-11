@@ -27,6 +27,15 @@ function createPopupUI() {
       </div>
     </div>
     
+    <div class="search-section">
+      <div class="search-container">
+        <input type="text" id="search-input" class="search-input" placeholder="搜索书签...">
+        <button id="search-btn" class="search-btn">
+          🔍
+        </button>
+      </div>
+    </div>
+    
     <div class="recent-section">
       <h3>📌 最近收藏</h3>
       <div id="recent-bookmarks" class="recent-list">
@@ -86,6 +95,30 @@ function bindEvents() {
       return;
     }
     addCurrentPage();
+  });
+  
+  // 搜索功能
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
+  
+  // 搜索按钮点击事件
+  searchBtn.addEventListener('click', function() {
+    performSearch();
+  });
+  
+  // 搜索框回车事件
+  searchInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      performSearch();
+    }
+  });
+  
+  // 搜索框输入事件（实时搜索）
+  searchInput.addEventListener('input', function() {
+    if (this.value.trim() === '') {
+      // 如果搜索框为空，显示最近书签
+      loadRecentBookmarks();
+    }
   });
   
   // 事件委托：处理最近书签的点击
@@ -636,6 +669,78 @@ function hideDeleteHint() {
   if (hint) {
     hint.remove();
   }
+}
+
+// 执行搜索
+async function performSearch() {
+  const searchInput = document.getElementById('search-input');
+  const query = searchInput.value.trim().toLowerCase();
+  
+  if (!query) {
+    loadRecentBookmarks();
+    return;
+  }
+  
+  try {
+    const container = document.getElementById('recent-bookmarks');
+    container.innerHTML = '<div class="search-loading">搜索中...</div>';
+    
+    // 获取所有书签
+    const bookmarkTree = await chrome.bookmarks.getTree();
+    const allBookmarks = getAllBookmarks(bookmarkTree[0]);
+    
+    // 过滤匹配的书签
+    const matchingBookmarks = allBookmarks.filter(bookmark => {
+      const title = bookmark.title.toLowerCase();
+      const url = bookmark.url.toLowerCase();
+      return title.includes(query) || url.includes(query);
+    });
+    
+    // 显示搜索结果
+    container.innerHTML = '';
+    
+    if (matchingBookmarks.length === 0) {
+      container.innerHTML = '<p class="no-bookmarks">未找到匹配的书签</p>';
+      return;
+    }
+    
+    // 限制显示数量，避免界面过长
+    const displayBookmarks = matchingBookmarks.slice(0, 10);
+    
+    displayBookmarks.forEach(bookmark => {
+      const item = createRecentBookmarkItem(bookmark);
+      container.appendChild(item);
+    });
+    
+    // 如果有更多结果，显示提示
+    if (matchingBookmarks.length > 10) {
+      const moreResults = document.createElement('div');
+      moreResults.className = 'search-more-results';
+      moreResults.textContent = `还有 ${matchingBookmarks.length - 10} 个结果...`;
+      container.appendChild(moreResults);
+    }
+    
+  } catch (error) {
+    console.error('搜索失败:', error);
+    const container = document.getElementById('recent-bookmarks');
+    container.innerHTML = '<p class="no-bookmarks">搜索失败</p>';
+  }
+}
+
+// 获取所有书签
+function getAllBookmarks(node) {
+  let bookmarks = [];
+  
+  function traverse(node) {
+    if (node.url) {
+      bookmarks.push(node);
+    } else if (node.children) {
+      node.children.forEach(child => traverse(child));
+    }
+  }
+  
+  traverse(node);
+  return bookmarks;
 }
 
 // 移除全局函数定义，现在使用事件委托
