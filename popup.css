@@ -143,51 +143,51 @@ body {
 }
 
 .recent-item {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease, opacity 0.3s ease, transform 0.3s ease;
-  margin-bottom: 6px;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
   cursor: pointer;
-  user-select: none;
+  border: 1px solid #e1e8ed;
+  margin-bottom: 1.5rem;
 }
 
 .recent-item:hover {
-  background-color: #f8f9fa;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .recent-favicon {
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
-  margin-right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
 .recent-info {
   flex: 1;
   min-width: 0;
-  margin-right: 8px;
+  margin-bottom: 1rem;
 }
 
 .recent-title {
-  font-size: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: #2c3e50;
-  font-weight: 500;
+  line-height: 1.4;
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .recent-url {
-  font-size: 10px;
+  font-size: 0.8rem;
   color: #6c757d;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 1rem;
+  word-break: break-all;
+  line-height: 1.4;
 }
 
 .recent-actions {

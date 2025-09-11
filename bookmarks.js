@@ -244,46 +244,109 @@ class BookmarkManager {
     this.hideEmptyState();
     
     bookmarks.forEach(bookmark => {
-      const card = this.createBookmarkCard(bookmark);
+      const card = this.createBookmarkCard(bookmark, { mode: 'normal' });
       grid.appendChild(card);
     });
   }
 
-  createBookmarkCard(bookmark) {
-    const card = document.createElement('div');
-    card.className = 'bookmark-card';
-    card.dataset.bookmarkId = bookmark.id;
-    card.dataset.bookmarkUrl = bookmark.url;
+  /**
+ * 创建统一的书签卡片
+ * @param {Object} bookmark - 书签对象
+ * @param {Object} options - 配置选项
+ * @param {string} options.mode - 显示模式: 'normal'(默认) | 'search'
+ * @param {string} options.searchTerm - 搜索关键词(仅search模式)
+ * @returns {HTMLElement} 书签卡片元素
+ */
+createBookmarkCard(bookmark, options = {}) {
+  const { mode = 'normal', searchTerm = '' } = options;
+  
+  const card = document.createElement('div');
+  card.className = 'bookmark-card';
+  card.dataset.bookmarkId = bookmark.id;
+  card.dataset.bookmarkUrl = bookmark.url;
+  
+  // 获取favicon
+  const favicon = this.getFaviconUrl(bookmark.url);
+  
+  // 处理文本内容（支持搜索高亮）
+  let titleContent = this.escapeHtml(bookmark.title);
+  let urlContent = this.escapeHtml(bookmark.url);
+  
+  if (mode === 'search' && searchTerm) {
+    const searchLower = searchTerm.toLowerCase();
+    const lowerTitle = bookmark.title.toLowerCase();
+    const lowerUrl = bookmark.url.toLowerCase();
     
-    // 获取favicon
-    const favicon = this.getFaviconUrl(bookmark.url);
-    
-    card.innerHTML = `
-      <div class="bookmark-header">
-        <img class="bookmark-favicon" src="${favicon}" alt="favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iI0U1RTVFNSIvPgo8cGF0aCBkPSJNMTIgN0M5LjI0IDcgNyA5LjI0IDcgMTJDMiAxNC43NiA5LjI0IDE3IDEyIDE3QzE0Ljc2IDE3IDE3IDE0Ljc2IDE3IDEyQzE3IDkuMjQgMTQuNzYgNyAxMiA3WiIgZmlsbD0iIzk5OTk5OSIvPgo8L3N2Zz4K'">
-        <div class="bookmark-title">${this.escapeHtml(bookmark.title)}</div>
-      </div>
-      <div class="bookmark-url">${this.escapeHtml(bookmark.url)}</div>
-      <div class="bookmark-actions">
-        <button class="bookmark-action-btn open-btn">打开</button>
-        <button class="bookmark-action-btn edit-btn">编辑</button>
-        <button class="bookmark-action-btn delete-btn">删除</button>
-      </div>
-    `;
-    
-    // 右键菜单
-    card.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      this.showContextMenu(e, bookmark);
-    });
-    
-    // 双击打开
-    card.addEventListener('dblclick', () => {
+    if (lowerTitle.includes(searchLower)) {
+      titleContent = this.highlightText(bookmark.title, searchTerm);
+    }
+    if (lowerUrl.includes(searchLower)) {
+      urlContent = this.highlightText(bookmark.url, searchTerm);
+    }
+  }
+  
+  card.innerHTML = `
+    <div class="bookmark-header">
+      <img class="bookmark-favicon" src="${favicon}" alt="favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iI0U1RTVFNSIvPgo8cGF0aCBkPSJNMTIgN0M5LjI0IDcgNyA5LjI0IDcgMTJDMiAxNC43NiA5LjI0IDE3IDEyIDE3QzE0Ljc2IDE3IDE3IDE0Ljc2IDE3IDEyQzE3IDkuMjQgMTQuNzYgNyAxMiA3WiIgZmlsbD0iIzk5OTk5OSIvPgo8L3N2Zz4K'">
+      <div class="bookmark-title">${titleContent}</div>
+    </div>
+    <div class="bookmark-url">${urlContent}</div>
+    <div class="bookmark-actions">
+      <button class="bookmark-action-btn open-btn">打开</button>
+      <button class="bookmark-action-btn edit-btn">编辑</button>
+      <button class="bookmark-action-btn delete-btn">删除</button>
+    </div>
+  `;
+  
+  // 绑定事件监听器
+  this.bindCardEvents(card, bookmark);
+  
+  return card;
+}
+
+/**
+ * 为书签卡片绑定事件监听器
+ * @param {HTMLElement} card - 书签卡片元素
+ * @param {Object} bookmark - 书签对象
+ */
+bindCardEvents(card, bookmark) {
+  // 右键菜单
+  card.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    this.showContextMenu(e, bookmark);
+  });
+  
+  // 双击打开
+  card.addEventListener('dblclick', () => {
+    this.openBookmark(bookmark.url);
+  });
+  
+  // 按钮事件
+  const openBtn = card.querySelector('.open-btn');
+  const editBtn = card.querySelector('.edit-btn');
+  const deleteBtn = card.querySelector('.delete-btn');
+  
+  if (openBtn) {
+    openBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       this.openBookmark(bookmark.url);
     });
-    
-    return card;
   }
+  
+  if (editBtn) {
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.editBookmark(bookmark.id);
+    });
+  }
+  
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.deleteBookmark(bookmark.id);
+    });
+  }
+}
 
   getFaviconUrl(url) {
     try {
@@ -652,83 +715,17 @@ class BookmarkManager {
     }
   }
 
-  createSearchResultCard(bookmark) {
-    const card = document.createElement('div');
-    card.className = 'search-result-card';
-    card.dataset.bookmarkId = bookmark.id;
-    card.dataset.bookmarkUrl = bookmark.url;
-    
-    const faviconUrl = this.getFaviconUrl(bookmark.url);
-    
-    // 处理标题和URL的高亮显示
-    let titleHtml = this.escapeHtml(bookmark.title);
-    let urlHtml = this.escapeHtml(bookmark.url);
-    
-    if (this.searchTerm) {
-      const searchLower = this.searchTerm.toLowerCase();
-      const lowerTitle = bookmark.title.toLowerCase();
-      const lowerUrl = bookmark.url.toLowerCase();
-      
-      if (lowerTitle.includes(searchLower)) {
-        titleHtml = this.highlightText(bookmark.title, this.searchTerm);
-      }
-      if (lowerUrl.includes(searchLower)) {
-        urlHtml = this.highlightText(bookmark.url, this.searchTerm);
-      }
-    }
-    
-    card.innerHTML = `
-      <div class="search-card-header">
-        <img class="search-card-favicon" src="${faviconUrl}" alt="favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iI0U1RTVFNSIvPgo8cGF0aCBkPSJNMTIgN0M5LjI0IDcgNyA5LjI0IDcgMTJDMiAxNC43NiA5LjI0IDE3IDEyIDE3QzE0Ljc2IDE3IDE3IDE0Ljc2IDE3IDEyQzE3IDkuMjQgMTQuNzYgNyAxMiA3WiIgZmlsbD0iIzk5OTk5OSIvPgo8L3N2Zz4K'">
-        <div class="search-card-title">${titleHtml}</div>
-      </div>
-      <div class="search-card-url">${urlHtml}</div>
-      <div class="search-card-actions">
-        <button class="search-card-action-btn open-btn" title="打开书签">
-          🔗
-        </button>
-        <button class="search-card-action-btn edit-btn" title="编辑书签">
-          ✏️
-        </button>
-        <button class="search-card-action-btn delete-btn" title="删除书签">
-          🗑️
-        </button>
-      </div>
-    `;
-    
-    // 绑定按钮事件
-    const openBtn = card.querySelector('.open-btn');
-    const editBtn = card.querySelector('.edit-btn');
-    const deleteBtn = card.querySelector('.delete-btn');
-    
-    openBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.openBookmark(bookmark.url);
-    });
-    
-    editBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.editBookmark(bookmark.id);
-    });
-    
-    deleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.deleteBookmark(bookmark.id);
-    });
-    
-    // 右键菜单
-    card.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      this.showContextMenu(e, bookmark);
-    });
-    
-    // 双击打开
-    card.addEventListener('dblclick', () => {
-      this.openBookmark(bookmark.url);
-    });
-    
-    return card;
-  }
+  /**
+ * 创建搜索结果书签卡片（统一函数的便捷方法）
+ * @param {Object} bookmark - 书签对象
+ * @returns {HTMLElement} 书签卡片元素
+ */
+createSearchResultCard(bookmark) {
+  return this.createBookmarkCard(bookmark, { 
+    mode: 'search', 
+    searchTerm: this.searchTerm 
+  });
+}
 
   clearSearch() {
     this.searchTerm = '';
