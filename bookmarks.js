@@ -231,7 +231,13 @@ class BookmarkManager {
     }
     
     // 获取当前文件夹的书签
-    let bookmarks = this.bookmarks.filter(b => b.parentId === this.currentFolder);
+    let bookmarks;
+    if (this.currentFolder === null) {
+      // 显示根目录书签（parentId为"0"或书签栏/其他书签栏的根节点）
+      bookmarks = this.bookmarks.filter(b => b.parentId === "0" || b.parentId === "1" || b.parentId === "2");
+    } else {
+      bookmarks = this.bookmarks.filter(b => b.parentId === this.currentFolder);
+    }
     
     // 按标题排序（默认）
     bookmarks = this.sortBookmarksArray(bookmarks);
