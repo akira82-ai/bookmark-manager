@@ -510,7 +510,7 @@ body {
 
 .bookmark-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  border-color: #667eea;
 }
 
 .bookmark-header {
@@ -548,39 +548,55 @@ body {
 
 .bookmark-actions {
   display: flex;
-  gap: 0.5rem;
-  justify-content: center;
+  gap: 1rem;
+  justify-content: flex-start;
   margin-top: 1rem;
 }
 
 .bookmark-action-btn {
   flex: 0 0 auto;
-  padding: 0.5rem 1rem;
-  border: 1px solid #e1e8ed;
-  border-radius: 6px;
-  background: white;
-  color: #6c757d;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: none;
   font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 60px;
+  font-weight: 500;
+  border-radius: 3px;
 }
 
 .bookmark-action-btn:hover {
-  background: #f8f9fa;
-  border-color: #667eea;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* 编辑按钮 - 黑色 */
+.bookmark-action-btn.edit-btn {
+  color: #2c3e50;
+}
+
+.bookmark-action-btn.edit-btn:hover {
+  color: #495057;
+  background: rgba(44, 62, 80, 0.1);
+}
+
+/* 保存按钮 - 蓝色 */
+.bookmark-action-btn.save-btn {
   color: #667eea;
 }
 
-.bookmark-action-btn.save-btn {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
+.bookmark-action-btn.save-btn:hover {
+  color: #5a6fd8;
+  background: rgba(102, 126, 234, 0.1);
 }
 
-.bookmark-action-btn.save-btn:hover {
-  background: #5a6fd8;
-  border-color: #5a6fd8;
+/* 删除按钮 - 红色 */
+.bookmark-action-btn.delete-btn {
+  color: #dc3545;
+}
+
+.bookmark-action-btn.delete-btn:hover {
+  color: #c82333;
+  background: rgba(220, 53, 69, 0.1);
 }
 
 /* 内联编辑样式 */
