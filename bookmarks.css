@@ -498,6 +498,7 @@ body {
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
+  padding-bottom: 3rem; /* 为按钮留出空间 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
   cursor: pointer;
@@ -506,6 +507,7 @@ body {
   width: 100%;
   box-sizing: border-box;
   justify-self: center;
+  position: relative; /* 为绝对定位的按钮提供参考 */
 }
 
 .bookmark-card:hover {
@@ -550,7 +552,9 @@ body {
   display: flex;
   gap: 1rem;
   justify-content: flex-start;
-  margin-top: 1rem;
+  position: absolute;
+  bottom: 1rem;
+  left: 1.5rem;
 }
 
 .bookmark-action-btn {
