@@ -600,7 +600,7 @@ bindCardEvents(card, bookmark) {
     statsDiv.innerHTML = `
       <div class="search-results-title">搜索结果</div>
       <div class="search-results-meta">
-        <span class="search-results-count">找到 <strong>${allBookmarks.length}</strong> 个结果 "${this.escapeHtml(this.searchTerm)}"</span>
+        <span class="search-results-count">已搜索到 <strong>${allBookmarks.length}</strong> 个结果</span>
         <div class="search-results-actions">
           <button class="clear-search-btn" onclick="bookmarkManager.clearSearch()">清除搜索</button>
         </div>
