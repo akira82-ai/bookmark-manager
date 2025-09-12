@@ -47,9 +47,161 @@
 
       <!-- 主内容区 - 书签列表 -->
       <main class="content">
-        <!-- 书签网格 -->
+        <!-- 智能检测工具栏 -->
+        <div class="toolbar-container">
+          <div class="toolbar-section">
+            <div class="toolbar-group">
+              <button id="check-all-btn" class="toolbar-btn" title="检测当前分类的书签链接">
+                <span class="toolbar-icon">🔍</span>
+                <span class="toolbar-text">分类检测</span>
+              </button>
+              <button id="check-selected-btn" class="toolbar-btn" title="检测选中的书签">
+                <span class="toolbar-icon">⚡</span>
+                <span class="toolbar-text">选中检测</span>
+              </button>
+              <button id="show-invalid-btn" class="toolbar-btn" title="只显示无效链接">
+                <span class="toolbar-icon">⚠️</span>
+                <span class="toolbar-text">显示无效</span>
+              </button>
+              <button id="cleanup-btn" class="toolbar-btn" title="清理无效书签">
+                <span class="toolbar-icon">🗑️</span>
+                <span class="toolbar-text">清理无效</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 检测进度显示 -->
+          <div id="check-progress" class="progress-container" style="display: none;">
+            <div class="progress-header">
+              <span class="progress-title">正在检测链接...</span>
+              <div class="progress-stats">
+                <span id="progress-count">0/0</span>
+                <span id="progress-percent">(0%)</span>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div class="progress-details">
+              <span class="progress-stat">
+                <span class="stat-icon">✅</span>
+                <span class="stat-label">有效:</span>
+                <span id="valid-count" class="stat-value">0</span>
+              </span>
+              <span class="progress-stat">
+                <span class="stat-icon">⚠️</span>
+                <span class="stat-label">重定向:</span>
+                <span id="redirect-count" class="stat-value">0</span>
+              </span>
+              <span class="progress-stat">
+                <span class="stat-icon">❌</span>
+                <span class="stat-label">无效:</span>
+                <span id="invalid-count" class="stat-value">0</span>
+              </span>
+            </div>
+          </div>
+          
+          <!-- 结果筛选器 -->
+          <div id="filter-toolbar" class="filter-toolbar" style="display: none;">
+            <div class="filter-actions">
+              <button id="exit-check-mode-btn" class="filter-action-btn exit-btn">
+                ↩️ 退出检测模式
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 书签网格 - 正常显示模式 -->
         <div id="bookmarks-grid" class="bookmarks-grid">
           <!-- 书签项将通过JavaScript动态生成 -->
+        </div>
+
+        <!-- 检测结果分组显示 - 默认隐藏 -->
+        <div id="results-grouped" class="results-grouped" style="display: none;">
+          <!-- 有效链接分组 -->
+          <div class="result-group" data-status="valid">
+            <div class="group-header">
+              <div class="group-info">
+                <span class="group-icon">✅</span>
+                <span class="group-title">有效链接</span>
+                <span class="group-count">(0)</span>
+              </div>
+              <div class="group-actions">
+                <button class="group-collapse-btn" title="折叠/展开">
+                  <span class="collapse-icon">▼</span>
+                </button>
+              </div>
+            </div>
+            <div class="group-content">
+              <div class="group-bookmarks-grid"></div>
+            </div>
+          </div>
+
+          <!-- 重定向链接分组 -->
+          <div class="result-group" data-status="redirect">
+            <div class="group-header">
+              <div class="group-info">
+                <span class="group-icon">⚠️</span>
+                <span class="group-title">重定向链接</span>
+                <span class="group-count">(0)</span>
+              </div>
+              <div class="group-actions">
+                <button class="group-action-btn" title="批量更新重定向">
+                  🔄 批量更新
+                </button>
+                <button class="group-collapse-btn" title="折叠/展开">
+                  <span class="collapse-icon">▼</span>
+                </button>
+              </div>
+            </div>
+            <div class="group-content">
+              <div class="group-bookmarks-grid"></div>
+            </div>
+          </div>
+
+          <!-- 超时链接分组 -->
+          <div class="result-group" data-status="timeout">
+            <div class="group-header">
+              <div class="group-info">
+                <span class="group-icon">⏰</span>
+                <span class="group-title">超时链接</span>
+                <span class="group-count">(0)</span>
+              </div>
+              <div class="group-actions">
+                <button class="group-action-btn" title="重新检测">
+                  🔍 重新检测
+                </button>
+                <button class="group-collapse-btn" title="折叠/展开">
+                  <span class="collapse-icon">▼</span>
+                </button>
+              </div>
+            </div>
+            <div class="group-content">
+              <div class="group-bookmarks-grid"></div>
+            </div>
+          </div>
+
+          <!-- 无效链接分组 -->
+          <div class="result-group" data-status="invalid">
+            <div class="group-header">
+              <div class="group-info">
+                <span class="group-icon">❌</span>
+                <span class="group-title">无效链接</span>
+                <span class="group-count">(0)</span>
+              </div>
+              <div class="group-actions">
+                <button class="group-action-btn" title="批量删除">
+                  🗑️ 批量删除
+                </button>
+                <button class="group-collapse-btn" title="折叠/展开">
+                  <span class="collapse-icon">▼</span>
+                </button>
+              </div>
+            </div>
+            <div class="group-content">
+              <div class="group-bookmarks-grid"></div>
+            </div>
+          </div>
         </div>
 
         <!-- 加载状态 -->
