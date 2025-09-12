@@ -315,7 +315,6 @@ createBookmarkCard(bookmark, options = {}) {
     </div>
     <div class="bookmark-url">${urlContent}</div>
     <div class="bookmark-actions">
-      <button class="bookmark-action-btn open-btn">打开</button>
       <button class="bookmark-action-btn edit-btn">编辑</button>
       <button class="bookmark-action-btn delete-btn">删除</button>
     </div>
@@ -339,27 +338,27 @@ bindCardEvents(card, bookmark) {
     this.showContextMenu(e, bookmark);
   });
   
-  // 双击打开
-  card.addEventListener('dblclick', () => {
+  // 单击打开书签（点击卡片空白区域）
+  card.addEventListener('click', (e) => {
+    // 如果点击的是按钮区域，不触发跳转
+    if (e.target.closest('.bookmark-actions')) {
+      return;
+    }
+    // 如果卡片处于编辑模式，不触发跳转
+    if (card.classList.contains('editing')) {
+      return;
+    }
     this.openBookmark(bookmark.url);
   });
   
   // 按钮事件
-  const openBtn = card.querySelector('.open-btn');
   const editBtn = card.querySelector('.edit-btn');
   const deleteBtn = card.querySelector('.delete-btn');
-  
-  if (openBtn) {
-    openBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.openBookmark(bookmark.url);
-    });
-  }
   
   if (editBtn) {
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.editBookmark(bookmark.id);
+      this.toggleEditMode(card, bookmark);
     });
   }
   
@@ -416,6 +415,175 @@ bindCardEvents(card, bookmark) {
     
     // 保存当前编辑的书签ID
     this.editingBookmarkId = bookmarkId;
+  }
+
+  /**
+   * 切换书签卡片的编辑模式
+   * @param {HTMLElement} card - 书签卡片元素
+   * @param {Object} bookmark - 书签对象
+   */
+  toggleEditMode(card, bookmark) {
+    const isEditing = card.classList.contains('editing');
+    
+    if (isEditing) {
+      // 保存编辑
+      this.saveInlineEdit(card, bookmark);
+    } else {
+      // 进入编辑模式
+      this.enterEditMode(card, bookmark);
+    }
+  }
+
+  /**
+   * 进入编辑模式
+   * @param {HTMLElement} card - 书签卡片元素
+   * @param {Object} bookmark - 书签对象
+   */
+  enterEditMode(card, bookmark) {
+    const titleElement = card.querySelector('.bookmark-title');
+    const urlElement = card.querySelector('.bookmark-url');
+    const editBtn = card.querySelector('.edit-btn');
+    
+    // 保存原始值
+    card.dataset.originalTitle = bookmark.title;
+    card.dataset.originalUrl = bookmark.url;
+    
+    // 替换标题为输入框
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.className = 'bookmark-title-input';
+    titleInput.value = bookmark.title;
+    titleInput.placeholder = '请输入书签标题';
+    titleElement.innerHTML = '';
+    titleElement.appendChild(titleInput);
+    
+    // 替换URL为输入框
+    const urlInput = document.createElement('input');
+    urlInput.type = 'url';
+    urlInput.className = 'bookmark-url-input';
+    urlInput.value = bookmark.url;
+    urlInput.placeholder = '请输入书签URL';
+    urlElement.innerHTML = '';
+    urlElement.appendChild(urlInput);
+    
+    // 更改按钮文本
+    editBtn.textContent = '保存';
+    editBtn.classList.add('save-btn');
+    
+    // 添加编辑模式样式
+    card.classList.add('editing');
+    
+    // 聚焦到标题输入框
+    titleInput.focus();
+    titleInput.select();
+    
+    // 绑定回车键保存
+    const saveOnEnter = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.saveInlineEdit(card, bookmark);
+        titleInput.removeEventListener('keydown', saveOnEnter);
+        urlInput.removeEventListener('keydown', saveOnEnter);
+      }
+    };
+    
+    titleInput.addEventListener('keydown', saveOnEnter);
+    urlInput.addEventListener('keydown', saveOnEnter);
+  }
+
+  /**
+   * 保存内联编辑
+   * @param {HTMLElement} card - 书签卡片元素
+   * @param {Object} bookmark - 书签对象
+   */
+  async saveInlineEdit(card, bookmark) {
+    const titleInput = card.querySelector('.bookmark-title-input');
+    const urlInput = card.querySelector('.bookmark-url-input');
+    
+    const newTitle = titleInput.value.trim();
+    const newUrl = urlInput.value.trim();
+    
+    // 验证输入
+    if (!newTitle) {
+      alert('请输入书签标题');
+      titleInput.focus();
+      return;
+    }
+    
+    if (!newUrl) {
+      alert('请输入书签URL');
+      urlInput.focus();
+      return;
+    }
+    
+    // 验证URL格式
+    try {
+      new URL(newUrl);
+    } catch (e) {
+      alert('请输入有效的URL');
+      urlInput.focus();
+      return;
+    }
+    
+    // 检查是否有实际变化
+    if (newTitle === bookmark.title && newUrl === bookmark.url) {
+      // 没有变化，直接退出编辑模式
+      this.exitEditMode(card, bookmark);
+      return;
+    }
+    
+    try {
+      // 更新书签
+      await chrome.bookmarks.update(bookmark.id, { 
+        title: newTitle, 
+        url: newUrl 
+      });
+      
+      // 更新本地数据
+      const localBookmark = this.bookmarks.find(b => b.id === bookmark.id);
+      if (localBookmark) {
+        localBookmark.title = newTitle;
+        localBookmark.url = newUrl;
+      }
+      
+      // 退出编辑模式
+      this.exitEditMode(card, bookmark, newTitle, newUrl);
+      
+    } catch (error) {
+      console.error('保存书签失败:', error);
+      alert('保存书签失败，请重试');
+    }
+  }
+
+  /**
+   * 退出编辑模式
+   * @param {HTMLElement} card - 书签卡片元素
+   * @param {Object} bookmark - 书签对象
+   * @param {string} [newTitle] - 新标题（可选）
+   * @param {string} [newUrl] - 新URL（可选）
+   */
+  exitEditMode(card, bookmark, newTitle, newUrl) {
+    const titleElement = card.querySelector('.bookmark-title');
+    const urlElement = card.querySelector('.bookmark-url');
+    const editBtn = card.querySelector('.edit-btn');
+    
+    // 恢复标题显示
+    const finalTitle = newTitle || bookmark.title;
+    const finalUrl = newUrl || bookmark.url;
+    
+    titleElement.innerHTML = this.escapeHtml(finalTitle);
+    urlElement.innerHTML = this.escapeHtml(finalUrl);
+    
+    // 恢复按钮文本
+    editBtn.textContent = '编辑';
+    editBtn.classList.remove('save-btn');
+    
+    // 移除编辑模式样式
+    card.classList.remove('editing');
+    
+    // 清理数据
+    delete card.dataset.originalTitle;
+    delete card.dataset.originalUrl;
   }
 
   async saveBookmark() {
