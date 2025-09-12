@@ -1,23 +1,17 @@
 /**
- * 链接检测器类
+ * 链接检测器类 - 简单可靠检测
  */
 class LinkChecker {
   constructor() {
-    this.cache = new Map();
-    this.cacheTimeout = 24 * 60 * 60 * 1000; // 24小时缓存
-    this.timeout = 10000; // 10秒超时
+    this.timeout = 8000; // 8秒超时
   }
 
   /**
-   * 检查单个链接
+   * 简单可靠检测主入口
    */
   async check(url) {
-    // 检查缓存
-    const cached = this.getFromCache(url);
-    if (cached) {
-      return cached;
-    }
-
+    console.log(`🔍 开始检测: ${url}`);
+    
     try {
       const startTime = Date.now();
       const result = await this.performCheck(url);
@@ -29,10 +23,9 @@ class LinkChecker {
         checkedAt: Date.now()
       };
 
-      // 存入缓存
-      this.setToCache(url, finalResult);
-      
+      console.log(`✅ 检测完成: ${result.status} (${responseTime}ms)`);
       return finalResult;
+      
     } catch (error) {
       const errorResult = {
         status: 'timeout',
@@ -40,10 +33,8 @@ class LinkChecker {
         responseTime: this.timeout,
         checkedAt: Date.now()
       };
-
-      // 错误结果也缓存，但时间较短
-      this.setToCache(url, errorResult, 5 * 60 * 1000); // 5分钟
       
+      console.log(`❌ 检测失败: ${error.message}`);
       return errorResult;
     }
   }
@@ -53,7 +44,7 @@ class LinkChecker {
    */
   async performCheck(url) {
     try {
-      // 使用 CORS 代理或者尝试直接请求
+      // 使用简单可靠的检测方法
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -119,88 +110,47 @@ class LinkChecker {
     }
   }
 
-  /**
-   * 从缓存获取
-   */
-  getFromCache(url) {
-    const cached = this.cache.get(url);
-    if (cached && Date.now() - cached.checkedAt < this.cacheTimeout) {
-      return cached;
-    }
-    return null;
   }
-
-  /**
-   * 存入缓存
-   */
-  setToCache(url, result, customTimeout = null) {
-    this.cache.set(url, result);
-    
-    // 设置过期清理
-    const timeout = customTimeout || this.cacheTimeout;
-    setTimeout(() => {
-      this.cache.delete(url);
-    }, timeout);
-  }
-}
 
 /**
  * 批量处理器类
  */
 class BatchProcessor {
-  constructor(maxConcurrent = 3) {
-    this.maxConcurrent = maxConcurrent;
-    this.activeRequests = 0;
-    this.queue = [];
+  constructor() {
+    // 串行处理器，不需要并发参数
   }
 
   /**
-   * 处理批量任务
+   * 串行处理批量任务
    */
   async process(items, processor) {
-    return new Promise((resolve, reject) => {
-      const results = [];
-      let completed = 0;
-      let hasError = false;
+    console.log(`BatchProcessor: 开始串行处理 ${items.length} 个项目`);
+    const results = [];
 
-      const processNext = async () => {
-        if (completed >= items.length || hasError) {
-          if (completed >= items.length) {
-            resolve(results);
-          }
-          return;
-        }
-
-        if (this.activeRequests >= this.maxConcurrent) {
-          setTimeout(processNext, 100);
-          return;
-        }
-
-        const item = items[completed];
-        this.activeRequests++;
-
-        try {
-          const result = await processor(item);
-          results[completed] = result;
-        } catch (error) {
-          console.error(`处理项目 ${completed} 失败:`, error);
-          results[completed] = {
-            status: 'error',
-            error: error.message
-          };
-          // 不设置 hasError，继续处理其他项目
-        } finally {
-          this.activeRequests--;
-          completed++;
-          setTimeout(processNext, 50); // 小延迟避免过快请求
-        }
-      };
-
-      // 启动多个并发处理器
-      for (let i = 0; i < Math.min(this.maxConcurrent, items.length); i++) {
-        setTimeout(processNext, i * 100);
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      console.log(`BatchProcessor: 正在处理项目 [${i}/${items.length}]: ${item.title || item.url}`);
+      
+      try {
+        const result = await processor(item, i);
+        results[i] = result;
+        console.log(`BatchProcessor: 项目 [${i}] 处理完成，状态: ${result.status}`);
+      } catch (error) {
+        console.error(`BatchProcessor: 项目 [${i}] 处理失败:`, error);
+        results[i] = {
+          status: 'error',
+          error: error.message
+        };
       }
-    });
+      
+      // 在项目之间添加小延迟，避免过快请求
+      if (i < items.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    console.log(`BatchProcessor: 串行处理完成，总共处理 ${items.length} 个项目`);
+    return results;
   }
 }
 
@@ -497,6 +447,10 @@ class BookmarkManager {
       bookmarks = this.bookmarks.filter(b => b.parentId === this.currentFolder);
     }
     
+    // 过滤有URL的书签进行统计
+    const displayBookmarks = bookmarks.filter(b => b.url && b.url.trim() !== '');
+    console.log(`显示统计: 当前文件夹总书签数=${bookmarks.length}, 有URL的书签数=${displayBookmarks.length}`);
+    
     // 按标题排序（默认）
     bookmarks = this.sortBookmarksArray(bookmarks);
     
@@ -507,10 +461,14 @@ class BookmarkManager {
     
     this.hideEmptyState();
     
+    let cardCount = 0;
     bookmarks.forEach(bookmark => {
       const card = this.createBookmarkCard(bookmark, { mode: 'normal' });
       grid.appendChild(card);
+      cardCount++;
     });
+    
+    console.log(`实际创建的书签卡片数量: ${cardCount}`);
   }
 
   /**
@@ -1354,7 +1312,10 @@ createSearchResultCard(bookmark) {
       return;
     }
 
+    console.log('=== 开始检测所有书签 ===');
     const bookmarksToCheck = this.getCurrentBookmarks();
+    console.log('=== 获取到书签列表，开始批量处理 ===');
+    
     if (bookmarksToCheck.length === 0) {
       this.showMessage('当前文件夹没有书签需要检查');
       return;
@@ -1368,6 +1329,7 @@ createSearchResultCard(bookmark) {
     this.showMessage(`开始检测 ${rangeText} 中的 ${bookmarksToCheck.length} 个书签...`);
 
     await this.performBatchCheck(bookmarksToCheck);
+    console.log('=== 批量处理完成 ===');
   }
 
   /**
@@ -1411,16 +1373,23 @@ createSearchResultCard(bookmark) {
       timeout: 0
     };
 
+    console.log(`开始批量检测，总共 ${bookmarks.length} 个书签`);
     this.showProgress();
     this.updateProgress();
 
     try {
-      const batchProcessor = new BatchProcessor(3); // 限制并发数为3
+      const batchProcessor = new BatchProcessor(); // 串行处理器
       
-      await batchProcessor.process(bookmarks, async (bookmark) => {
+      await batchProcessor.process(bookmarks, async (bookmark, index) => {
+        console.log(`正在检测 [${index}]: ${bookmark.title} (${bookmark.url}) [ID: ${bookmark.id}]`);
         const result = await this.linkChecker.check(bookmark.url);
-        this.processCheckResult(bookmark, result);
-        this.checkStats.processed++;
+        console.log(`检测结果 [${index}]: ${bookmark.title} -> ${result.status} [ID: ${bookmark.id}]`);
+        
+        // 只有在真正处理了书签时才增加计数
+        const wasProcessed = this.processCheckResult(bookmark, result);
+        if (wasProcessed !== false) { // false表示跳过重复
+          this.checkStats.processed++;
+        }
         this.updateProgress();
         this.updateBookmarkCardStatus(bookmark.id, result);
       });
@@ -1439,6 +1408,12 @@ createSearchResultCard(bookmark) {
    * 处理检测结果
    */
   processCheckResult(bookmark, result) {
+    // 串行处理通常不会有重复问题，但保留检查作为保护
+    if (this.checkResults.has(bookmark.id)) {
+      console.warn(`书签 ${bookmark.title} (${bookmark.id}) 被重复处理，跳过重复统计`);
+      return false; // 表示跳过处理
+    }
+    
     this.checkResults.set(bookmark.id, {
       ...bookmark,
       ...result,
@@ -1459,7 +1434,22 @@ createSearchResultCard(bookmark) {
       case 'timeout':
         this.checkStats.timeout++;
         break;
+      default:
+        console.warn('未知的检测结果状态:', result.status, bookmark);
+        break;
     }
+    
+    // 显示检测方法
+    if (result.method) {
+      const methodIcons = {
+        'quick_skip': '⚡',
+        'quick_validate': '📄', 
+        'standard_check': '🔍'
+      };
+      console.log(`${methodIcons[result.method] || '🔍'} ${bookmark.title}: ${result.status} (${result.responseTime || 0}ms)`);
+    }
+    
+    return true; // 表示成功处理
   }
 
   /**
@@ -1494,7 +1484,17 @@ createSearchResultCard(bookmark) {
   showCheckComplete() {
     setTimeout(() => {
       document.getElementById('check-progress').style.display = 'none';
-      const { valid, invalid, redirect, timeout } = this.checkStats;
+      const { total, processed, valid, invalid, redirect, timeout } = this.checkStats;
+      
+      // 验证统计数量是否正确
+      const statsSum = valid + invalid + redirect + timeout;
+      if (statsSum !== processed) {
+        console.error(`统计数量不一致: 处理数=${processed}, 统计和=${statsSum} (有效:${valid}, 无效:${invalid}, 重定向:${redirect}, 超时:${timeout})`);
+      }
+      if (processed !== total) {
+        console.error(`处理数量不完整: 总数=${total}, 已处理=${processed}`);
+      }
+      
       this.showMessage(`检测完成！有效: ${valid}, 无效: ${invalid}, 重定向: ${redirect}, 超时: ${timeout}`);
       
       // 只有在有检测结果时才显示筛选工具栏和切换到分组显示
@@ -2017,18 +2017,41 @@ createSearchResultCard(bookmark) {
     let bookmarksToCheck;
     
     if (this.currentFolder === null) {
-      // 如果没有选择文件夹，检测所有书签
-      bookmarksToCheck = this.bookmarks;
+      // 如果没有选择文件夹，只检测根目录书签（与renderBookmarks保持一致）
+      bookmarksToCheck = this.bookmarks.filter(b => b.parentId === "0" || b.parentId === "1" || b.parentId === "2");
     } else {
       // 只检测当前文件夹的书签
       bookmarksToCheck = this.bookmarks.filter(b => b.parentId === this.currentFolder);
     }
     
-    return bookmarksToCheck.map(bookmark => ({
+    console.log('当前文件夹所有书签详情:');
+    bookmarksToCheck.forEach((bookmark, index) => {
+      console.log(`[${index}] ${bookmark.title} (ID: ${bookmark.id}, URL: ${bookmark.url})`);
+    });
+    
+    // 过滤有效的URL
+    const validBookmarks = bookmarksToCheck.filter(bookmark => {
+      const hasUrl = bookmark.url && bookmark.url.trim() !== '';
+      if (!hasUrl) {
+        console.log(`跳过无URL的书签: ${bookmark.title}`);
+      }
+      return hasUrl;
+    });
+    
+    console.log(`当前文件夹书签总数: ${bookmarksToCheck.length}, 有效URL书签数: ${validBookmarks.length}`);
+    
+    const result = validBookmarks.map(bookmark => ({
       id: bookmark.id,
       url: bookmark.url,
       title: bookmark.title
     }));
+    
+    console.log('将要检测的书签列表:');
+    result.forEach((bookmark, index) => {
+      console.log(`检测[${index}]: ${bookmark.title} (ID: ${bookmark.id})`);
+    });
+    
+    return result;
   }
 
   ensureCheckResultsHidden() {
