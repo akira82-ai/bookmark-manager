@@ -101,10 +101,21 @@ body {
   cursor: pointer;
   padding: 0.25rem;
   transition: all 0.2s ease;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.search-btn.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .search-btn:hover {
-  color: #667eea;
+  color: #dc3545;
+}
+
+.search-btn.visible:hover {
+  color: #dc3545;
 }
 
 .search-btn:active {
@@ -222,14 +233,11 @@ body {
 /* 搜索结果分组 - 每个分类占满一行 */
 .search-result-group {
   width: 100%;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
   box-sizing: border-box;
-  border-bottom: 1px solid #e9ecef;
 }
 
 .search-result-group:last-child {
-  border-bottom: none;
   margin-bottom: 0;
 }
 

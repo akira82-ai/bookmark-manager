@@ -11,6 +11,8 @@ class BookmarkManager {
 
   init() {
     this.bindEvents();
+    // 初始化搜索按钮状态
+    this.updateSearchButtonVisibility('');
     this.loadBookmarks();
   }
 
@@ -36,9 +38,16 @@ class BookmarkManager {
     const searchInput = document.getElementById('search-input');
     const searchBtn = document.getElementById('search-btn');
     
-    // 点击搜索按钮进行搜索
+    // 点击搜索按钮进行搜索或清空
     searchBtn.addEventListener('click', () => {
-      this.performSearch();
+      const query = searchInput.value.trim();
+      if (query === '') {
+        // 如果搜索框为空，不执行任何操作
+        return;
+      } else {
+        // 如果搜索框有内容，清空搜索框
+        this.clearSearch();
+      }
     });
     
     // 回车键搜索
@@ -52,6 +61,9 @@ class BookmarkManager {
     searchInput.addEventListener('input', (e) => {
       clearTimeout(this.searchTimeout);
       const query = e.target.value.trim();
+      
+      // 根据搜索框内容控制按钮显示
+      this.updateSearchButtonVisibility(query);
       
       if (query === '') {
         // 如果搜索框为空，清除搜索
@@ -201,6 +213,11 @@ class BookmarkManager {
 
   
   selectFolder(folderId, folderTitle) {
+    // 如果当前在搜索状态，先退出搜索
+    if (this.searchTerm) {
+      this.exitSearchState();
+    }
+    
     // 更新当前文件夹
     this.currentFolder = folderId;
     
@@ -537,12 +554,61 @@ bindCardEvents(card, bookmark) {
     document.getElementById('bookmarks-grid').style.display = 'grid';
   }
 
+  // 退出搜索状态
+  exitSearchState() {
+    this.searchTerm = '';
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    
+    // 更新搜索按钮显示状态
+    this.updateSearchButtonVisibility('');
+    
+    // 恢复原来的网格布局
+    const grid = document.getElementById('bookmarks-grid');
+    grid.style.display = '';
+    grid.style.flexDirection = '';
+    grid.style.gridTemplateColumns = '';
+    
+    // 移除搜索结果头部
+    const searchHeader = document.querySelector('.search-results-header');
+    if (searchHeader) {
+      searchHeader.remove();
+    }
+    
+    // 移除搜索结果容器
+    const searchContainer = document.querySelector('.search-results-container');
+    if (searchContainer) {
+      searchContainer.remove();
+    }
+  }
+
+  // 更新搜索按钮显示状态
+  updateSearchButtonVisibility(query) {
+    const searchBtn = document.getElementById('search-btn');
+    if (searchBtn) {
+      if (query) {
+        searchBtn.classList.add('visible');
+        searchBtn.innerHTML = '✕';
+        searchBtn.title = '清空搜索';
+      } else {
+        searchBtn.classList.remove('visible');
+        searchBtn.innerHTML = '🔍';
+        searchBtn.title = '搜索';
+      }
+    }
+  }
+
   // 搜索功能方法
   performSearch() {
     const searchInput = document.getElementById('search-input');
     const searchBtn = document.getElementById('search-btn');
     
     this.searchTerm = searchInput.value.trim();
+    
+    // 更新搜索按钮显示状态
+    this.updateSearchButtonVisibility(this.searchTerm);
     
     if (!this.searchTerm) {
       this.clearSearch();
@@ -734,18 +800,7 @@ createSearchResultCard(bookmark) {
 }
 
   clearSearch() {
-    this.searchTerm = '';
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-      searchInput.value = '';
-    }
-    
-    // 恢复原来的网格布局
-    const grid = document.getElementById('bookmarks-grid');
-    grid.style.display = '';
-    grid.style.flexDirection = '';
-    grid.style.gridTemplateColumns = '';
-    
+    this.exitSearchState();
     this.renderBookmarks();
   }
 
