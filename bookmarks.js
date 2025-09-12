@@ -236,6 +236,8 @@ class BookmarkManager {
     this.bindEvents();
     // 初始化搜索按钮状态
     this.updateSearchButtonVisibility('');
+    // 确保初始状态下隐藏检测结果分组UI
+    this.ensureCheckResultsHidden();
     this.loadBookmarks();
   }
 
@@ -471,6 +473,14 @@ class BookmarkManager {
   renderBookmarks() {
     const grid = document.getElementById('bookmarks-grid');
     grid.innerHTML = '';
+    
+    // 确保在未检测状态下隐藏分组容器
+    if (!this.isCheckMode || this.checkResults.size === 0) {
+      const groupedContainer = document.getElementById('results-grouped');
+      if (groupedContainer) {
+        groupedContainer.style.display = 'none';
+      }
+    }
     
     // 如果有搜索词，显示搜索结果
     if (this.searchTerm) {
@@ -992,6 +1002,12 @@ bindCardEvents(card, bookmark) {
     if (searchContainer) {
       searchContainer.remove();
     }
+    
+    // 重新显示智能检测工具栏 - 退出搜索模式后恢复正常功能
+    const toolbar = document.querySelector('.toolbar-container');
+    if (toolbar) {
+      toolbar.style.display = '';
+    }
   }
 
   // 更新搜索按钮显示状态
@@ -1041,6 +1057,12 @@ bindCardEvents(card, bookmark) {
     // 临时移除网格布局，改用flex布局实现水平排列
     grid.style.display = 'flex';
     grid.style.flexDirection = 'column';
+    
+    // 隐藏智能检测工具栏 - 搜索结果页不需要检测功能
+    const toolbar = document.querySelector('.toolbar-container');
+    if (toolbar) {
+      toolbar.style.display = 'none';
+    }
     grid.style.gridTemplateColumns = 'none';
     
     // 全局搜索过滤所有书签，添加匹配信息
@@ -1226,6 +1248,12 @@ createSearchResultCard(bookmark) {
     `;
     
     grid.appendChild(emptyState);
+    
+    // 隐藏智能检测工具栏 - 搜索空状态页也不需要检测功能
+    const toolbar = document.querySelector('.toolbar-container');
+    if (toolbar) {
+      toolbar.style.display = 'none';
+    }
   }
 
   // 高亮文本中的关键词
@@ -1398,7 +1426,6 @@ createSearchResultCard(bookmark) {
       });
 
       this.showCheckComplete();
-      this.showFilterToolbar();
       
     } catch (error) {
       console.error('批量检测失败:', error);
@@ -1470,8 +1497,9 @@ createSearchResultCard(bookmark) {
       const { valid, invalid, redirect, timeout } = this.checkStats;
       this.showMessage(`检测完成！有效: ${valid}, 无效: ${invalid}, 重定向: ${redirect}, 超时: ${timeout}`);
       
-      // 自动切换到分组显示模式
+      // 只有在有检测结果时才显示筛选工具栏和切换到分组显示
       if (this.checkResults.size > 0) {
+        this.showFilterToolbar();
         this.switchToGroupedView();
       }
     }, 2000);
@@ -1745,7 +1773,8 @@ createSearchResultCard(bookmark) {
     document.getElementById('bookmarks-grid').style.display = 'none';
     
     // 显示分组容器
-    document.getElementById('results-grouped').style.display = 'block';
+    const groupedContainer = document.getElementById('results-grouped');
+    groupedContainer.style.display = 'flex';
     
     // 渲染分组内容
     this.renderGroupedResults();
@@ -1964,6 +1993,18 @@ createSearchResultCard(bookmark) {
 
     // 清空检测结果
     this.checkResults.clear();
+    
+    // 清空分组内容
+    const groupContainers = document.querySelectorAll('.group-bookmarks-grid');
+    groupContainers.forEach(container => {
+      container.innerHTML = '';
+    });
+    
+    // 重置分组计数
+    const countElements = document.querySelectorAll('.group-count');
+    countElements.forEach(element => {
+      element.textContent = '(0)';
+    });
 
     // 显示退出消息
     this.showMessage('已退出检测模式，恢复正常书签列表');
@@ -1988,6 +2029,25 @@ createSearchResultCard(bookmark) {
       url: bookmark.url,
       title: bookmark.title
     }));
+  }
+
+  ensureCheckResultsHidden() {
+    // 强制确保分组容器隐藏
+    const groupedContainer = document.getElementById('results-grouped');
+    if (groupedContainer) {
+      groupedContainer.style.display = 'none';
+      // 移除所有可能影响显示的类
+      groupedContainer.classList.remove('show', 'active', 'visible');
+    }
+    
+    // 确保筛选工具栏隐藏
+    const filterToolbar = document.getElementById('filter-toolbar');
+    if (filterToolbar) {
+      filterToolbar.style.display = 'none';
+    }
+    
+    // 重置分组状态
+    this.isGroupedView = false;
   }
 
   escapeHtml(text) {
