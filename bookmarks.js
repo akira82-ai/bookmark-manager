@@ -2080,8 +2080,103 @@ createSearchResultCard(bookmark) {
   }
 }
 
+/**
+ * 深色模式管理器
+ */
+class DarkModeManager {
+  constructor() {
+    this.isDarkMode = this.loadTheme();
+    this.init();
+  }
+
+  /**
+   * 初始化深色模式
+   */
+  init() {
+    this.applyTheme();
+    this.bindEvents();
+  }
+
+  /**
+   * 绑定事件
+   */
+  bindEvents() {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        this.toggleTheme();
+      });
+    }
+  }
+
+  /**
+   * 切换主题
+   */
+  toggleTheme() {
+    this.isDarkMode = !this.isDarkMode;
+    this.applyTheme();
+    this.saveTheme();
+    this.updateThemeIcon();
+  }
+
+  /**
+   * 应用主题
+   */
+  applyTheme() {
+    if (this.isDarkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }
+
+  /**
+   * 更新主题图标
+   */
+  updateThemeIcon() {
+    const themeIcon = document.querySelector('.theme-icon');
+    if (themeIcon) {
+      themeIcon.textContent = this.isDarkMode ? '☀️' : '🌙';
+    }
+  }
+
+  /**
+   * 保存主题设置
+   */
+  saveTheme() {
+    try {
+      localStorage.setItem('darkMode', this.isDarkMode);
+    } catch (error) {
+      console.warn('无法保存主题设置:', error);
+    }
+  }
+
+  /**
+   * 加载主题设置
+   */
+  loadTheme() {
+    try {
+      const saved = localStorage.getItem('darkMode');
+      if (saved !== null) {
+        return JSON.parse(saved);
+      }
+
+      // 检测系统主题偏好
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return true;
+      }
+    } catch (error) {
+      console.warn('无法加载主题设置:', error);
+    }
+
+    return false; // 默认浅色模式
+  }
+}
+
 // 初始化书签管理器
 let bookmarkManager;
+let darkModeManager;
 document.addEventListener('DOMContentLoaded', () => {
   bookmarkManager = new BookmarkManager();
+  darkModeManager = new DarkModeManager();
 });

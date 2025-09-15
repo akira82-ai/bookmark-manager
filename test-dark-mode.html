@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>深色模式测试</title>
+  <link rel="stylesheet" href="bookmarks.css">
+  <style>
+    .test-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    body.dark-mode .test-container {
+      background: var(--card-bg);
+      box-shadow: 0 2px 8px var(--shadow-color);
+    }
+
+    .test-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+    }
+
+    body.dark-mode .test-section {
+      border-color: var(--border-color);
+    }
+
+    .test-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 1rem;
+    }
+
+    body.dark-mode .test-title {
+      color: var(--text-primary);
+    }
+
+    .test-text {
+      color: #6c757d;
+      line-height: 1.6;
+    }
+
+    body.dark-mode .test-text {
+      color: var(--text-secondary);
+    }
+
+    .test-button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .test-button:hover {
+      background: #5a6fd8;
+      transform: translateY(-1px);
+    }
+
+    .status-indicator {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    body.dark-mode .status-indicator {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <div class="test-section">
+      <h1 class="test-title">🌙 深色模式测试页面</h1>
+      <p class="test-text">
+        这个页面用于测试深色模式的各种样式效果。点击右上角的主题切换按钮来切换明暗主题。
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">📝 测试内容</h2>
+      <p class="test-text">
+        这里展示各种元素的深色模式效果，包括文本颜色、背景色、边框色等。
+      </p>
+      <button class="test-button">测试按钮</button>
+      <button class="test-button">另一个按钮</button>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">🎨 颜色测试</h2>
+      <p class="test-text">
+        主要文本颜色应该在深色模式下变为浅色，次要文本变为中灰色。
+      </p>
+      <div class="status-indicator" id="theme-status">
+        当前主题：浅色模式
+      </div>
+    </div>
+  </div>
+
+  <script src="bookmarks.js"></script>
+  <script>
+    // 测试专用的主题状态显示
+    function updateThemeStatus() {
+      const statusEl = document.getElementById('theme-status');
+      if (document.body.classList.contains('dark-mode')) {
+        statusEl.textContent = '当前主题：深色模式 🌙';
+      } else {
+        statusEl.textContent = '当前主题：浅色模式 ☀️';
+      }
+    }
+
+    // 监听主题变化
+    const observer = new MutationObserver(updateThemeStatus);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      updateThemeStatus();
+    });
+  </script>
+</body>
+</html>
