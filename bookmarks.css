@@ -1853,47 +1853,6 @@ body.dark-mode .modal-footer {
   gap: 0.5rem;
 }
 
-/* 统计卡片样式 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
-}
-
-.stat-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.stat-title {
-  font-size: 0.9rem;
-  color: #6c757d;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #667eea;
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-}
 
 /* 特色功能样式 */
 .features-grid {
@@ -2227,26 +2186,20 @@ body.dark-mode .welcome-card h3 {
   color: var(--text-primary);
 }
 
-body.dark-mode .stat-box,
 body.dark-mode .feature-box,
 body.dark-mode .version-item {
   background: var(--bg-tertiary);
 }
 
-body.dark-mode .stat-box:hover,
 body.dark-mode .feature-box:hover {
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-body.dark-mode .stat-title,
 body.dark-mode .feature-subtitle,
 body.dark-mode .version-date {
   color: var(--text-secondary);
 }
 
-body.dark-mode .stat-value {
-  color: #667eea;
-}
 
 body.dark-mode .feature-title {
   color: var(--text-primary);
@@ -2285,7 +2238,6 @@ body.dark-mode .version-change:hover {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .stats-grid,
   .features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -2309,7 +2261,6 @@ body.dark-mode .version-change:hover {
 }
 
 @media (max-width: 480px) {
-  .stats-grid,
   .features-grid {
     grid-template-columns: 1fr;
   }

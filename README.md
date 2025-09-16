@@ -1,169 +1,316 @@
-# Bookmark Manager - 书签管理器
+# 📚 Bookmark Manager - 智能书签管理器
 
-一个功能完整的浏览器书签管理插件，支持Chrome和Edge浏览器。
+<div align="center">
 
-## 🌟 主要功能
+![Chrome Web Store](https://img.shields.io/badge/Chrome-Web%20Store-brightgreen?style=for-the-badge&logo=googlechrome)
+![Edge Add-ons](https://img.shields.io/badge/Edge-Add%20Ons-brightgreen?style=for-the-badge&logo=microsoftedge)
+![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+![Stars](https://img.shields.io/github/stars/akira82-ai/bookmark-manager?style=for-the-badge&logo=github)
+![Forks](https://img.shields.io/github/forks/akira82-ai/bookmark-manager?style=for-the-badge&logo=github)
 
-### 📚 完整的书签管理器
-- **树状文件夹结构** - 直观显示书签分类和层级关系
-- **拖拽式导航** - 点击文件夹查看其中书签，面包屑导航定位当前位置
-- **双击展开/折叠** - 双击文件夹可以展开或折叠子文件夹
+**一款现代化的智能书签管理器，让您的书签管理变得简单高效**
 
-### 🎨 精美的用户界面
-- **现代化设计** - 采用渐变色彩和卡片式布局
-- **响应式布局** - 适配不同屏幕尺寸，支持移动设备
-- **双视图模式** - 网格视图和列表视图随心切换
+[功能特性](#-主要功能) • [安装指南](#-安装指南) • [使用演示](#-使用演示) • [技术栈](#-技术特点) • [更新日志](#-更新日志)
 
-### 🚀 强大的功能
-- **批量操作** - 支持编辑、删除、移动书签
-- **右键菜单** - 快速操作书签（打开、编辑、删除、复制）
-- **书签统计** - 显示总书签数、文件夹数、今日添加数
-- **favicon显示** - 自动获取并显示网站图标
+</div>
 
-### 📱 弹出窗口
-- **快速访问** - 点击插件图标即可打开书签管理器
+---
+
+## 🌟 为什么选择 Bookmark Manager？
+
+🎯 **智能检测** - 自动检测链接有效性，告别死链烦恼  
+📊 **访问统计** - 真实访问次数统计，了解您的浏览习惯  
+🎨 **精美设计** - 现代化UI设计，支持深色模式  
+⚡ **极速响应** - 优化性能，即使处理大量书签也流畅如飞  
+🔒 **隐私安全** - 数据本地存储，保护您的隐私安全
+
+## 🚀 核心功能
+
+### 🎯 智能链接检测
+- **批量检测** - 一键检测所有书签链接的有效性
+- **结果分类** - 自动将检测结果分为有效、重定向、超时、无效四类
+- **分组显示** - 检测结果按状态分组显示，支持折叠/展开
+- **批量操作** - 支持批量更新重定向链接和删除无效链接
+
+### 📊 访问统计系统
+- **真实数据** - 通过浏览器历史记录获取真实访问次数
+- **并发查询** - 多线程并发查询，快速完成统计
+- **智能缓存** - 缓存机制避免重复查询，提升性能
+- **可视化展示** - 在书签卡片中直观显示访问次数
+
+### 🎨 现代化界面设计
+- **深色模式** - 完整的深色主题支持，护眼且美观
+- **响应式布局** - 完美适配桌面、平板、手机等各种设备
+- **流畅动画** - 精心设计的交互动画和过渡效果
+- **卡片式设计** - 清晰的信息层次，优秀的视觉体验
+
+### 📚 完整的书签管理
+- **树状结构** - 直观的文件夹层级显示
+- **快速搜索** - 实时搜索书签，结果高亮显示
+- **批量操作** - 支持批量编辑、删除、移动
+- **右键菜单** - 便捷的上下文操作菜单
+
+### 📱 便捷的弹出窗口
+- **快速访问** - 点击图标即可打开书签列表
+- **简约设计** - 优化的单行布局，空间利用率更高
 - **一键添加** - 快速添加当前页面到书签
-- **最近书签** - 显示最近添加的5个书签
-- **统计信息** - 实时显示书签统计
+- **最近收藏** - 显示最近添加的5个书签
 
-## 🎯 使用方法
+### 🔧 强大的技术特性
+- **多浏览器支持** - 兼容 Chrome、Edge 等主流浏览器
+- **Manifest V3** - 使用最新的扩展开发标准
+- **性能优化** - 异步加载、事件委托、智能缓存
+- **数据安全** - 本地存储，保护用户隐私
 
-### 1. 打开书签管理器
-点击浏览器工具栏中的插件图标，然后点击"打开书签管理器"按钮
+## 💿 安装指南
 
-### 2. 浏览书签
-- **侧边栏** 显示所有书签文件夹
-- **主区域** 显示当前选中文件夹的书签
-- **面包屑导航** 显示当前位置，可快速跳转
+<div align="center">
 
-### 3. 管理书签
-- **查看书签** - 点击书签标题或双击书签卡片
-- **编辑书签** - 右键点击书签选择"编辑"或点击编辑按钮
-- **删除书签** - 右键点击书签选择"删除"或点击删除按钮
+### 🌟 支持的浏览器
 
-### 4. 排序和视图
-- **切换视图** - 点击工具栏中的网格/列表按钮
-- **排序方式** - 按标题、日期、URL排序
-- **排序顺序** - 升序或降序
+| 浏览器 | 版本要求 | 安装状态 |
+|--------|----------|----------|
+| ![Chrome](https://img.shields.io/badge/Chrome-90+-brightgreen?style=for-the-badge&logo=googlechrome) | 90+ | ✅ 完全支持 |
+| ![Edge](https://img.shields.io/badge/Edge-90+-brightgreen?style=for-the-badge&logo=microsoftedge) | 90+ | ✅ 完全支持 |
+| ![Firefox](https://img.shields.io/badge/Firefox-Coming%20Soon-lightgrey?style=for-the-badge&logo=firefox) | - | 🚧 开发中 |
 
-### 5. 快速操作
-- **添加当前页面** - 在弹出窗口中点击"添加当前页面"
-- **快速添加** - 在弹出窗口中点击"快速添加"手动输入
-- **展开所有** - 点击侧边栏的展开按钮展开所有文件夹
+</div>
 
-## 安装方法
+### 📥 快速安装
 
-### Chrome浏览器
+#### 🟡 Chrome 浏览器
 
-1. 打开Chrome浏览器
-2. 访问 `chrome://extensions/`
-3. 开启右上角的"开发者模式"
-4. 点击"加载已解压的扩展程序"
-5. 选择此文件夹（bookmark-manager）
-6. 完成安装
+1. **打开扩展管理页面**
+   ```
+   在地址栏输入: chrome://extensions/
+   ```
 
-### Edge浏览器
+2. **启用开发者模式**
+   - 点击右上角的 **"开发者模式"** 开关
 
-1. 打开Edge浏览器
-2. 访问 `edge://extensions/`
-3. 开启左下角的"开发人员模式"
-4. 点击"加载解压缩的扩展"
-5. 选择此文件夹（bookmark-manager）
-6. 完成安装
+3. **加载扩展**
+   - 点击 **"加载已解压的扩展程序"**
+   - 选择 `bookmark-manager` 文件夹
+   - ✅ 安装完成！
 
-## 使用方法
+#### 🔵 Edge 浏览器
 
-### 添加书签
+1. **打开扩展管理页面**
+   ```
+   在地址栏输入: edge://extensions/
+   ```
 
-1. 点击工具栏中的插件图标
-2. 在弹出窗口中输入书签标题和URL
-3. 点击"添加书签"按钮
+2. **启用开发人员模式**
+   - 点击左下角的 **"开发人员模式"** 开关
 
-### 快速添加书签
+3. **加载扩展**
+   - 点击 **"加载解压缩的扩展"**
+   - 选择 `bookmark-manager` 文件夹
+   - ✅ 安装完成！
 
-- 在网页上右键点击，选择"添加到书签管理器"
-- 使用键盘快捷键：Ctrl+Shift+B
+### 🎯 首次使用
 
-### 管理书签
+1. **寻找图标** - 在浏览器工具栏找到 📚 图标
+2. **点击打开** - 点击图标，选择"打开书签管理器"
+3. **开始使用** - 享受现代化的书签管理体验！
 
-1. 点击插件图标打开书签列表
-2. 点击书签标题可以打开链接
-3. 点击"删除"按钮可以删除书签
+---
 
-### 导入/导出书签
+## 📖 使用指南
 
-1. 点击"导出书签"按钮将书签导出为JSON文件
-2. 点击"导入书签"按钮选择JSON文件导入书签
+### 🚀 快速上手
 
-## 📁 文件结构
+#### 🔍 检测链接健康状态
+1. 打开书签管理器
+2. 选择要检测的文件夹
+3. 点击 **"分类检测"** 按钮
+4. 查看检测结果，支持批量操作
+
+#### 📊 查看访问统计
+1. 在书签卡片底部查看访问次数
+2. 访问次数从浏览器历史记录实时获取
+3. 根据访问热度了解您的浏览习惯
+
+#### 🌙 切换深色模式
+1. 点击侧边栏的主题切换按钮 🌙/☀️
+2. 自动保存您的偏好设置
+3. 享受护眼的深色主题
+
+### 🎮 基本操作
+
+| 操作 | 方法 |
+|------|------|
+| **打开书签** | 点击书签标题或卡片 |
+| **编辑书签** | 右键菜单 → 编辑，或点击编辑按钮 |
+| **删除书签** | 右键菜单 → 删除，或点击删除按钮 |
+| **搜索书签** | 使用顶部搜索框，支持实时搜索 |
+| **添加书签** | 弹出窗口 → "添加当前页面" |
+| **移动书签** | 拖拽到目标文件夹，或使用编辑功能 |
+
+---
+
+## 🏗️ 技术架构
+
+<div align="center">
+
+### 🛠️ 技术栈
+
+| 技术 | 用途 | 版本 |
+|------|------|------|
+| ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow?style=for-the-badge&logo=javascript) | 核心逻辑 | ES6+ |
+| ![CSS3](https://img.shields.io/badge/CSS3-Modern-blue?style=for-the-badge&logo=css3) | 样式设计 | CSS3 |
+| ![HTML5](https://img.shields.io/badge/HTML5-Semantic-orange?style=for-the-badge&logo=html5) | 页面结构 | HTML5 |
+| ![Manifest V3](https://img.shields.io/badge/Manifest-V3-red?style=for-the-badge&logo=googlechrome) | 扩展标准 | V3 |
+
+</div>
+
+### 🎯 核心特性
+
+#### 🔗 智能链接检测
+```javascript
+// 多线程并发检测，支持批量处理
+async checkLinks(bookmarks) {
+  const results = await Promise.all(
+    bookmarks.map(bookmark => this.linkChecker.check(bookmark.url))
+  );
+  return this.groupResultsByStatus(results);
+}
+```
+
+#### 📊 访问统计
+```javascript
+// 通过浏览器历史记录获取真实访问数据
+async getVisitCount(url) {
+  const visits = await chrome.history.getVisits({url});
+  return visits.length; // 真实访问次数
+}
+```
+
+#### 🎨 响应式设计
+```css
+/* 适配各种屏幕尺寸 */
+@media (max-width: 767px) {
+  .bookmarks-grid {
+    grid-template-columns: 1fr;
+  }
+}
+```
+
+### 📁 项目结构
 
 ```
 bookmark-manager/
-├── manifest.json          # 插件配置文件
-├── popup.html            # 弹出窗口界面
-├── popup.js              # 弹出窗口逻辑
-├── popup.css             # 弹出窗口样式
-├── bookmarks.html        # 书签管理器网页
-├── bookmarks.js          # 书签管理器逻辑
-├── bookmarks.css         # 书签管理器样式
-├── content.js            # 内容脚本
-├── background.js         # 后台脚本
-├── icons/                # 图标文件夹
+├── 📋 manifest.json          # 扩展配置
+├── 🌐 popup.html            # 弹出窗口
+├── 📝 popup.js              # 弹出逻辑
+├── 🎨 popup.css             # 弹出样式
+├── 📚 bookmarks.html        # 主管理界面
+├── ⚙️ bookmarks.js          # 核心业务逻辑
+├── 🎭 bookmarks.css         # 界面样式
+├── 🔧 background.js         # 后台服务
+├── 🖼️ icons/                # 图标资源
 │   ├── icon16.png
 │   ├── icon48.png
-│   ├── icon128.png
-│   └── README.md
-└── README.md             # 说明文档
+│   └── icon128.png
+├── 📜 release.md            # 更新日志
+├── 📝 log.md               # 开发日志
+└── 📖 README.md             # 项目说明
 ```
 
-## 注意事项
+---
 
-1. 首次使用前，请在 `icons/` 文件夹中放置所需的图标文件
-2. 书签数据存储在浏览器本地，不会同步到云端
-3. 导入的书签文件必须是有效的JSON格式
+## 📈 性能特点
 
-## 开发说明
+| 特性 | 描述 | 优势 |
+|------|------|------|
+| **⚡ 异步加载** | 书签数据异步加载 | 避免界面卡顿 |
+| **🧠 智能缓存** | 访问统计缓存机制 | 减少重复查询 |
+| **🎯 事件委托** | 高效事件处理 | 提升响应速度 |
+| **📱 响应式** | 适配各种设备 | 完美用户体验 |
+| **🔒 隐私保护** | 数据本地存储 | 安全可靠 |
 
-此插件使用Manifest V3标准开发，支持最新的Chrome和Edge浏览器。
+---
 
-### 权限说明
+## 🤝 贡献指南
 
-- `storage` - 用于存储书签数据
-- `tabs` - 用于获取当前标签页信息
-- `bookmarks` - 用于书签管理功能
+我们欢迎任何形式的贡献！无论是发现问题、提出建议，还是直接提交代码。
 
-## 🔧 技术特点
+### 🚀 如何贡献
 
-### 现代化技术栈
-- **Manifest V3** - 使用最新的Chrome扩展标准
-- **ES6+语法** - 采用现代JavaScript特性
-- **CSS3动画** - 流畅的过渡效果和交互反馈
-- **响应式设计** - 适配各种屏幕尺寸
+1. **Fork 本项目**
+2. **创建功能分支** (`git checkout -b feature/AmazingFeature`)
+3. **提交更改** (`git commit -m 'Add some AmazingFeature'`)
+4. **推送分支** (`git push origin feature/AmazingFeature`)
+5. **创建 Pull Request**
 
-### 性能优化
-- **异步加载** - 书签数据异步加载，避免界面卡顿
-- **虚拟滚动** - 大量书签时的性能优化
-- **缓存机制** - 智能缓存，减少重复请求
-- **事件委托** - 高效的事件处理机制
+### 🐛 问题反馈
 
-### 安全性
-- **权限最小化** - 只申请必要的浏览器权限
-- **数据安全** - 所有数据存储在浏览器本地
-- **输入验证** - 严格的数据验证和过滤
+- 📋 **功能请求** - [创建 Issue](https://github.com/akira82-ai/bookmark-manager/issues/new?template=feature_request.md)
+- 🐞 **Bug 报告** - [创建 Issue](https://github.com/akira82-ai/bookmark-manager/issues/new?template=bug_report.md)
+- 💡 **改进建议** - [创建 Issue](https://github.com/akira82-ai/bookmark-manager/issues/new?template=improvement.md)
 
-## 🔄 更新日志
+### 📝 开发规范
 
-### v1.0 (2024-01-01)
-- ✨ 完整的书签管理器界面
-- 🎨 现代化的用户界面设计
-- 📱 响应式布局支持
-- 📊 书签统计信息
-- 🚀 快速操作功能
-- 🌐 多浏览器支持（Chrome、Edge）
+- ✅ 遵循 ESLint 代码规范
+- ✅ 添加必要的注释和文档
+- ✅ 确保所有功能正常工作
+- ✅ 更新相关文档
 
-## 🤝 贡献与反馈
+---
 
-如果您在使用过程中遇到问题或有改进建议，请：
-1. 查看本README文档
-2. 检查浏览器控制台错误信息
-3. 确保插件权限设置正确
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+---
+
+## 🙏 致谢
+
+感谢所有为这个项目做出贡献的开发者和用户！
+
+- 💚 **贡献者** - 感谢所有提交代码和提出建议的朋友
+- 🌟 **用户** - 感谢使用和支持本项目的用户
+- 📚 **开源社区** - 感谢开源软件生态系统的支持
+
+---
+
+<div align="center">
+
+**如果这个项目对您有帮助，请考虑给我们一个 ⭐️**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=akira82-ai/bookmark-manager&type=Date)](https://star-history.com/#akira82-ai/bookmark-manager&Date)
+
+</div>
+
+---
+
+## 📋 更新日志
+
+查看详细的更新历史：[更新日志](release.md)
+
+### 🌟 最近更新 (2025-09-16)
+- ✨ **智能链接检测** - 批量检测链接有效性，告别死链烦恼
+- 📊 **访问统计功能** - 真实访问次数统计，了解浏览习惯
+- 🎨 **界面优化** - 简约设计，提升用户体验
+- 🌙 **深色模式** - 完整的深色主题支持
+- ⚡ **性能优化** - 多线程并发，响应更迅速
+
+---
+
+<div align="center">
+
+## 📞 联系我们
+
+| 方式 | 链接 |
+|------|------|
+| **GitHub Issues** | [问题反馈](https://github.com/akira82-ai/bookmark-manager/issues) |
+| **作者邮箱** | [联系作者](mailto:your-email@example.com) |
+| **项目主页** | [GitHub](https://github.com/akira82-ai/bookmark-manager) |
+
+---
+
+**⭐ 如果这个项目对您有帮助，请给我们一个Star！**
+
+![Star History](https://img.shields.io/github/stars/akira82-ai/bookmark-manager?style=social)
+
+</div>

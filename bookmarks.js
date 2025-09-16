@@ -935,29 +935,8 @@ bindCardEvents(card, bookmark) {
     
     document.getElementById('total-bookmarks').textContent = totalBookmarks;
     document.getElementById('total-folders').textContent = totalFolders;
-    
-    // 同时更新欢迎页面的统计
-    this.updateWelcomeStats();
   }
   
-  updateWelcomeStats() {
-    const totalBookmarks = this.bookmarks.length;
-    const totalFolders = this.folders.length;
-    
-    // 计算有效链接率（假设大部分书签都有URL）
-    const validBookmarks = this.bookmarks.filter(b => b.url && b.url.trim() !== '');
-    const validRate = totalBookmarks > 0 ? Math.round((validBookmarks.length / totalBookmarks) * 100) : 0;
-    
-    // 获取最近收藏数量（从「最近收藏」文件夹）
-    const recentFolder = this.folders.find(f => f.title === '📌 最近收藏');
-    const recentCount = recentFolder ? this.bookmarks.filter(b => b.parentId === recentFolder.id).length : 0;
-    
-    // 更新欢迎页面统计
-    document.getElementById('welcome-total-count').textContent = totalBookmarks;
-    document.getElementById('welcome-folders-count').textContent = totalFolders;
-    document.getElementById('welcome-valid-rate').textContent = validRate + '%';
-    document.getElementById('welcome-recent-count').textContent = recentCount;
-  }
   
   showWelcomePage() {
     const welcomePage = document.getElementById('welcome-page');
@@ -977,9 +956,6 @@ bindCardEvents(card, bookmark) {
     if (groupedContainer) {
       groupedContainer.style.display = 'none';
     }
-    
-    // 更新欢迎页面统计数据
-    this.updateWelcomeStats();
     
     // 加载版本记录
     this.loadVersionHistory();
