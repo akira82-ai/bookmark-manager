@@ -847,13 +847,54 @@ bindCardEvents(card, bookmark) {
       // 从数组中移除
       this.bookmarks = this.bookmarks.filter(b => b.id !== bookmarkId);
       
-      // 重新渲染
-      this.renderBookmarks();
+      // 如果当前在检测模式，从检测结果中移除
+      if (this.checkResults.has(bookmarkId)) {
+        this.checkResults.delete(bookmarkId);
+        // 如果检测结果为空，退出检测模式
+        if (this.checkResults.size === 0) {
+          this.exitCheckMode();
+        } else {
+          // 重新渲染检测结果，保持在分组显示模式
+          this.renderGroupedResults();
+          // 确保分组显示容器可见
+          document.getElementById('results-grouped').style.display = 'flex';
+          document.getElementById('bookmarks-grid').style.display = 'none';
+        }
+      }
+      
+      // 重新渲染（如果在检测模式，不调用renderBookmarks，避免冲突）
+      if (!this.isCheckMode) {
+        this.renderBookmarks();
+      }
       this.updateStats();
+      this.renderFolderTree();
+      
+      // 恢复当前选中文件夹的焦点状态
+      setTimeout(() => {
+        this.restoreFolderSelection();
+      }, 10);
       
     } catch (error) {
       console.error('删除书签失败:', error);
       alert('删除书签失败');
+    }
+  }
+
+  /**
+   * 恢复文件夹选中状态
+   */
+  restoreFolderSelection() {
+    // 移除所有文件夹的选中状态
+    document.querySelectorAll('.folder-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // 如果有当前选中的文件夹，恢复其选中状态
+    if (this.currentFolder) {
+      const selectedFolder = document.querySelector(`[data-folder-id="${this.currentFolder}"]`);
+      if (selectedFolder) {
+        selectedFolder.classList.add('active');
+      }
     }
   }
 
