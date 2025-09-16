@@ -1570,6 +1570,9 @@ createSearchResultCard(bookmark) {
     console.log(`开始批量检测，总共 ${bookmarks.length} 个书签`);
     this.showProgress();
     this.updateProgress();
+    
+    // 触发书签卡片的随机延迟渐隐动画
+    this.triggerRandomFadeOutAnimation();
 
     try {
       const batchProcessor = new BatchProcessor(); // 串行处理器
@@ -1682,6 +1685,40 @@ createSearchResultCard(bookmark) {
   }
 
   /**
+   * 触发书签卡片的随机延迟渐隐动画
+   */
+  triggerRandomFadeOutAnimation() {
+    const cards = document.querySelectorAll('.bookmark-card');
+    
+    cards.forEach((card, index) => {
+      // 立即启动动画，无需延迟
+      card.classList.add('checking');
+    });
+  }
+
+  /**
+   * 触发书签卡片的恢复动画
+   */
+  triggerFadeInAnimation() {
+    const cards = document.querySelectorAll('.bookmark-card.checking');
+    
+    cards.forEach((card, index) => {
+      // 为每个卡片生成随机延迟 (0-1秒)
+      const randomDelay = Math.random() * 1000;
+      
+      setTimeout(() => {
+        card.classList.remove('checking');
+        card.classList.add('check-complete');
+        
+        // 动画完成后移除check-complete类
+        setTimeout(() => {
+          card.classList.remove('check-complete');
+        }, 600);
+      }, randomDelay);
+    });
+  }
+
+  /**
    * 显示检测完成
    */
   showCheckComplete() {
@@ -1697,6 +1734,9 @@ createSearchResultCard(bookmark) {
       if (processed !== total) {
         console.error(`处理数量不完整: 总数=${total}, 已处理=${processed}`);
       }
+      
+      // 触发书签卡片恢复动画
+      this.triggerFadeInAnimation();
       
       // 将"分类检测"按钮改为"退出检测模式"
       const checkAllBtn = document.getElementById('check-all-btn');
@@ -2096,11 +2136,11 @@ createSearchResultCard(bookmark) {
       this.switchToNormalView();
     }
 
-    // 清除所有状态类
+    // 恢复所有书签卡片状态
     const cards = document.querySelectorAll('.bookmark-card');
     cards.forEach(card => {
-      // 移除状态类
-      card.classList.remove('valid', 'invalid', 'redirect', 'timeout', 'checking');
+      // 移除检测相关类
+      card.classList.remove('valid', 'invalid', 'redirect', 'timeout', 'checking', 'check-complete');
       
       // 确保卡片可见
       card.style.display = 'block';
