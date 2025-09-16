@@ -162,6 +162,10 @@ class BookmarkManager {
     this.searchTerm = '';
     this.searchTimeout = null;
     
+    // 访问统计相关
+    this.visitStatsCache = new Map(); // 简单缓存
+    this.pendingVisitQueries = new Set(); // 进行中的查询
+    
     // 智能检测相关属性
     this.linkChecker = new LinkChecker();
     this.checkResults = new Map(); // 存储检测结果
@@ -519,7 +523,7 @@ createBookmarkCard(bookmark, options = {}) {
         <button class="bookmark-action-btn edit-btn">编辑</button>
         <button class="bookmark-action-btn delete-btn">删除</button>
       </div>
-      <span class="visit-count">👁 ${Math.floor(Math.random() * 100) + 1}</span>
+      <span class="visit-count" data-url="${this.escapeHtml(bookmark.url)}">👁 加载中...</span>
     </div>
   `;
   
@@ -535,6 +539,9 @@ createBookmarkCard(bookmark, options = {}) {
       card.classList.toggle('selected');
     }
   });
+  
+  // 异步获取并显示访问次数
+  this.loadAndDisplayVisitCount(card, bookmark.url);
   
   return card;
 }
@@ -2074,6 +2081,111 @@ createSearchResultCard(bookmark) {
     
     // 重置分组状态
     this.isGroupedView = false;
+  }
+
+  // ==================== 访问统计功能 ====================
+
+  /**
+   * 获取书签访问次数 - 极简实现
+   */
+  async getVisitCount(url) {
+    if (!url) return 0;
+    
+    // 检查缓存
+    const cacheKey = this.getCacheKey(url);
+    if (this.visitStatsCache.has(cacheKey)) {
+      return this.visitStatsCache.get(cacheKey);
+    }
+    
+    // 避免重复查询
+    if (this.pendingVisitQueries.has(cacheKey)) {
+      return 0; // 返回0，避免UI闪烁
+    }
+    
+    this.pendingVisitQueries.add(cacheKey);
+    
+    try {
+      const visits = await chrome.history.getVisits({ url });
+      const count = visits.length;
+      
+      // 缓存结果
+      this.visitStatsCache.set(cacheKey, count);
+      
+      // 限制缓存大小
+      if (this.visitStatsCache.size > 1000) {
+        // 简单清理：删除最旧的缓存项
+        const firstKey = this.visitStatsCache.keys().next().value;
+        this.visitStatsCache.delete(firstKey);
+      }
+      
+      return count;
+    } catch (error) {
+      console.warn('获取访问次数失败:', url, error);
+      return 0;
+    } finally {
+      this.pendingVisitQueries.delete(cacheKey);
+    }
+  }
+
+  /**
+   * 生成缓存键
+   */
+  getCacheKey(url) {
+    return url; // 直接使用URL作为缓存键
+  }
+
+  /**
+   * 批量获取访问次数 - 多线程优化
+   */
+  async batchGetVisitCounts(urls) {
+    const uniqueUrls = [...new Set(urls)].filter(url => url);
+    const promises = uniqueUrls.map(url => this.getVisitCount(url));
+    
+    try {
+      const results = await Promise.all(promises);
+      const countMap = new Map();
+      
+      uniqueUrls.forEach((url, index) => {
+        countMap.set(url, results[index]);
+      });
+      
+      return countMap;
+    } catch (error) {
+      console.error('批量获取访问次数失败:', error);
+      return new Map();
+    }
+  }
+
+  /**
+   * 异步加载并显示访问次数
+   */
+  async loadAndDisplayVisitCount(card, url) {
+    const visitCountElement = card.querySelector('.visit-count');
+    if (!visitCountElement || !url) return;
+    
+    try {
+      const visitCount = await this.getVisitCount(url);
+      visitCountElement.textContent = `👁 ${visitCount}`;
+      
+      // 根据访问次数添加样式
+      if (visitCount === 0) {
+        visitCountElement.style.opacity = '0.5';
+      } else if (visitCount > 50) {
+        visitCountElement.style.fontWeight = '600';
+        visitCountElement.style.color = '#667eea';
+      }
+    } catch (error) {
+      console.warn('加载访问次数失败:', error);
+      visitCountElement.textContent = '👁 -';
+    }
+  }
+
+  /**
+   * 清除访问统计缓存
+   */
+  clearVisitStatsCache() {
+    this.visitStatsCache.clear();
+    this.pendingVisitQueries.clear();
   }
 
   escapeHtml(text) {
