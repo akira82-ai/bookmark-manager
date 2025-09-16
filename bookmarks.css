@@ -939,45 +939,6 @@ body.dark-mode .progress-bar {
   100% { opacity: 1; }
 }
 
-/* 检测状态标签 - 简洁样式 */
-.status-badge {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 10px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  z-index: 1;
-  border: 1px solid;
-  background: white;
-}
-
-.status-badge.valid {
-  color: #28a745;
-  border-color: #28a745;
-}
-
-.status-badge.invalid {
-  color: #dc3545;
-  border-color: #dc3545;
-}
-
-.status-badge.redirect {
-  color: #ffc107;
-  border-color: #ffc107;
-}
-
-.status-badge.timeout {
-  color: #fd7e14;
-  border-color: #fd7e14;
-}
-
-.status-badge.checking {
-  color: #6c757d;
-  border-color: #6c757d;
-  background: #f8f9fa;
-}
 
 /* 书签网格 */
 .bookmarks-grid {
@@ -1187,7 +1148,6 @@ body.dark-mode .bookmark-card {
 .bookmark-card.selected {
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-  transform: translateY(-2px);
 }
 
 .bookmark-card:hover {
@@ -1327,7 +1287,7 @@ body.dark-mode .visit-count {
   color: #adb5bd;
 }
 
-/* 内联编辑样式 */
+/* 内联编辑样式 - 简约底色 */
 .bookmark-card.editing {
   cursor: default;
 }
@@ -1335,18 +1295,20 @@ body.dark-mode .visit-count {
 .bookmark-card.editing .bookmark-title-input,
 .bookmark-card.editing .bookmark-url-input {
   width: 100%;
-  padding: 0.5rem;
-  border: 2px solid #667eea;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border: none;
+  background: rgba(102, 126, 234, 0.08);
   font-size: 1rem;
   font-family: inherit;
   outline: none;
   transition: all 0.2s ease;
+  border-radius: 6px;
 }
 
 .bookmark-card.editing .bookmark-title-input {
   font-weight: 600;
   margin-bottom: 0.5rem;
+  color: #2c3e50;
 }
 
 .bookmark-card.editing .bookmark-url-input {
@@ -1357,8 +1319,23 @@ body.dark-mode .visit-count {
 
 .bookmark-card.editing .bookmark-title-input:focus,
 .bookmark-card.editing .bookmark-url-input:focus {
-  border-color: #5a6fd8;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: rgba(102, 126, 234, 0.12);
+}
+
+/* 深色模式适配 */
+body.dark-mode .bookmark-card.editing .bookmark-title-input {
+  color: var(--text-primary);
+  background: rgba(102, 126, 234, 0.15);
+}
+
+body.dark-mode .bookmark-card.editing .bookmark-url-input {
+  color: var(--text-secondary);
+  background: rgba(102, 126, 234, 0.15);
+}
+
+body.dark-mode .bookmark-card.editing .bookmark-title-input:focus,
+body.dark-mode .bookmark-card.editing .bookmark-url-input:focus {
+  background: rgba(102, 126, 234, 0.25);
 }
 
 /* 加载状态 */
@@ -1415,72 +1392,6 @@ body.dark-mode .visit-count {
   color: #6c757d;
 }
 
-/* 右键菜单 */
-.context-menu {
-  position: fixed;
-  background: white;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  min-width: 200px;
-}
-
-body.dark-mode .context-menu {
-  background: var(--card-bg);
-  border-color: var(--border-color);
-  box-shadow: 0 4px 16px var(--shadow-color);
-}
-
-body.dark-mode .menu-item:hover {
-  background: var(--hover-bg);
-}
-
-body.dark-mode .menu-text {
-  color: var(--text-primary);
-}
-
-body.dark-mode .menu-separator {
-  background: var(--border-color);
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  gap: 0.75rem;
-}
-
-.menu-item:hover {
-  background: #f8f9fa;
-}
-
-.menu-item:first-child {
-  border-radius: 8px 8px 0 0;
-}
-
-.menu-item:last-child {
-  border-radius: 0 0 8px 8px;
-}
-
-.menu-icon {
-  font-size: 1rem;
-  width: 20px;
-  text-align: center;
-}
-
-.menu-text {
-  font-size: 0.9rem;
-  color: #2c3e50;
-}
-
-.menu-separator {
-  height: 1px;
-  background: #e1e8ed;
-  margin: 0.25rem 0;
-}
 
 /* 模态框 */
 .modal {

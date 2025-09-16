@@ -277,12 +277,6 @@ class BookmarkManager {
       this.saveBookmark();
     });
 
-    // 点击外部关闭上下文菜单
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.context-menu')) {
-        this.hideContextMenu();
-      }
-    });
 
     // 点击模态框外部关闭模态框
     document.getElementById('edit-modal').addEventListener('click', (e) => {
@@ -568,11 +562,6 @@ createBookmarkCard(bookmark, options = {}) {
  * @param {Object} bookmark - 书签对象
  */
 bindCardEvents(card, bookmark) {
-  // 右键菜单
-  card.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    this.showContextMenu(e, bookmark);
-  });
   
   // 单击打开书签（点击卡片空白区域）
   card.addEventListener('click', (e) => {
@@ -873,49 +862,8 @@ bindCardEvents(card, bookmark) {
     this.editingBookmarkId = null;
   }
 
-  showContextMenu(e, bookmark) {
-    const menu = document.getElementById('context-menu');
-    menu.style.display = 'block';
-    menu.style.left = `${e.pageX}px`;
-    menu.style.top = `${e.pageY}px`;
-    
-    // 绑定菜单项事件
-    const menuItems = menu.querySelectorAll('.menu-item');
-    menuItems.forEach(item => {
-      item.onclick = () => {
-        const action = item.dataset.action;
-        switch (action) {
-          case 'open':
-            this.openBookmark(bookmark.url);
-            break;
-          case 'edit':
-            this.editBookmark(bookmark.id);
-            break;
-          case 'delete':
-            this.deleteBookmark(bookmark.id);
-            break;
-          case 'copy':
-            this.copyToClipboard(bookmark.url);
-            break;
-        }
-        this.hideContextMenu();
-      };
-    });
-  }
 
-  hideContextMenu() {
-    document.getElementById('context-menu').style.display = 'none';
-  }
 
-  async copyToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      // 可以添加一个提示
-      console.log('链接已复制到剪贴板');
-    } catch (err) {
-      console.error('复制失败:', err);
-    }
-  }
 
   sortBookmarksArray(bookmarks) {
     return bookmarks.sort((a, b) => {
@@ -1531,13 +1479,12 @@ createSearchResultCard(bookmark) {
       checkAllBtn.addEventListener('click', () => {
         // 检查按钮当前显示的文本来决定功能
         const buttonText = checkAllBtn.querySelector('.toolbar-text').textContent;
-        if (buttonText === '分类检测') {
+        if (buttonText === '检测书签是否有效') {
           this.startCheckAll();
         } else if (buttonText === '退出检测模式') {
           // 如果正在检测中，先停止检测
           if (this.isChecking) {
             this.isChecking = false;
-            this.showMessage('已停止检测');
           }
           this.exitCheckMode();
         }
@@ -1550,7 +1497,6 @@ createSearchResultCard(bookmark) {
    */
   async startCheckAll() {
     if (this.isChecking) {
-      this.showMessage('检测正在进行中，请稍候...');
       return;
     }
 
@@ -1563,7 +1509,6 @@ createSearchResultCard(bookmark) {
     console.log('获取到的书签数量:', bookmarksToCheck.length);
     
     if (bookmarksToCheck.length === 0) {
-      this.showMessage('当前文件夹没有书签需要检查');
       return;
     }
 
@@ -1578,7 +1523,6 @@ createSearchResultCard(bookmark) {
 
     const folderName = this.getCurrentFolderName();
     const rangeText = folderName ? `当前分类"${folderName}"` : '所有书签';
-    this.showMessage(`开始检测 ${rangeText} 中的 ${bookmarksToCheck.length} 个书签...`);
 
     await this.performBatchCheck(bookmarksToCheck);
     console.log('=== 批量处理完成 ===');
@@ -1589,13 +1533,11 @@ createSearchResultCard(bookmark) {
    */
   async startCheckSelected() {
     if (this.isChecking) {
-      this.showMessage('检测正在进行中，请稍候...');
       return;
     }
 
     const selectedCards = document.querySelectorAll('.bookmark-card.selected');
     if (selectedCards.length === 0) {
-      this.showMessage('请先选择要检查的书签');
       return;
     }
 
@@ -1649,7 +1591,6 @@ createSearchResultCard(bookmark) {
           this.checkStats.processed++;
         }
         this.updateProgress();
-        this.updateBookmarkCardStatus(bookmark.id, result);
         
         return result; // 明确返回结果
       });
@@ -1661,7 +1602,6 @@ createSearchResultCard(bookmark) {
       
     } catch (error) {
       console.error('批量检测失败:', error);
-      this.showMessage('检测过程中出现错误: ' + error.message);
     } finally {
       this.isChecking = false;
     }
@@ -1758,8 +1698,6 @@ createSearchResultCard(bookmark) {
         console.error(`处理数量不完整: 总数=${total}, 已处理=${processed}`);
       }
       
-      this.showMessage(`检测完成！有效: ${valid}, 无效: ${invalid}, 重定向: ${redirect}, 超时: ${timeout}`);
-      
       // 将"分类检测"按钮改为"退出检测模式"
       const checkAllBtn = document.getElementById('check-all-btn');
       if (checkAllBtn) {
@@ -1781,88 +1719,9 @@ createSearchResultCard(bookmark) {
     // 筛选工具栏已移除，此方法保留以避免错误
   }
 
-  /**
-   * 更新书签卡片状态
-   */
-  updateBookmarkCardStatus(bookmarkId, result) {
-    const card = document.querySelector(`[data-bookmark-id="${bookmarkId}"]`);
-    if (!card) return;
 
-    // 移除检测状态类（保留selected等交互类）
-    card.classList.remove('checking');
-    
-    // 检查结果是否有效
-    if (!result || !result.status) {
-      console.warn(`书签 ${bookmarkId} 的检测结果无效，跳过状态更新`);
-      return;
-    }
-    
-    // 更新或添加状态标签
-    let statusBadge = card.querySelector('.status-badge');
-    if (!statusBadge) {
-      statusBadge = document.createElement('div');
-      statusBadge.className = 'status-badge';
-      card.appendChild(statusBadge);
-    }
-    
-    statusBadge.className = `status-badge ${result.status}`;
-    
-    const statusTexts = {
-      valid: '有效',
-      invalid: '无效',
-      redirect: '重定向',
-      timeout: '超时'
-    };
-    
-    statusBadge.textContent = statusTexts[result.status] || '未知';
-  }
 
-  /**
-   * 切换无效链接筛选
-   */
-  toggleInvalidFilter() {
-    const showInvalid = document.getElementById('filter-invalid').checked;
-    document.getElementById('filter-invalid').checked = !showInvalid;
-    this.applyFilters();
-  }
 
-  /**
-   * 应用筛选器
-   */
-  applyFilters() {
-    const showValid = document.getElementById('filter-valid').checked;
-    const showRedirect = document.getElementById('filter-redirect').checked;
-    const showTimeout = document.getElementById('filter-timeout').checked;
-    const showInvalid = document.getElementById('filter-invalid').checked;
-
-    const cards = document.querySelectorAll('.bookmark-card');
-    cards.forEach(card => {
-      const status = this.getCardStatus(card);
-      let shouldShow = false;
-
-      if (status === 'valid' && showValid) shouldShow = true;
-      if (status === 'redirect' && showRedirect) shouldShow = true;
-      if (status === 'timeout' && showTimeout) shouldShow = true;
-      if (status === 'invalid' && showInvalid) shouldShow = true;
-
-      card.style.display = shouldShow ? 'block' : 'none';
-    });
-  }
-
-  /**
-   * 获取卡片状态
-   */
-  getCardStatus(card) {
-    const statusBadge = card.querySelector('.status-badge');
-    if (!statusBadge) return 'unknown';
-    
-    if (statusBadge.classList.contains('valid')) return 'valid';
-    if (statusBadge.classList.contains('invalid')) return 'invalid';
-    if (statusBadge.classList.contains('redirect')) return 'redirect';
-    if (statusBadge.classList.contains('timeout')) return 'timeout';
-    
-    return 'unknown';
-  }
 
   /**
    * 清理无效书签
@@ -1876,7 +1735,6 @@ createSearchResultCard(bookmark) {
     });
 
     if (invalidBookmarks.length === 0) {
-      this.showMessage('没有发现无效书签');
       return;
     }
 
@@ -1887,7 +1745,6 @@ createSearchResultCard(bookmark) {
       invalidBookmarks.forEach(bookmark => {
         this.deleteBookmark(bookmark.id);
       });
-      this.showMessage(`已删除 ${invalidBookmarks.length} 个无效书签`);
     }
   }
 
@@ -1933,7 +1790,6 @@ createSearchResultCard(bookmark) {
     });
 
     if (redirects.length === 0) {
-      this.showMessage('没有发现需要更新的重定向链接');
       return;
     }
 
@@ -1948,7 +1804,6 @@ createSearchResultCard(bookmark) {
       }
     }
 
-    this.showMessage(`已更新 ${redirects.length} 个重定向链接`);
   }
 
   /**
@@ -1958,7 +1813,7 @@ createSearchResultCard(bookmark) {
     const results = Array.from(this.checkResults.values());
     const csv = this.convertToCSV(results);
     this.downloadCSV(csv, `bookmark-check-results-${new Date().toISOString().split('T')[0]}.csv`);
-    this.showMessage(`已导出 ${results.length} 条检测结果`);
+    
   }
 
   /**
@@ -2038,7 +1893,6 @@ createSearchResultCard(bookmark) {
    */
   switchToGroupedView() {
     if (this.checkResults.size === 0) {
-      this.showMessage('没有检测结果，无法显示分组');
       return;
     }
 
@@ -2057,7 +1911,6 @@ createSearchResultCard(bookmark) {
     // 绑定分组事件
     this.bindGroupEvents();
     
-    this.showMessage('已切换到分组显示模式');
   }
 
   /**
@@ -2072,7 +1925,6 @@ createSearchResultCard(bookmark) {
     // 隐藏分组容器
     document.getElementById('results-grouped').style.display = 'none';
     
-    this.showMessage('已切换到正常显示模式');
   }
 
   /**
@@ -2128,18 +1980,6 @@ createSearchResultCard(bookmark) {
     // 渲染书签卡片
     bookmarks.forEach(bookmark => {
       const card = this.createBookmarkCard(bookmark);
-      
-      // 添加检测状态标签
-      const statusBadge = document.createElement('div');
-      statusBadge.className = `status-badge ${bookmark.status}`;
-      const statusTexts = {
-        valid: '有效',
-        invalid: '无效',
-        redirect: '重定向',
-        timeout: '超时'
-      };
-      statusBadge.textContent = statusTexts[bookmark.status] || '未知';
-      card.appendChild(statusBadge);
       
       content.appendChild(card);
     });
@@ -2212,12 +2052,10 @@ createSearchResultCard(bookmark) {
       .filter(result => result.status === 'timeout');
 
     if (timeoutBookmarks.length === 0) {
-      this.showMessage('没有超时的书签需要重新检测');
       return;
     }
 
     if (confirm(`确定要重新检测 ${timeoutBookmarks.length} 个超时书签吗？`)) {
-      this.showMessage(`开始重新检测 ${timeoutBookmarks.length} 个超时书签...`);
       
       // 从结果中移除超时书签，然后重新检测
       timeoutBookmarks.forEach(bookmark => {
@@ -2258,17 +2096,11 @@ createSearchResultCard(bookmark) {
       this.switchToNormalView();
     }
 
-    // 清除所有状态标签
+    // 清除所有状态类
     const cards = document.querySelectorAll('.bookmark-card');
     cards.forEach(card => {
       // 移除状态类
       card.classList.remove('valid', 'invalid', 'redirect', 'timeout', 'checking');
-      
-      // 移除状态标签
-      const statusBadge = card.querySelector('.status-badge');
-      if (statusBadge) {
-        statusBadge.remove();
-      }
       
       // 确保卡片可见
       card.style.display = 'block';
@@ -2290,14 +2122,13 @@ createSearchResultCard(bookmark) {
       element.textContent = '(0)';
     });
 
-    // 恢复"分类检测"按钮
+    // 恢复"检测书签是否有效"按钮
     const checkAllBtn = document.getElementById('check-all-btn');
     if (checkAllBtn) {
-      checkAllBtn.innerHTML = '<span class="toolbar-icon">🔍</span><span class="toolbar-text">分类检测</span>';
+      checkAllBtn.innerHTML = '<span class="toolbar-icon">🔍</span><span class="toolbar-text">检测书签是否有效</span>';
     }
 
-    // 显示退出消息
-    this.showMessage('已退出检测模式，恢复正常书签列表');
+    // 退出检测模式
   }
 
   /**
