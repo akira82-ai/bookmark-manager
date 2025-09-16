@@ -35,7 +35,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["bookmarks.html", "bookmarks.css", "bookmarks.js"],
+      "resources": ["bookmarks.html", "bookmarks.css", "bookmarks.js", "log.md", "release.md"],
       "matches": ["<all_urls>"]
     }
   ]

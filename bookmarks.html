@@ -50,8 +50,8 @@
 
       <!-- 主内容区 - 书签列表 -->
       <main class="content">
-        <!-- 智能检测工具栏 -->
-        <div class="toolbar-container">
+        <!-- 智能检测工具栏 - 在欢迎页面隐藏 -->
+        <div class="toolbar-container" id="toolbar-container">
           <div class="toolbar-section">
             <div class="toolbar-group">
               <button id="check-all-btn" class="toolbar-btn" title="检测当前分类的书签链接">
@@ -114,8 +114,127 @@
           </div>
         </div>
 
+        <!-- 欢迎页面 - 默认显示 -->
+        <div id="welcome-page" class="welcome-page">
+          <div class="welcome-header">
+            <h1>📚 智能书签管理器</h1>
+            <p class="welcome-subtitle">简洁高效的书签管理工具</p>
+            <div class="author-info">
+              <div class="author-item">👤 作者：磊叔</div>
+              <div class="author-item">🔗 GitHub：<a href="https://github.com/akira82-ai/bookmark-manager" target="_blank" rel="noopener noreferrer">https://github.com/akira82-ai/bookmark-manager</a></div>
+            </div>
+          </div>
+          
+          <div class="welcome-content">
+            <div class="welcome-section">
+              <div class="welcome-card stats-card">
+                <h3>📊 书签数据统计</h3>
+                <div class="stats-grid">
+                  <div class="stat-box">
+                    <div class="stat-icon">📚</div>
+                    <div class="stat-title">总书签数</div>
+                    <div class="stat-value" id="welcome-total-count">0</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-icon">📁</div>
+                    <div class="stat-title">文件夹数</div>
+                    <div class="stat-value" id="welcome-folders-count">0</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-title">有效链接</div>
+                    <div class="stat-value" id="welcome-valid-rate">0%</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-icon">📌</div>
+                    <div class="stat-title">最近收藏</div>
+                    <div class="stat-value" id="welcome-recent-count">0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="welcome-section">
+              <div class="welcome-card features-card">
+                <h3>⚡ 特色功能</h3>
+                <div class="features-grid">
+                  <div class="feature-box">
+                    <div class="feature-icon">🔍</div>
+                    <div class="feature-title">智能链接</div>
+                    <div class="feature-subtitle">检测</div>
+                  </div>
+                  <div class="feature-box">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-title">访问次数</div>
+                    <div class="feature-subtitle">统计</div>
+                  </div>
+                  <div class="feature-box">
+                    <div class="feature-icon">🌙</div>
+                    <div class="feature-title">深色模式</div>
+                    <div class="feature-subtitle">支持</div>
+                  </div>
+                  <div class="feature-box">
+                    <div class="feature-icon">🔎</div>
+                    <div class="feature-title">快速搜索</div>
+                    <div class="feature-subtitle">定位</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="welcome-section">
+              <div class="welcome-card tips-card">
+                <h3>🔧 安装说明</h3>
+                <div class="installation-flow">
+                  <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                      <div class="step-title">下载插件</div>
+                      <div class="step-desc">获取完整插件文件</div>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                      <div class="step-title">打开扩展管理</div>
+                      <div class="step-desc">chrome://extensions/</div>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                      <div class="step-title">加载插件</div>
+                      <div class="step-desc">选择文件夹安装</div>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                      <div class="step-title">完成安装</div>
+                      <div class="step-desc">开始使用书签管理</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="welcome-section">
+              <div class="welcome-card version-card">
+                <h3>📝 更新日志</h3>
+                <div class="version-timeline" id="version-timeline">
+                  <!-- 更新日志将通过JavaScript从log.md动态加载 -->
+                  <div class="loading-versions">正在加载更新日志...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 书签网格 - 正常显示模式 -->
-        <div id="bookmarks-grid" class="bookmarks-grid">
+        <div id="bookmarks-grid" class="bookmarks-grid" style="display: none;">
           <!-- 书签项将通过JavaScript动态生成 -->
         </div>
 

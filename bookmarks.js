@@ -426,6 +426,8 @@ class BookmarkManager {
 
   renderBookmarks() {
     const grid = document.getElementById('bookmarks-grid');
+    const welcomePage = document.getElementById('welcome-page');
+    
     grid.innerHTML = '';
     
     // 确保在未检测状态下隐藏分组容器
@@ -438,9 +440,19 @@ class BookmarkManager {
     
     // 如果有搜索词，显示搜索结果
     if (this.searchTerm) {
+      this.showBookmarksView();
       this.renderSearchResults();
       return;
     }
+    
+    // 如果没有选择文件夹，显示欢迎页面
+    if (this.currentFolder === null) {
+      this.showWelcomePage();
+      return;
+    }
+    
+    // 否则显示书签列表
+    this.showBookmarksView();
     
     // 获取当前文件夹的书签
     let bookmarks;
@@ -919,6 +931,253 @@ bindCardEvents(card, bookmark) {
     
     document.getElementById('total-bookmarks').textContent = totalBookmarks;
     document.getElementById('total-folders').textContent = totalFolders;
+    
+    // 同时更新欢迎页面的统计
+    this.updateWelcomeStats();
+  }
+  
+  updateWelcomeStats() {
+    const totalBookmarks = this.bookmarks.length;
+    const totalFolders = this.folders.length;
+    
+    // 计算有效链接率（假设大部分书签都有URL）
+    const validBookmarks = this.bookmarks.filter(b => b.url && b.url.trim() !== '');
+    const validRate = totalBookmarks > 0 ? Math.round((validBookmarks.length / totalBookmarks) * 100) : 0;
+    
+    // 获取最近收藏数量（从「最近收藏」文件夹）
+    const recentFolder = this.folders.find(f => f.title === '📌 最近收藏');
+    const recentCount = recentFolder ? this.bookmarks.filter(b => b.parentId === recentFolder.id).length : 0;
+    
+    // 更新欢迎页面统计
+    document.getElementById('welcome-total-count').textContent = totalBookmarks;
+    document.getElementById('welcome-folders-count').textContent = totalFolders;
+    document.getElementById('welcome-valid-rate').textContent = validRate + '%';
+    document.getElementById('welcome-recent-count').textContent = recentCount;
+  }
+  
+  showWelcomePage() {
+    const welcomePage = document.getElementById('welcome-page');
+    const bookmarksGrid = document.getElementById('bookmarks-grid');
+    const toolbarContainer = document.getElementById('toolbar-container');
+    
+    welcomePage.style.display = 'block';
+    bookmarksGrid.style.display = 'none';
+    
+    // 隐藏工具栏
+    if (toolbarContainer) {
+      toolbarContainer.style.display = 'none';
+    }
+    
+    // 隐藏其他视图
+    const groupedContainer = document.getElementById('results-grouped');
+    if (groupedContainer) {
+      groupedContainer.style.display = 'none';
+    }
+    
+    // 更新欢迎页面统计数据
+    this.updateWelcomeStats();
+    
+    // 加载版本记录
+    this.loadVersionHistory();
+  }
+  
+  showBookmarksView() {
+    const welcomePage = document.getElementById('welcome-page');
+    const bookmarksGrid = document.getElementById('bookmarks-grid');
+    const toolbarContainer = document.getElementById('toolbar-container');
+    
+    welcomePage.style.display = 'none';
+    bookmarksGrid.style.display = 'grid';
+    
+    // 显示工具栏
+    if (toolbarContainer) {
+      toolbarContainer.style.display = 'block';
+    }
+  }
+  
+  async loadVersionHistory() {
+    try {
+      // 尝试从扩展目录读取release.md文件
+      const response = await fetch('release.md');
+      if (response.ok) {
+        const releaseContent = await response.text();
+        const versions = this.parseReleaseHistory(releaseContent);
+        this.renderVersionHistory(versions);
+      } else {
+        // 如果无法读取文件，使用预设的版本信息
+        this.loadDefaultVersionHistory();
+      }
+    } catch (error) {
+      console.log('无法读取release.md文件，使用默认版本信息:', error);
+      this.loadDefaultVersionHistory();
+    }
+  }
+  
+  loadDefaultVersionHistory() {
+    const versions = [
+      {
+        date: '2025-09-16',
+        changes: [
+          '新增书签访问次数统计功能，支持从浏览器历史记录获取真实访问数据',
+          '优化popup界面设计，实现简约单行布局，高度减半提升空间利用率',
+          '实现多线程并发查询机制，提升访问次数统计性能',
+          '添加缓存优化和错误隔离机制，确保功能稳定性',
+          '完善用户界面，添加加载状态和视觉反馈优化'
+        ]
+      },
+      {
+        date: '2025-09-15',
+        changes: [
+          '实现完整深色模式支持，包含主题切换按钮和智能记忆功能',
+          '建立CSS变量系统，便于主题维护和扩展',
+          '为所有UI组件添加深色模式适配，包括侧边栏、工具栏、卡片等',
+          '添加平滑过渡效果和自定义滚动条美化',
+          '优化深色模式配色方案，确保视觉舒适度'
+        ]
+      },
+      {
+        date: '2025-09-12',
+        changes: [
+          '新增智能链接检测系统，支持批量检查链接有效性',
+          '实现检测结果分组显示，包含有效、重定向、超时、无效分类',
+          '统一三页面视觉样式，彻底解决横向滚动条问题',
+          '完善响应式设计，支持大、中、小三种屏幕尺寸',
+          '修复关键UI显示Bug，提升用户体验和界面稳定性'
+        ]
+      }
+    ];
+    
+    this.renderVersionHistory(versions);
+  }
+  
+  parseReleaseHistory(releaseContent) {
+    const versions = [];
+    const lines = releaseContent.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // 匹配日期行，如 "## 2025-09-16"
+      const dateMatch = line.match(/^##\s+(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (dateMatch) {
+        const year = dateMatch[1];
+        const month = dateMatch[2].padStart(2, '0');
+        const day = dateMatch[3].padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+        
+        // 查找该日期下的更新内容
+        const changes = [];
+        
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          
+          // 如果遇到下一个日期或文件末尾，停止
+          if (nextLine.match(/^##\s+\d{4}-\d{1,2}-\d{1,2}/) || j === lines.length - 1) {
+            break;
+          }
+          
+          // 匹配更新点，如 "- 新增书签访问次数统计功能"
+          const changeMatch = nextLine.match(/^[-*]\s+(.+)$/);
+          if (changeMatch) {
+            const description = changeMatch[1];
+            
+            // 根据内容自动匹配图标
+            const icon = this.getChangeIcon(description);
+            
+            // 简化描述，去掉过于详细的内容
+            let simplifiedDesc = description;
+            if (simplifiedDesc.length > 25) {
+              simplifiedDesc = simplifiedDesc.substring(0, 25) + '...';
+            }
+            
+            changes.push({
+              icon: icon,
+              text: simplifiedDesc
+            });
+          }
+        }
+        
+        if (changes.length > 0) {
+          // 按照release.md中的顺序添加版本记录
+          versions.push({
+            date: dateStr,
+            changes: changes.slice(0, 6) // 取前6个更新点，用于2x3网格布局
+          });
+        }
+      }
+    }
+    
+    return versions.slice(0, 5); // 只返回前5个更新记录
+  }
+
+  getChangeIcon(description) {
+    const iconMap = {
+      '新增': '🚀',
+      '优化': '⚡', 
+      '修复': '🔧',
+      '实现': '✨',
+      '添加': '➕',
+      '改进': '🎨',
+      '更新': '🔄',
+      '重构': '🏗️',
+      '移除': '🗑️',
+      '完善': '✅',
+      '创建': '🏗️',
+      '支持': '🛡️',
+      '集成': '🔗',
+      '提升': '📈',
+      '增强': '💪',
+      '简化': '📝',
+      '统一': '🎯',
+      '解决': '🎯',
+      '建立': '🏗️',
+      '设计': '🎨',
+      '适配': '📱',
+      '美化': '✨',
+      '修复': '🔧'
+    };
+    
+    // 根据描述内容匹配图标
+    for (const [keyword, icon] of Object.entries(iconMap)) {
+      if (description.includes(keyword)) {
+        return icon;
+      }
+    }
+    
+    // 默认图标
+    return '📝';
+  }
+  
+  renderVersionHistory(versions) {
+    const timeline = document.getElementById('version-timeline');
+    if (!timeline) return;
+    
+    timeline.innerHTML = '';
+    
+    versions.forEach(version => {
+      const versionItem = document.createElement('div');
+      versionItem.className = 'version-item';
+      
+      let changesHtml = '';
+      if (version.changes && version.changes.length > 0) {
+        changesHtml = version.changes.map(change => 
+          `<div class="version-change">
+            <span class="change-icon">${change.icon}</span>
+            <span class="change-text">${change.text}</span>
+          </div>`
+        ).join('');
+      }
+      
+      versionItem.innerHTML = `
+        <div class="version-header">
+          <span class="version-date">${version.date}</span>
+        </div>
+        <div class="version-changes">
+          ${changesHtml}
+        </div>
+      `;
+      timeline.appendChild(versionItem);
+    });
   }
 
   showLoading() {
@@ -929,7 +1188,7 @@ bindCardEvents(card, bookmark) {
 
   hideLoading() {
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('bookmarks-grid').style.display = 'grid';
+    // 不在这里显示书签网格，让 renderBookmarks 决定显示欢迎页面还是书签网格
   }
 
   showEmptyState() {
