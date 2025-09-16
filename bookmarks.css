@@ -1242,11 +1242,17 @@ body.dark-mode .bookmark-url {
 
 .bookmark-actions {
   display: flex;
-  gap: 1rem;
-  justify-content: flex-start;
+  justify-content: space-between;
+  align-items: center;
   position: absolute;
   bottom: 1rem;
   left: 1.5rem;
+  right: 1.5rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
 }
 
 .bookmark-action-btn {
@@ -1303,6 +1309,21 @@ body.dark-mode .bookmark-action-btn.edit-btn:hover {
 .bookmark-action-btn.delete-btn:hover {
   color: #c82333;
   background: rgba(220, 53, 69, 0.1);
+}
+
+/* 访问次数样式 */
+.visit-count {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+body.dark-mode .visit-count {
+  color: #adb5bd;
 }
 
 /* 内联编辑样式 */

@@ -515,8 +515,11 @@ createBookmarkCard(bookmark, options = {}) {
     </div>
     <div class="bookmark-url">${urlContent}</div>
     <div class="bookmark-actions">
-      <button class="bookmark-action-btn edit-btn">编辑</button>
-      <button class="bookmark-action-btn delete-btn">删除</button>
+      <div class="action-buttons">
+        <button class="bookmark-action-btn edit-btn">编辑</button>
+        <button class="bookmark-action-btn delete-btn">删除</button>
+      </div>
+      <span class="visit-count">👁 ${Math.floor(Math.random() * 100) + 1}</span>
     </div>
   `;
   
@@ -551,7 +554,7 @@ bindCardEvents(card, bookmark) {
   // 单击打开书签（点击卡片空白区域）
   card.addEventListener('click', (e) => {
     // 如果点击的是按钮区域，不触发跳转
-    if (e.target.closest('.bookmark-actions')) {
+    if (e.target.closest('.action-buttons')) {
       return;
     }
     // 如果卡片处于编辑模式，不触发跳转
