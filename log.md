@@ -239,6 +239,81 @@
 - ✅ **性能优化** - 缓存机制、防重复查询、内存管理
 - ✅ **代码简洁** - 核心功能代码量控制在50行以内
 
+### 检测工具栏优化与按钮动态切换功能
+
+#### 第一阶段：JavaScript错误修复
+- **移除冗余元素引用** - 删除对已移除的 `filter-toolbar` 元素的所有引用
+- **事件监听器清理** - 移除不存在的按钮事件绑定（check-selected-btn, show-invalid-btn, cleanup-btn）
+- **语法错误修复** - 修复 LinkChecker 类末尾多余的 `}` 语法错误
+- **null引用防护** - 添加 DOM 元素存在性检查，避免访问 null 元素
+
+#### 第二阶段：按钮动态切换功能
+- **即时状态切换** - 检测开始时立即将"分类检测"按钮改为"退出检测模式"
+- **智能事件处理** - 根据按钮当前文本动态决定功能（分类检测/退出检测）
+- **检测中断机制** - 支持在检测过程中随时点击按钮停止检测
+- **状态恢复机制** - 退出检测模式时自动恢复按钮为"分类检测"状态
+
+#### 第三阶段：UI界面简化
+- **移除冗余按钮** - 删除进度条下方的"退出检测模式"按钮，统一使用工具栏按钮
+- **清理CSS样式** - 移除所有与 exit-btn 和 progress-footer 相关的CSS定义
+- **简化HTML结构** - 减少DOM元素，提升页面加载性能
+- **统一交互入口** - 所有检测控制通过工具栏单一按钮完成
+
+#### 第四阶段：检测结果分组折叠功能修复
+- **事件委托机制** - 使用事件委托处理动态生成的分组内容，解决事件绑定时机问题
+- **折叠功能修复** - 修复分组头部点击和折叠按钮点击的折叠/展开功能
+- **CSS动画优化** - 确保折叠图标旋转动画正常工作（▼ → ◀）
+- **内容显示控制** - 修复分组内容的隐藏/显示逻辑
+
+#### 第五阶段：检测结果undefined错误修复
+- **多层验证机制** - 在 processCheckResult、linkChecker.check、updateBookmarkCardStatus 等方法中添加结果有效性检查
+- **明确返回值** - 确保 async 函数有明确的返回值，避免返回 undefined
+- **错误处理增强** - 优雅处理无效结果，不中断整个检测流程
+- **日志信息完善** - 添加详细的错误日志，便于问题诊断和调试
+
+#### 技术实现要点
+
+**按钮状态管理：**
+```javascript
+// 智能按钮功能切换
+if (buttonText === '分类检测') {
+  this.startCheckAll(); // 开始检测
+} else if (buttonText === '退出检测模式') {
+  if (this.isChecking) {
+    this.isChecking = false; // 停止检测
+    this.showMessage('已停止检测');
+  }
+  this.exitCheckMode(); // 退出检测模式
+}
+```
+
+**事件委托模式：**
+```javascript
+// 分组折叠功能的事件委托
+groupedContainer.addEventListener('click', (e) => {
+  if (e.target.closest('.group-collapse-btn')) {
+    const group = e.target.closest('.result-group');
+    group.classList.toggle('collapsed');
+  }
+});
+```
+
+**错误处理机制：**
+```javascript
+// 多层验证确保结果有效性
+if (!result || typeof result !== 'object') {
+  console.error(`书签 ${bookmark.title} 的检测结果无效:`, result);
+  return false;
+}
+```
+
+#### 功能优化效果
+- ✅ **无错误运行** - 彻底解决 JavaScript 错误和 undefined 访问问题
+- ✅ **界面简洁** - 移除冗余UI元素，统一交互入口
+- ✅ **响应迅速** - 按钮状态即时切换，支持检测中断
+- ✅ **功能完整** - 分组折叠、检测结果展示等功能正常工作
+- ✅ **用户体验** - 清晰的状态指示和直观的操作流程
+
 ## 2025年9月15日
 
 ### 深色模式功能实现

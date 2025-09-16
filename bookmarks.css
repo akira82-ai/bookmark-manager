@@ -96,13 +96,16 @@ body.dark-mode .sidebar-header {
   transform: translateY(-50%);
   background: none;
   border: 1px solid #e1e8ed;
-  border-radius: 20px;
-  padding: 0.5rem;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.9rem;
 }
 
 .theme-toggle:hover {
@@ -618,6 +621,11 @@ body.dark-mode .sidebar-stats {
   font-size: 0.85rem;
 }
 
+.sidebar-stats .stat-value {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 .stat-item:last-child {
   margin-bottom: 0;
 }
@@ -717,6 +725,28 @@ body.dark-mode .toolbar-btn:hover {
   box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
+body.dark-mode .progress-container {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .progress-title {
+  color: var(--text-primary);
+}
+
+body.dark-mode .progress-stats {
+  color: var(--text-secondary);
+}
+
+body.dark-mode #progress-count {
+  color: var(--text-primary);
+}
+
+body.dark-mode .progress-bar {
+  background: var(--border-color);
+}
+
+
 .toolbar-btn:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(102, 126, 234, 0.2);
@@ -742,11 +772,16 @@ body.dark-mode .toolbar-btn:hover {
   border-bottom: 1px solid #e1e8ed;
 }
 
-.progress-header {
+.progress-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
 }
 
 .progress-title {
@@ -779,7 +814,6 @@ body.dark-mode .toolbar-btn:hover {
   background: #e9ecef;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 1rem;
 }
 
 .progress-fill {
@@ -790,32 +824,10 @@ body.dark-mode .toolbar-btn:hover {
   width: 0%;
 }
 
-/* 进度详情 */
-.progress-details {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
+/* 进度底部 */
 
-.progress-stat {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
 
-.stat-icon {
-  font-size: 1rem;
-}
-
-.stat-label {
-  color: #6c757d;
-}
-
-.stat-value {
-  font-weight: 600;
-  color: #2c3e50;
-}
+/* 已移除的进度统计样式 */
 
 /* 筛选工具栏 */
 .filter-toolbar {
@@ -882,17 +894,6 @@ body.dark-mode .toolbar-btn:hover {
   transform: translateY(0);
 }
 
-.filter-action-btn.exit-btn {
-  border-color: #6c757d;
-  color: #6c757d;
-  margin-left: 1rem;
-}
-
-.filter-action-btn.exit-btn:hover {
-  background: #6c757d;
-  color: white;
-  border-color: #6c757d;
-}
 
 /* 书签卡片状态样式 - 移除边框，保持简洁 */
 .bookmark-card.checking {

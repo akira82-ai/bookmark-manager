@@ -58,58 +58,22 @@
                 <span class="toolbar-icon">🔍</span>
                 <span class="toolbar-text">分类检测</span>
               </button>
-              <button id="check-selected-btn" class="toolbar-btn" title="检测选中的书签">
-                <span class="toolbar-icon">⚡</span>
-                <span class="toolbar-text">选中检测</span>
-              </button>
-              <button id="show-invalid-btn" class="toolbar-btn" title="只显示无效链接">
-                <span class="toolbar-icon">⚠️</span>
-                <span class="toolbar-text">显示无效</span>
-              </button>
-              <button id="cleanup-btn" class="toolbar-btn" title="清理无效书签">
-                <span class="toolbar-icon">🗑️</span>
-                <span class="toolbar-text">清理无效</span>
-              </button>
             </div>
           </div>
           
           <!-- 检测进度显示 -->
           <div id="check-progress" class="progress-container" style="display: none;">
-            <div class="progress-header">
-              <span class="progress-title">正在检测链接...</span>
-              <div class="progress-stats">
-                <span id="progress-count">0/0</span>
-                <span id="progress-percent">(0%)</span>
+            <div class="progress-content">
+              <div class="progress-info">
+                <span class="progress-title">正在检测链接...</span>
+                <div class="progress-stats">
+                  <span id="progress-count">0/0</span>
+                  <span id="progress-percent">(0%)</span>
+                </div>
               </div>
-            </div>
-            <div class="progress-bar">
-              <div id="progress-fill" class="progress-fill"></div>
-            </div>
-            <div class="progress-details">
-              <span class="progress-stat">
-                <span class="stat-icon">✅</span>
-                <span class="stat-label">有效:</span>
-                <span id="valid-count" class="stat-value">0</span>
-              </span>
-              <span class="progress-stat">
-                <span class="stat-icon">⚠️</span>
-                <span class="stat-label">重定向:</span>
-                <span id="redirect-count" class="stat-value">0</span>
-              </span>
-              <span class="progress-stat">
-                <span class="stat-icon">❌</span>
-                <span class="stat-label">无效:</span>
-                <span id="invalid-count" class="stat-value">0</span>
-              </span>
-            </div>
-          </div>
-          
-          <!-- 结果筛选器 -->
-          <div id="filter-toolbar" class="filter-toolbar" style="display: none;">
-            <div class="filter-actions">
-              <button id="exit-check-mode-btn" class="filter-action-btn exit-btn">
-                ↩️ 退出检测模式
-              </button>
+              <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -198,7 +162,7 @@
                     <div class="step-number">2</div>
                     <div class="step-content">
                       <div class="step-title">打开扩展管理</div>
-                      <div class="step-desc">chrome://extensions/</div>
+                      <div class="step-desc">chrome://extensions/<br>edge://extensions/</div>
                     </div>
                   </div>
                   <div class="flow-arrow">→</div>

@@ -17,6 +17,11 @@ class LinkChecker {
       const result = await this.performCheck(url);
       const responseTime = Date.now() - startTime;
 
+      // 确保 result 有 status 字段
+      if (!result || !result.status) {
+        throw new Error('检测结果无效');
+      }
+
       const finalResult = {
         ...result,
         responseTime,
@@ -109,8 +114,7 @@ class LinkChecker {
       };
     }
   }
-
-  }
+}
 
 /**
  * 批量处理器类
@@ -134,7 +138,7 @@ class BatchProcessor {
       try {
         const result = await processor(item, i);
         results[i] = result;
-        console.log(`BatchProcessor: 项目 [${i}] 处理完成，状态: ${result.status}`);
+        console.log(`BatchProcessor: 项目 [${i}] 处理完成，状态: ${result ? result.status : 'undefined'}`);
       } catch (error) {
         console.error(`BatchProcessor: 项目 [${i}] 处理失败:`, error);
         results[i] = {
@@ -1545,31 +1549,24 @@ createSearchResultCard(bookmark) {
    * 绑定工具栏事件
    */
   bindToolbarEvents() {
-    // 健康检查按钮
-    document.getElementById('check-all-btn').addEventListener('click', () => {
-      this.startCheckAll();
-    });
-
-    // 选中检查按钮
-    document.getElementById('check-selected-btn').addEventListener('click', () => {
-      this.startCheckSelected();
-    });
-
-    // 显示无效按钮
-    document.getElementById('show-invalid-btn').addEventListener('click', () => {
-      this.toggleInvalidFilter();
-    });
-
-    // 清理无效按钮
-    document.getElementById('cleanup-btn').addEventListener('click', () => {
-      this.cleanupInvalidBookmarks();
-    });
-
-    
-    // 退出检测模式按钮
-    document.getElementById('exit-check-mode-btn').addEventListener('click', () => {
-      this.exitCheckMode();
-    });
+    // 健康检查按钮 - 动态处理，根据当前状态决定功能
+    const checkAllBtn = document.getElementById('check-all-btn');
+    if (checkAllBtn) {
+      checkAllBtn.addEventListener('click', () => {
+        // 检查按钮当前显示的文本来决定功能
+        const buttonText = checkAllBtn.querySelector('.toolbar-text').textContent;
+        if (buttonText === '分类检测') {
+          this.startCheckAll();
+        } else if (buttonText === '退出检测模式') {
+          // 如果正在检测中，先停止检测
+          if (this.isChecking) {
+            this.isChecking = false;
+            this.showMessage('已停止检测');
+          }
+          this.exitCheckMode();
+        }
+      });
+    }
   }
 
   /**
@@ -1582,8 +1579,12 @@ createSearchResultCard(bookmark) {
     }
 
     console.log('=== 开始检测所有书签 ===');
+    console.log('当前文件夹ID:', this.currentFolder);
+    console.log('总书签数:', this.bookmarks.length);
+    
     const bookmarksToCheck = this.getCurrentBookmarks();
     console.log('=== 获取到书签列表，开始批量处理 ===');
+    console.log('获取到的书签数量:', bookmarksToCheck.length);
     
     if (bookmarksToCheck.length === 0) {
       this.showMessage('当前文件夹没有书签需要检查');
@@ -1592,6 +1593,12 @@ createSearchResultCard(bookmark) {
 
     // 进入检测模式
     this.isCheckMode = true;
+
+    // 立即将按钮改为"退出检测模式"
+    const checkAllBtn = document.getElementById('check-all-btn');
+    if (checkAllBtn) {
+      checkAllBtn.innerHTML = '<span class="toolbar-icon">🔍</span><span class="toolbar-text">退出检测模式</span>';
+    }
 
     const folderName = this.getCurrentFolderName();
     const rangeText = folderName ? `当前分类"${folderName}"` : '所有书签';
@@ -1650,6 +1657,12 @@ createSearchResultCard(bookmark) {
       const batchProcessor = new BatchProcessor(); // 串行处理器
       
       await batchProcessor.process(bookmarks, async (bookmark, index) => {
+        // 检查是否已停止检测
+        if (!this.isChecking) {
+          console.log('检测已停止，中断处理');
+          return false; // 停止处理
+        }
+        
         console.log(`正在检测 [${index}]: ${bookmark.title} (${bookmark.url}) [ID: ${bookmark.id}]`);
         const result = await this.linkChecker.check(bookmark.url);
         console.log(`检测结果 [${index}]: ${bookmark.title} -> ${result.status} [ID: ${bookmark.id}]`);
@@ -1661,9 +1674,14 @@ createSearchResultCard(bookmark) {
         }
         this.updateProgress();
         this.updateBookmarkCardStatus(bookmark.id, result);
+        
+        return result; // 明确返回结果
       });
 
-      this.showCheckComplete();
+      // 只有在检测正常完成时才显示完成信息
+      if (this.isChecking) {
+        this.showCheckComplete();
+      }
       
     } catch (error) {
       console.error('批量检测失败:', error);
@@ -1677,6 +1695,12 @@ createSearchResultCard(bookmark) {
    * 处理检测结果
    */
   processCheckResult(bookmark, result) {
+    // 检查结果是否有效
+    if (!result || typeof result !== 'object') {
+      console.error(`书签 ${bookmark.title} (${bookmark.id}) 的检测结果无效:`, result);
+      return false;
+    }
+    
     // 串行处理通常不会有重复问题，但保留检查作为保护
     if (this.checkResults.has(bookmark.id)) {
       console.warn(`书签 ${bookmark.title} (${bookmark.id}) 被重复处理，跳过重复统计`);
@@ -1727,9 +1751,6 @@ createSearchResultCard(bookmark) {
   showProgress() {
     const progressContainer = document.getElementById('check-progress');
     progressContainer.style.display = 'block';
-    
-    // 隐藏筛选器
-    document.getElementById('filter-toolbar').style.display = 'none';
   }
 
   /**
@@ -1742,9 +1763,6 @@ createSearchResultCard(bookmark) {
     document.getElementById('progress-count').textContent = `${processed}/${total}`;
     document.getElementById('progress-percent').textContent = `(${percentage}%)`;
     document.getElementById('progress-fill').style.width = `${percentage}%`;
-    document.getElementById('valid-count').textContent = valid;
-    document.getElementById('redirect-count').textContent = redirect;
-    document.getElementById('invalid-count').textContent = invalid;
   }
 
   /**
@@ -1766,6 +1784,12 @@ createSearchResultCard(bookmark) {
       
       this.showMessage(`检测完成！有效: ${valid}, 无效: ${invalid}, 重定向: ${redirect}, 超时: ${timeout}`);
       
+      // 将"分类检测"按钮改为"退出检测模式"
+      const checkAllBtn = document.getElementById('check-all-btn');
+      if (checkAllBtn) {
+        checkAllBtn.innerHTML = '<span class="toolbar-icon">🔍</span><span class="toolbar-text">退出检测模式</span>';
+      }
+      
       // 只有在有检测结果时才显示筛选工具栏和切换到分组显示
       if (this.checkResults.size > 0) {
         this.showFilterToolbar();
@@ -1778,7 +1802,7 @@ createSearchResultCard(bookmark) {
    * 显示筛选工具栏
    */
   showFilterToolbar() {
-    document.getElementById('filter-toolbar').style.display = 'flex';
+    // 筛选工具栏已移除，此方法保留以避免错误
   }
 
   /**
@@ -1790,6 +1814,12 @@ createSearchResultCard(bookmark) {
 
     // 移除检测状态类（保留selected等交互类）
     card.classList.remove('checking');
+    
+    // 检查结果是否有效
+    if (!result || !result.status) {
+      console.warn(`书签 ${bookmarkId} 的检测结果无效，跳过状态更新`);
+      return;
+    }
     
     // 更新或添加状态标签
     let statusBadge = card.querySelector('.status-badge');
@@ -2143,52 +2173,57 @@ createSearchResultCard(bookmark) {
    * 绑定分组事件
    */
   bindGroupEvents() {
-    // 分组折叠/展开事件
-    document.querySelectorAll('.group-collapse-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const group = btn.closest('.result-group');
-        group.classList.toggle('collapsed');
+    // 使用事件委托处理分组折叠/展开
+    const groupedContainer = document.getElementById('results-grouped');
+    if (groupedContainer) {
+      // 分组折叠按钮点击事件
+      groupedContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.group-collapse-btn')) {
+          e.stopPropagation();
+          const group = e.target.closest('.result-group');
+          if (group) {
+            group.classList.toggle('collapsed');
+          }
+        }
       });
-    });
-
-    // 分组头部点击事件
-    document.querySelectorAll('.group-header').forEach(header => {
-      header.addEventListener('click', () => {
-        const group = header.closest('.result-group');
-        group.classList.toggle('collapsed');
+      
+      // 分组头部点击事件
+      groupedContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.group-header') && !e.target.closest('.group-collapse-btn')) {
+          const group = e.target.closest('.result-group');
+          if (group) {
+            group.classList.toggle('collapsed');
+          }
+        }
       });
-    });
-
-    // 分组操作按钮事件
+    }
+    
+    // 绑定分组操作按钮事件
     this.bindGroupActionEvents();
   }
 
   /**
-   * 绑定分组操作事件
+   * 绑定分组操作按钮事件
    */
   bindGroupActionEvents() {
-    // 重定向分组 - 批量更新
-    const redirectUpdateBtn = document.querySelector('[data-status="redirect"] .group-action-btn');
-    if (redirectUpdateBtn) {
-      redirectUpdateBtn.addEventListener('click', () => {
-        this.updateRedirects();
-      });
-    }
-
-    // 超时分组 - 重新检测
-    const timeoutRecheckBtn = document.querySelector('[data-status="timeout"] .group-action-btn');
-    if (timeoutRecheckBtn) {
-      timeoutRecheckBtn.addEventListener('click', () => {
-        this.recheckTimeoutBookmarks();
-      });
-    }
-
-    // 无效分组 - 批量删除
-    const invalidDeleteBtn = document.querySelector('[data-status="invalid"] .group-action-btn');
-    if (invalidDeleteBtn) {
-      invalidDeleteBtn.addEventListener('click', () => {
-        this.cleanupInvalidBookmarks();
+    // 使用事件委托处理分组操作按钮
+    const groupedContainer = document.getElementById('results-grouped');
+    if (groupedContainer) {
+      groupedContainer.addEventListener('click', (e) => {
+        // 重定向分组 - 批量更新
+        if (e.target.closest('[data-status="redirect"] .group-action-btn')) {
+          this.updateRedirects();
+        }
+        
+        // 超时分组 - 重新检测
+        if (e.target.closest('[data-status="timeout"] .group-action-btn')) {
+          this.recheckTimeoutBookmarks();
+        }
+        
+        // 无效分组 - 批量删除
+        if (e.target.closest('[data-status="invalid"] .group-action-btn')) {
+          this.cleanupInvalidBookmarks();
+        }
       });
     }
   }
@@ -2236,6 +2271,12 @@ createSearchResultCard(bookmark) {
     // 退出检测模式
     this.isCheckMode = false;
 
+    // 隐藏进度条（如果正在显示）
+    const progressContainer = document.getElementById('check-progress');
+    if (progressContainer) {
+      progressContainer.style.display = 'none';
+    }
+
     // 如果在分组显示模式，先切换到正常模式
     if (this.isGroupedView) {
       this.switchToNormalView();
@@ -2257,9 +2298,7 @@ createSearchResultCard(bookmark) {
       card.style.display = 'block';
     });
 
-    // 隐藏筛选工具栏
-    document.getElementById('filter-toolbar').style.display = 'none';
-
+  
     // 清空检测结果
     this.checkResults.clear();
     
@@ -2274,6 +2313,12 @@ createSearchResultCard(bookmark) {
     countElements.forEach(element => {
       element.textContent = '(0)';
     });
+
+    // 恢复"分类检测"按钮
+    const checkAllBtn = document.getElementById('check-all-btn');
+    if (checkAllBtn) {
+      checkAllBtn.innerHTML = '<span class="toolbar-icon">🔍</span><span class="toolbar-text">分类检测</span>';
+    }
 
     // 显示退出消息
     this.showMessage('已退出检测模式，恢复正常书签列表');
@@ -2333,10 +2378,7 @@ createSearchResultCard(bookmark) {
     }
     
     // 确保筛选工具栏隐藏
-    const filterToolbar = document.getElementById('filter-toolbar');
-    if (filterToolbar) {
-      filterToolbar.style.display = 'none';
-    }
+    // 筛选工具栏已移除，此方法保留以避免错误
     
     // 重置分组状态
     this.isGroupedView = false;
