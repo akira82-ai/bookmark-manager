@@ -2563,391 +2563,6 @@ createSearchResultCard(bookmark) {
     div.textContent = text;
     return div.innerHTML;
   }
-
-  /**
-   * 初始化智能提醒功能
-   */
-  initializeReminderFeature() {
-    // 从存储加载提醒设置
-    chrome.storage.local.get(['reminderSettings'], (result) => {
-      if (result.reminderSettings) {
-        this.reminderSettings = { ...this.reminderSettings, ...result.reminderSettings };
-      }
-    });
-
-    // 监听标签页更新事件
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (changeInfo.status === 'complete' && tab.url) {
-        this.recordPageAccess(tab.url, tab.title);
-      }
-    });
-
-    // 定期检查提醒条件
-    setInterval(() => {
-      this.checkReminderConditions();
-    }, 30000); // 每30秒检查一次
-  }
-
-  /**
-   * 记录页面访问
-   */
-  recordPageAccess(url, title) {
-    if (!this.reminderEnabled || !url) return;
-
-    const domain = this.extractMainDomain(url);
-    
-    // 检查是否在排除列表中
-    if (this.reminderSettings.excludedDomains.includes(domain)) return;
-
-    const now = Date.now();
-    
-    // 记录域名访问
-    if (!this.domainAccessData.has(domain)) {
-      this.domainAccessData.set(domain, []);
-    }
-    this.domainAccessData.get(domain).push({ time: now, url, title });
-
-    // 记录URL访问
-    if (!this.urlAccessData.has(url)) {
-      this.urlAccessData.set(url, []);
-    }
-    this.urlAccessData.get(url).push({ time: now, title });
-
-    // 清理过期数据
-    this.cleanupOldData();
-  }
-
-  /**
-   * 检查提醒条件
-   */
-  checkReminderConditions() {
-    if (!this.reminderEnabled) return;
-
-    const now = Date.now();
-    
-    // 检查域名级别提醒
-    for (const [domain, visits] of this.domainAccessData) {
-      if (this.dismissedDomains.has(domain)) continue;
-      
-      const snoozeUntil = this.snoozedDomains.get(domain);
-      if (snoozeUntil && now < snoozeUntil) continue;
-
-      const recentVisits = visits.filter(v => now - v.time < this.reminderSettings.domainTimeWindow);
-      if (recentVisits.length >= this.reminderSettings.domainThreshold) {
-        this.showDomainReminder(domain, recentVisits);
-        break;
-      }
-    }
-
-    // 检查URL级别提醒
-    for (const [url, visits] of this.urlAccessData) {
-      if (this.dismissedUrls.has(url)) continue;
-      
-      const snoozeUntil = this.snoozedUrls.get(url);
-      if (snoozeUntil && now < snoozeUntil) continue;
-
-      const recentVisits = visits.filter(v => now - v.time < this.reminderSettings.urlTimeWindow);
-      if (recentVisits.length >= this.reminderSettings.urlThreshold) {
-        this.showUrlReminder(url, recentVisits);
-        break;
-      }
-    }
-  }
-
-  /**
-   * 显示域名级别提醒
-   */
-  showDomainReminder(domain, visits) {
-    if (this.activeReminder) return;
-
-    const latestVisit = visits[visits.length - 1];
-    const reminder = document.createElement('div');
-    reminder.className = 'bookmark-reminder';
-    reminder.innerHTML = `
-      <div class="reminder-content">
-        <div class="reminder-icon">🔖</div>
-        <div class="reminder-text">
-          <div class="reminder-title">添加书签提醒</div>
-          <div class="reminder-message">您最近访问了 ${domain} ${visits.length} 次，是否要添加书签？</div>
-        </div>
-        <div class="reminder-actions">
-          <button class="reminder-btn save-btn">收藏</button>
-          <button class="reminder-btn snooze-btn">稍后提醒</button>
-          <button class="reminder-btn dismiss-btn">不再提醒</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(reminder);
-    this.activeReminder = { type: 'domain', data: domain, element: reminder };
-
-    // 延迟显示，避免干扰用户
-    setTimeout(() => {
-      reminder.classList.add('show');
-    }, 2000);
-
-    // 绑定事件
-    reminder.querySelector('.save-btn').onclick = () => this.addDomainBookmark(domain, latestVisit.title);
-    reminder.querySelector('.snooze-btn').onclick = () => this.snoozeReminder('domain', domain);
-    reminder.querySelector('.dismiss-btn').onclick = () => this.dismissReminder('domain', domain);
-  }
-
-  /**
-   * 显示URL级别提醒
-   */
-  showUrlReminder(url, visits) {
-    if (this.activeReminder) return;
-
-    const latestVisit = visits[visits.length - 1];
-    const reminder = document.createElement('div');
-    reminder.className = 'bookmark-reminder';
-    reminder.innerHTML = `
-      <div class="reminder-content">
-        <div class="reminder-icon">🔖</div>
-        <div class="reminder-text">
-          <div class="reminder-title">添加书签提醒</div>
-          <div class="reminder-message">您最近多次访问了这个页面，是否要添加书签？</div>
-        </div>
-        <div class="reminder-actions">
-          <button class="reminder-btn save-btn">收藏</button>
-          <button class="reminder-btn snooze-btn">稍后提醒</button>
-          <button class="reminder-btn dismiss-btn">不再提醒</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(reminder);
-    this.activeReminder = { type: 'url', data: url, element: reminder };
-
-    // 延迟显示，避免干扰用户
-    setTimeout(() => {
-      reminder.classList.add('show');
-    }, 2000);
-
-    // 绑定事件
-    reminder.querySelector('.save-btn').onclick = () => this.addUrlBookmark(url, latestVisit.title);
-    reminder.querySelector('.snooze-btn').onclick = () => this.snoozeReminder('url', url);
-    reminder.querySelector('.dismiss-btn').onclick = () => this.dismissReminder('url', url);
-  }
-
-  /**
-   * 添加域名书签
-   */
-  addDomainBookmark(domain, title) {
-    const url = `https://${domain}`;
-    this.showFolderSelector(url, title || domain);
-    this.hideActiveReminder();
-  }
-
-  /**
-   * 添加URL书签
-   */
-  addUrlBookmark(url, title) {
-    this.showFolderSelector(url, title);
-    this.hideActiveReminder();
-  }
-
-  /**
-   * 显示文件夹选择器
-   */
-  showFolderSelector(url, title) {
-    const selector = document.createElement('div');
-    selector.className = 'folder-selector';
-    selector.innerHTML = `
-      <div class="selector-content">
-        <div class="selector-header">
-          <h3>选择文件夹</h3>
-          <button class="selector-close">&times;</button>
-        </div>
-        <div class="selector-body">
-          <div class="folder-list">
-            <!-- 文件夹列表将通过JavaScript生成 -->
-          </div>
-          <div class="new-folder">
-            <input type="text" placeholder="新建文件夹名称" class="new-folder-input">
-            <button class="create-folder-btn">创建</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(selector);
-
-    // 生成文件夹列表
-    chrome.bookmarks.getTree((bookmarkTreeNodes) => {
-      const folderList = selector.querySelector('.folder-list');
-      this.renderFolderOptions(bookmarkTreeNodes, folderList, url, title);
-    });
-
-    // 绑定事件
-    selector.querySelector('.selector-close').onclick = () => selector.remove();
-    selector.querySelector('.create-folder-btn').onclick = () => {
-      const input = selector.querySelector('.new-folder-input');
-      const folderName = input.value.trim();
-      if (folderName) {
-        this.createNewFolder(folderName, url, title);
-        selector.remove();
-      }
-    };
-  }
-
-  /**
-   * 渲染文件夹选项
-   */
-  renderFolderOptions(bookmarkTreeNodes, container, url, title) {
-    bookmarkTreeNodes.forEach(node => {
-      if (node.children) {
-        node.children.forEach(child => {
-          if (child.children) { // 是文件夹
-            const folderItem = document.createElement('div');
-            folderItem.className = 'folder-item';
-            folderItem.innerHTML = `
-              <span class="folder-icon">📁</span>
-              <span class="folder-name">${child.title}</span>
-            `;
-            folderItem.onclick = () => this.addBookmarkToFolder(child.id, url, title);
-            container.appendChild(folderItem);
-          }
-        });
-      }
-    });
-  }
-
-  /**
-   * 创建新文件夹
-   */
-  createNewFolder(folderName, url, title) {
-    chrome.bookmarks.create({
-      title: folderName
-    }, (folder) => {
-      this.addBookmarkToFolder(folder.id, url, title);
-    });
-  }
-
-  /**
-   * 添加书签到文件夹
-   */
-  addBookmarkToFolder(folderId, url, title) {
-    chrome.bookmarks.create({
-      parentId: folderId,
-      title: title,
-      url: url
-    }, () => {
-      this.showMessage('书签添加成功！');
-    });
-  }
-
-  /**
-   * 稍后提醒
-   */
-  snoozeReminder(type, data) {
-    const snoozeTime = Date.now() + (5 * 24 * 60 * 60 * 1000); // 5天后
-    if (type === 'domain') {
-      this.snoozedDomains.set(data, snoozeTime);
-    } else {
-      this.snoozedUrls.set(data, snoozeTime);
-    }
-    this.hideActiveReminder();
-    this.showMessage('已设置为5天后提醒');
-  }
-
-  /**
-   * 不再提醒
-   */
-  dismissReminder(type, data) {
-    if (type === 'domain') {
-      this.dismissedDomains.add(data);
-    } else {
-      this.dismissedUrls.add(data);
-    }
-    this.hideActiveReminder();
-  }
-
-  /**
-   * 隐藏活动提醒
-   */
-  hideActiveReminder() {
-    if (this.activeReminder) {
-      this.activeReminder.element.remove();
-      this.activeReminder = null;
-    }
-  }
-
-  /**
-   * 显示消息
-   */
-  showMessage(message) {
-    const messageEl = document.createElement('div');
-    messageEl.className = 'reminder-message';
-    messageEl.textContent = message;
-    document.body.appendChild(messageEl);
-    
-    setTimeout(() => {
-      messageEl.classList.add('show');
-    }, 10);
-
-    setTimeout(() => {
-      messageEl.classList.remove('show');
-      setTimeout(() => messageEl.remove(), 300);
-    }, 2000);
-  }
-
-  /**
-   * 清理过期数据
-   */
-  cleanupOldData() {
-    const now = Date.now();
-    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30天
-
-    // 清理域名访问数据
-    for (const [domain, visits] of this.domainAccessData) {
-      const validVisits = visits.filter(v => now - v.time < maxAge);
-      if (validVisits.length === 0) {
-        this.domainAccessData.delete(domain);
-      } else {
-        this.domainAccessData.set(domain, validVisits);
-      }
-    }
-
-    // 清理URL访问数据
-    for (const [url, visits] of this.urlAccessData) {
-      const validVisits = visits.filter(v => now - v.time < maxAge);
-      if (validVisits.length === 0) {
-        this.urlAccessData.delete(url);
-      } else {
-        this.urlAccessData.set(url, validVisits);
-      }
-    }
-
-    // 清理过期的稍后提醒
-    for (const [domain, snoozeTime] of this.snoozedDomains) {
-      if (now >= snoozeTime) {
-        this.snoozedDomains.delete(domain);
-      }
-    }
-
-    for (const [url, snoozeTime] of this.snoozedUrls) {
-      if (now >= snoozeTime) {
-        this.snoozedUrls.delete(url);
-      }
-    }
-  }
-
-  /**
-   * 提取主域名
-   */
-  extractMainDomain(url) {
-    try {
-      const domain = new URL(url).hostname;
-      return domain.replace(/^www\./, '').toLowerCase();
-    } catch {
-      const match = url.match(/^https?:\/\/([^\/]+)/);
-      if (match) {
-        return match[1].replace(/^www\./, '').toLowerCase();
-      }
-      return url;
-    }
-  }
 }
 
 /**
@@ -3040,6 +2655,750 @@ class DarkModeManager {
     }
 
     return false; // 默认浅色模式
+  }
+
+  /**
+   * 加载提醒数据
+   */
+  async loadReminderData() {
+    try {
+      const result = await chrome.storage.local.get(['reminderData']);
+      if (result.reminderData) {
+        const data = result.reminderData;
+        this.domainAccessData = new Map(data.domainAccessData || []);
+        this.urlAccessData = new Map(data.urlAccessData || []);
+        this.snoozedDomains = new Map(data.snoozedDomains || []);
+        this.snoozedUrls = new Map(data.snoozedUrls || []);
+        this.dismissedDomains = new Set(data.dismissedDomains || []);
+        this.dismissedUrls = new Set(data.dismissedUrls || []);
+      }
+    } catch (error) {
+      console.warn('加载提醒数据失败:', error);
+    }
+  }
+
+  /**
+   * 保存提醒数据
+   */
+  async saveReminderData() {
+    try {
+      const data = {
+        domainAccessData: Array.from(this.domainAccessData.entries()),
+        urlAccessData: Array.from(this.urlAccessData.entries()),
+        snoozedDomains: Array.from(this.snoozedDomains.entries()),
+        snoozedUrls: Array.from(this.snoozedUrls.entries()),
+        dismissedDomains: Array.from(this.dismissedDomains),
+        dismissedUrls: Array.from(this.dismissedUrls),
+        lastSaved: Date.now()
+      };
+      await chrome.storage.local.set({ reminderData: data });
+    } catch (error) {
+      console.warn('保存提醒数据失败:', error);
+    }
+  }
+
+  /**
+   * 设置页面访问监听
+   */
+  setupPageTracking() {
+    // 监听标签页更新
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (changeInfo.status === 'complete' && tab.url) {
+        this.recordPageAccess(tab.url);
+      }
+    });
+
+    // 监听标签页激活
+    chrome.tabs.onActivated.addListener((activeInfo) => {
+      chrome.tabs.get(activeInfo.tabId, (tab) => {
+        if (tab.url) {
+          this.recordPageAccess(tab.url);
+        }
+      });
+    });
+  }
+
+  /**
+   * 记录页面访问
+   */
+  recordPageAccess(url) {
+    // 检查是否启用智能提醒
+    if (reminderSettingsManager && !reminderSettingsManager.getSetting('enabled')) {
+      return;
+    }
+    
+    try {
+      const domain = this.extractMainDomain(url);
+      
+      // 检查是否在排除列表中
+      if (this.reminderSettings.excludedDomains.includes(domain)) {
+        return;
+      }
+      
+      const now = Date.now();
+      
+      // 记录域名访问
+      const domainData = this.domainAccessData.get(domain) || {
+        visits: [],
+        firstVisit: now,
+        lastVisit: now
+      };
+      domainData.visits.push(now);
+      domainData.lastVisit = now;
+      this.domainAccessData.set(domain, domainData);
+      
+      // 记录URL访问
+      const urlData = this.urlAccessData.get(url) || {
+        visits: [],
+        firstVisit: now,
+        lastVisit: now,
+        stayTime: 0
+      };
+      urlData.visits.push(now);
+      urlData.lastVisit = now;
+      this.urlAccessData.set(url, urlData);
+      
+      // 保存数据
+      this.saveReminderData();
+      
+      // 检查提醒条件
+      this.checkReminderConditions();
+    } catch (error) {
+      console.warn('记录页面访问失败:', error);
+    }
+  }
+
+  /**
+   * 检查提醒条件
+   */
+  async checkReminderConditions() {
+    // 检查是否启用智能提醒
+    if (reminderSettingsManager && !reminderSettingsManager.getSetting('enabled')) {
+      return;
+    }
+    
+    try {
+      // 获取当前标签页
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.url) return;
+      
+      const domain = this.extractMainDomain(tab.url);
+      const now = Date.now();
+      
+      // 检查域名级提醒
+      if (this.shouldShowDomainReminder(domain, now)) {
+        this.showDomainReminder(domain, tab.url, tab.title);
+        return;
+      }
+      
+      // 检查网址级提醒
+      if (this.shouldShowUrlReminder(tab.url, now)) {
+        this.showUrlReminder(tab.url, tab.title);
+        return;
+      }
+      
+      // 检查稍后提醒
+      this.checkSnoozedReminders(tab.url, now);
+    } catch (error) {
+      console.warn('检查提醒条件失败:', error);
+    }
+  }
+
+  /**
+   * 判断是否应该显示域名级提醒
+   */
+  shouldShowDomainReminder(domain, now) {
+    // 检查是否在忽略列表中
+    if (this.dismissedDomains.has(domain)) return false;
+    
+    // 检查是否有稍后提醒
+    if (this.snoozedDomains.has(domain)) {
+      const snoozeData = this.snoozedDomains.get(domain);
+      if (snoozeData.nextRemindTime > now) return false;
+    }
+    
+    // 检查是否已收藏该域名
+    if (this.hasBookmarkForDomain(domain)) return false;
+    
+    const domainData = this.domainAccessData.get(domain);
+    if (!domainData) return false;
+    
+    // 获取设置值
+    const threshold = reminderSettingsManager ? reminderSettingsManager.getSetting('threshold') : this.reminderSettings.domainThreshold;
+    
+    // 检查访问次数
+    const recentVisits = domainData.visits.filter(time => 
+      now - time <= this.reminderSettings.domainTimeWindow
+    );
+    
+    if (recentVisits.length < threshold) return false;
+    
+    // 检查是否有不同天的访问
+    const uniqueDays = new Set(recentVisits.map(time => 
+      new Date(time).toDateString()
+    ));
+    
+    return uniqueDays.size >= 2;
+  }
+
+  /**
+   * 判断是否应该显示网址级提醒
+   */
+  shouldShowUrlReminder(url, now) {
+    // 检查是否在忽略列表中
+    if (this.dismissedUrls.has(url)) return false;
+    
+    // 检查是否有稍后提醒
+    if (this.snoozedUrls.has(url)) {
+      const snoozeData = this.snoozedUrls.get(url);
+      if (snoozeData.nextRemindTime > now) return false;
+    }
+    
+    // 检查是否已收藏该URL
+    if (this.hasBookmarkForUrl(url)) return false;
+    
+    const urlData = this.urlAccessData.get(url);
+    if (!urlData) return false;
+    
+    // 检查访问次数
+    const recentVisits = urlData.visits.filter(time => 
+      now - time <= this.reminderSettings.urlTimeWindow
+    );
+    
+    if (recentVisits.length < this.reminderSettings.urlThreshold) return false;
+    
+    // 检查停留时间
+    return urlData.stayTime >= this.reminderSettings.minStayTime;
+  }
+
+  /**
+   * 检查是否有该域名的书签
+   */
+  hasBookmarkForDomain(domain) {
+    return this.bookmarks.some(bookmark => {
+      try {
+        const bookmarkDomain = this.extractMainDomain(bookmark.url);
+        return bookmarkDomain === domain;
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  /**
+   * 检查是否有该URL的书签
+   */
+  hasBookmarkForUrl(url) {
+    return this.bookmarks.some(bookmark => bookmark.url === url);
+  }
+
+  /**
+   * 检查稍后提醒
+   */
+  checkSnoozedReminders(url, now) {
+    const domain = this.extractMainDomain(url);
+    
+    // 检查域名级稍后提醒
+    if (this.snoozedDomains.has(domain)) {
+      const snoozeData = this.snoozedDomains.get(domain);
+      if (snoozeData.nextRemindTime <= now && snoozeData.remindCount < 2) {
+        this.showDomainReminder(domain, url, '');
+        return;
+      }
+    }
+    
+    // 检查网址级稍后提醒
+    if (this.snoozedUrls.has(url)) {
+      const snoozeData = this.snoozedUrls.get(url);
+      if (snoozeData.nextRemindTime <= now && snoozeData.remindCount < 2) {
+        this.showUrlReminder(url, '');
+        return;
+      }
+    }
+  }
+
+  /**
+   * 清理过期数据
+   */
+  cleanupExpiredData() {
+    const now = Date.now();
+    const expireTime = 15 * 24 * 60 * 60 * 1000; // 15天
+    
+    // 清理过期的访问数据
+    for (const [domain, data] of this.domainAccessData.entries()) {
+      if (now - data.lastVisit > expireTime) {
+        this.domainAccessData.delete(domain);
+      }
+    }
+    
+    for (const [url, data] of this.urlAccessData.entries()) {
+      if (now - data.lastVisit > expireTime) {
+        this.urlAccessData.delete(url);
+      }
+    }
+    
+    // 清理过期的稍后提醒
+    for (const [domain, data] of this.snoozedDomains.entries()) {
+      if (now - data.lastRemindTime > expireTime) {
+        this.snoozedDomains.delete(domain);
+      }
+    }
+    
+    for (const [url, data] of this.snoozedUrls.entries()) {
+      if (now - data.lastRemindTime > expireTime) {
+        this.snoozedUrls.delete(url);
+      }
+    }
+    
+    this.saveReminderData();
+  }
+
+  /**
+   * 显示域名级提醒
+   */
+  showDomainReminder(domain, url, title) {
+    if (this.activeReminder) return; // 避免重复显示
+    
+    const domainData = this.domainAccessData.get(domain);
+    const recentVisits = domainData.visits.filter(time => 
+      Date.now() - time <= this.reminderSettings.domainTimeWindow
+    );
+    
+    const reminderHTML = `
+      <div class="bookmark-reminder" id="bookmark-reminder">
+        <div class="reminder-content">
+          <div class="reminder-icon">📌</div>
+          <div class="reminder-text">
+            <div class="reminder-title">发现您经常访问 ${domain}</div>
+            <div class="reminder-subtitle">已访问 ${recentVisits.length} 次，最近一次是今天</div>
+            <div class="reminder-question">是否要将其添加到书签？</div>
+          </div>
+          <div class="reminder-close" onclick="bookmarkManager.closeReminder()">✕</div>
+        </div>
+        <div class="reminder-actions">
+          <button class="reminder-btn primary" onclick="bookmarkManager.handleDomainReminder('${domain}', '${this.escapeHtml(url)}', 'save')">收藏</button>
+          <button class="reminder-btn secondary" onclick="bookmarkManager.handleDomainReminder('${domain}', '${this.escapeHtml(url)}', 'snooze')">稍后提醒</button>
+          <button class="reminder-btn dismiss" onclick="bookmarkManager.handleDomainReminder('${domain}', '${this.escapeHtml(url)}', 'dismiss')">不再提醒</button>
+        </div>
+      </div>
+    `;
+    
+    this.showReminder(reminderHTML, 'domain');
+  }
+
+  /**
+   * 显示网址级提醒
+   */
+  showUrlReminder(url, title) {
+    if (this.activeReminder) return; // 避免重复显示
+    
+    const urlData = this.urlAccessData.get(url);
+    const recentVisits = urlData.visits.filter(time => 
+      Date.now() - time <= this.reminderSettings.urlTimeWindow
+    );
+    
+    const domain = this.extractMainDomain(url);
+    const displayTitle = title || '此页面';
+    
+    const reminderHTML = `
+      <div class="bookmark-reminder" id="bookmark-reminder">
+        <div class="reminder-content">
+          <div class="reminder-icon">📌</div>
+          <div class="reminder-text">
+            <div class="reminder-title">这篇文章您已经看了${recentVisits.length}次</div>
+            <div class="reminder-subtitle">${this.escapeHtml(displayTitle)} - ${domain}</div>
+            <div class="reminder-question">建议收藏起来方便后续查看</div>
+          </div>
+          <div class="reminder-close" onclick="bookmarkManager.closeReminder()">✕</div>
+        </div>
+        <div class="reminder-actions">
+          <button class="reminder-btn primary" onclick="bookmarkManager.handleUrlReminder('${this.escapeHtml(url)}', '${this.escapeHtml(displayTitle)}', 'save')">保存</button>
+          <button class="reminder-btn secondary" onclick="bookmarkManager.handleUrlReminder('${this.escapeHtml(url)}', '${this.escapeHtml(displayTitle)}', 'snooze')">稍后提醒</button>
+          <button class="reminder-btn dismiss" onclick="bookmarkManager.handleUrlReminder('${this.escapeHtml(url)}', '${this.escapeHtml(displayTitle)}', 'dismiss')">不再提醒</button>
+        </div>
+      </div>
+    `;
+    
+    this.showReminder(reminderHTML, 'url');
+  }
+
+  /**
+   * 显示提醒弹窗
+   */
+  showReminder(html, type) {
+    // 移除现有提醒
+    this.closeReminder();
+    
+    // 创建提醒元素
+    const reminderElement = document.createElement('div');
+    reminderElement.innerHTML = html;
+    document.body.appendChild(reminderElement.firstElementChild);
+    
+    // 设置当前活动提醒
+    this.activeReminder = {
+      type: type,
+      element: document.getElementById('bookmark-reminder')
+    };
+    
+    // 2秒后自动显示（给用户时间看到页面内容）
+    setTimeout(() => {
+      if (this.activeReminder) {
+        this.activeReminder.element.classList.add('show');
+      }
+    }, 2000);
+    
+    // 点击遮罩关闭
+    this.activeReminder.element.addEventListener('click', (e) => {
+      if (e.target === this.activeReminder.element) {
+        this.closeReminder();
+      }
+    });
+  }
+
+  /**
+   * 关闭提醒弹窗
+   */
+  closeReminder() {
+    if (this.activeReminder) {
+      this.activeReminder.element.remove();
+      this.activeReminder = null;
+    }
+  }
+
+  /**
+   * 处理域名级提醒响应
+   */
+  async handleDomainReminder(domain, url, action) {
+    this.closeReminder();
+    
+    switch (action) {
+      case 'save':
+        await this.addDomainBookmark(domain, url);
+        break;
+      case 'snooze':
+        this.snoozeDomainReminder(domain);
+        break;
+      case 'dismiss':
+        this.dismissDomainReminder(domain);
+        break;
+    }
+  }
+
+  /**
+   * 处理网址级提醒响应
+   */
+  async handleUrlReminder(url, title, action) {
+    this.closeReminder();
+    
+    switch (action) {
+      case 'save':
+        await this.addUrlBookmark(url, title);
+        break;
+      case 'snooze':
+        this.snoozeUrlReminder(url);
+        break;
+      case 'dismiss':
+        this.dismissUrlReminder(url);
+        break;
+    }
+  }
+
+  /**
+   * 稍后提醒域名
+   */
+  snoozeDomainReminder(domain) {
+    const now = Date.now();
+    const existingData = this.snoozedDomains.get(domain) || {
+      remindCount: 0,
+      lastRemindTime: now,
+      nextRemindTime: now,
+      status: 'snoozed'
+    };
+    
+    // 获取设置值
+    const snoozeDelay = reminderSettingsManager ? reminderSettingsManager.getSetting('snoozeDelay') : 5;
+    
+    existingData.remindCount += 1;
+    existingData.lastRemindTime = now;
+    existingData.nextRemindTime = now + (snoozeDelay * existingData.remindCount * 24 * 60 * 60 * 1000); // 设置天数 * 次数
+    existingData.status = 'snoozed';
+    
+    this.snoozedDomains.set(domain, existingData);
+    this.saveReminderData();
+    
+    const daysUntilNext = Math.ceil((existingData.nextRemindTime - now) / (24 * 60 * 60 * 1000));
+    this.showFeedback(`将在${daysUntilNext}天后再次提醒`);
+  }
+
+  /**
+   * 稍后提醒URL
+   */
+  snoozeUrlReminder(url) {
+    const now = Date.now();
+    const existingData = this.snoozedUrls.get(url) || {
+      remindCount: 0,
+      lastRemindTime: now,
+      nextRemindTime: now,
+      status: 'snoozed'
+    };
+    
+    // 获取设置值
+    const snoozeDelay = reminderSettingsManager ? reminderSettingsManager.getSetting('snoozeDelay') : 5;
+    
+    existingData.remindCount += 1;
+    existingData.lastRemindTime = now;
+    existingData.nextRemindTime = now + (snoozeDelay * existingData.remindCount * 24 * 60 * 60 * 1000); // 设置天数 * 次数
+    existingData.status = 'snoozed';
+    
+    this.snoozedUrls.set(url, existingData);
+    this.saveReminderData();
+    
+    const daysUntilNext = Math.ceil((existingData.nextRemindTime - now) / (24 * 60 * 60 * 1000));
+    this.showFeedback(`将在${daysUntilNext}天后再次提醒`);
+  }
+
+  /**
+   * 不再提醒域名
+   */
+  dismissDomainReminder(domain) {
+    this.dismissedDomains.add(domain);
+    this.snoozedDomains.delete(domain);
+    this.saveReminderData();
+    this.showFeedback('已将此域名加入不再提醒列表');
+  }
+
+  /**
+   * 不再提醒URL
+   */
+  dismissUrlReminder(url) {
+    this.dismissedUrls.add(url);
+    this.snoozedUrls.delete(url);
+    this.saveReminderData();
+    this.showFeedback('已将此页面加入不再提醒列表');
+  }
+
+  /**
+   * 显示反馈信息
+   */
+  showFeedback(message) {
+    const feedback = document.createElement('div');
+    feedback.className = 'reminder-feedback';
+    feedback.textContent = message;
+    document.body.appendChild(feedback);
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+      feedback.remove();
+    }, 3000);
+  }
+
+  /**
+   * 添加域名书签
+   */
+  async addDomainBookmark(domain, url) {
+    try {
+      // 获取当前标签页信息
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.url) return;
+      
+      // 使用当前页面的URL和标题
+      const bookmarkUrl = tab.url;
+      const bookmarkTitle = tab.title || domain;
+      
+      // 显示文件夹选择器
+      this.showFolderSelector(bookmarkUrl, bookmarkTitle, 'domain');
+    } catch (error) {
+      console.error('添加域名书签失败:', error);
+      this.showFeedback('添加书签失败，请重试');
+    }
+  }
+
+  /**
+   * 添加URL书签
+   */
+  async addUrlBookmark(url, title) {
+    try {
+      // 显示文件夹选择器
+      this.showFolderSelector(url, title, 'url');
+    } catch (error) {
+      console.error('添加URL书签失败:', error);
+      this.showFeedback('添加书签失败，请重试');
+    }
+  }
+
+  /**
+   * 显示文件夹选择器
+   */
+  showFolderSelector(url, title, type) {
+    // 保存待处理的书签信息
+    this.pendingUrl = url;
+    this.pendingTitle = title;
+    this.pendingType = type;
+    
+    // 创建文件夹选择器HTML
+    const selectorHTML = `
+      <div class="folder-selector" id="folder-selector">
+        <div class="selector-content">
+          <div class="selector-header">
+            <h3>选择文件夹</h3>
+            <div class="selector-close" onclick="bookmarkManager.closeFolderSelector()">✕</div>
+          </div>
+          <div class="selector-body">
+            <div class="folder-list" id="folder-list">
+              ${this.generateFolderListHTML()}
+            </div>
+            <div class="new-folder-section">
+              <input type="text" id="new-folder-input" placeholder="新建文件夹名称" class="new-folder-input">
+              <button onclick="bookmarkManager.createNewFolder()" class="create-folder-btn">创建</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // 添加到页面
+    const selectorElement = document.createElement('div');
+    selectorElement.innerHTML = selectorHTML;
+    document.body.appendChild(selectorElement.firstElementChild);
+    
+    // 聚焦到新建文件夹输入框
+    setTimeout(() => {
+      const input = document.getElementById('new-folder-input');
+      if (input) input.focus();
+    }, 100);
+    
+    // 点击遮罩关闭
+    document.getElementById('folder-selector').addEventListener('click', (e) => {
+      if (e.target.id === 'folder-selector') {
+        this.closeFolderSelector();
+      }
+    });
+  }
+
+  /**
+   * 生成文件夹列表HTML
+   */
+  generateFolderListHTML() {
+    let html = '';
+    
+    // 添加根目录选项
+    html += `
+      <div class="folder-item" onclick="bookmarkManager.addBookmarkToFolder('0')">
+        <div class="folder-icon">📁</div>
+        <div class="folder-name">书签栏</div>
+      </div>
+    `;
+    
+    // 添加其他文件夹
+    this.folders.forEach(folder => {
+      html += `
+        <div class="folder-item" onclick="bookmarkManager.addBookmarkToFolder('${folder.id}')">
+          <div class="folder-icon">📁</div>
+          <div class="folder-name">${this.escapeHtml(folder.title)}</div>
+          <div class="folder-count">(${folder.children.length})</div>
+        </div>
+      `;
+    });
+    
+    return html;
+  }
+
+  /**
+   * 关闭文件夹选择器
+   */
+  closeFolderSelector() {
+    const selector = document.getElementById('folder-selector');
+    if (selector) {
+      selector.remove();
+    }
+  }
+
+  /**
+   * 创建新文件夹
+   */
+  async createNewFolder() {
+    const input = document.getElementById('new-folder-input');
+    const folderName = input.value.trim();
+    
+    if (!folderName) {
+      this.showFeedback('请输入文件夹名称');
+      return;
+    }
+    
+    try {
+      // 创建文件夹
+      const newFolder = await chrome.bookmarks.create({
+        parentId: '1', // 其他书签栏
+        title: folderName
+      });
+      
+      // 刷新文件夹列表
+      this.loadBookmarks();
+      
+      // 延迟一下确保文件夹创建完成
+      setTimeout(() => {
+        this.addBookmarkToFolder(newFolder.id);
+        this.closeFolderSelector();
+      }, 100);
+      
+    } catch (error) {
+      console.error('创建文件夹失败:', error);
+      this.showFeedback('创建文件夹失败，请重试');
+    }
+  }
+
+  /**
+   * 将书签添加到指定文件夹
+   */
+  async addBookmarkToFolder(parentId) {
+    try {
+      // 创建书签
+      const bookmark = await chrome.bookmarks.create({
+        parentId: parentId,
+        title: this.pendingTitle,
+        url: this.pendingUrl
+      });
+      
+      // 刷新书签列表
+      this.loadBookmarks();
+      
+      // 显示成功反馈
+      this.showFeedback('书签添加成功');
+      
+      // 清理提醒数据
+      this.clearReminderData(this.pendingUrl);
+      
+    } catch (error) {
+      console.error('添加书签失败:', error);
+      this.showFeedback('添加书签失败，请重试');
+    }
+  }
+
+  /**
+   * 清理提醒数据
+   */
+  clearReminderData(url) {
+    const domain = this.extractMainDomain(url);
+    
+    // 从稍后提醒中移除
+    this.snoozedDomains.delete(domain);
+    this.snoozedUrls.delete(url);
+    
+    // 从不再提醒中移除
+    this.dismissedDomains.delete(domain);
+    this.dismissedUrls.delete(url);
+    
+    // 保存数据
+    this.saveReminderData();
+  }
+
+  /**
+   * 设置待处理的URL和标题
+   */
+  setPendingBookmark(url, title, type) {
+    this.pendingUrl = url;
+    this.pendingTitle = title;
+    this.pendingType = type;
   }
 }
 

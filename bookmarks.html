@@ -46,6 +46,41 @@
             <span id="total-folders" class="stat-value">0</span>
           </div>
         </div>
+        
+        <!-- 智能提醒设置 -->
+        <div class="reminder-settings">
+          <div class="settings-header">
+            <span class="settings-title">🧠 智能提醒</span>
+            <button id="settings-toggle" class="settings-toggle-btn" title="展开/收起设置">
+              <span class="toggle-icon">▼</span>
+            </button>
+          </div>
+          <div class="settings-content" id="reminder-settings-content" style="display: none;">
+            <div class="setting-item">
+              <label class="setting-label">
+                <input type="checkbox" id="reminder-enabled" class="setting-checkbox">
+                <span class="setting-text">启用智能提醒</span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <label class="setting-label">
+                <span class="setting-text">触发阈值：</span>
+                <input type="number" id="reminder-threshold" class="setting-input" min="2" max="20" value="5">
+                <span class="setting-unit">次</span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <label class="setting-label">
+                <span class="setting-text">稍后提醒延迟：</span>
+                <input type="number" id="snooze-delay" class="setting-input" min="1" max="30" value="5">
+                <span class="setting-unit">天</span>
+              </label>
+            </div>
+            <div class="setting-description">
+              💡 当您频繁访问某个网站时，系统会提醒您添加书签
+            </div>
+          </div>
+        </div>
       </aside>
 
       <!-- 主内容区 - 书签列表 -->
