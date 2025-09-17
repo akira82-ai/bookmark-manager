@@ -170,6 +170,15 @@ class BookmarkManager {
     this.visitStatsCache = new Map(); // 简单缓存
     this.pendingVisitQueries = new Set(); // 进行中的查询
     
+    // 域名级别访问统计 - 高性能优化
+    this.domainVisitIndex = new Map(); // 域名 -> 访问次数
+    this.urlToDomainMap = new Map(); // URL -> 域名映射
+    this.domainIndexInitialized = false; // 索引初始化状态
+    this.initializationPromise = null; // 初始化Promise
+    this.useDomainStats = true; // 使用域名级别统计
+    this.MAX_DOMAIN_CACHE_SIZE = 5000; // 最大域名缓存数量
+    this.MAX_URL_CACHE_SIZE = 20000; // 最大URL映射数量
+    
     // 智能检测相关属性
     this.linkChecker = new LinkChecker();
     this.checkResults = new Map(); // 存储检测结果
@@ -197,6 +206,15 @@ class BookmarkManager {
     // 确保初始状态下隐藏检测结果分组UI
     this.ensureCheckResultsHidden();
     this.loadBookmarks();
+    
+    // 预初始化域名索引（异步进行，不阻塞UI）
+    if (this.useDomainStats) {
+      this.initializeDomainIndex().catch(error => {
+        console.warn('域名索引预初始化失败:', error);
+        // 失败时自动降级到URL级别统计
+        this.useDomainStats = false;
+      });
+    }
   }
 
   bindEvents() {
@@ -2352,8 +2370,20 @@ createSearchResultCard(bookmark) {
     const visitCountElement = card.querySelector('.visit-count');
     if (!visitCountElement || !url) return;
     
+    // 显示等待占位符
+    visitCountElement.textContent = '👁 加载中...';
+    visitCountElement.style.opacity = '0.7';
+    
     try {
-      const visitCount = await this.getVisitCount(url);
+      let visitCount;
+      if (this.useDomainStats) {
+        // 使用域名级别统计
+        visitCount = await this.getDomainVisitCount(url);
+      } else {
+        // 使用原有的URL级别统计
+        visitCount = await this.getVisitCount(url);
+      }
+      
       visitCountElement.textContent = `👁 ${visitCount}`;
       
       // 根据访问次数添加样式
@@ -2375,6 +2405,136 @@ createSearchResultCard(bookmark) {
   clearVisitStatsCache() {
     this.visitStatsCache.clear();
     this.pendingVisitQueries.clear();
+    this.domainVisitIndex.clear();
+    this.urlToDomainMap.clear();
+    this.domainIndexInitialized = false;
+    this.initializationPromise = null;
+  }
+
+  /**
+   * 提取主域名 - 标准化处理
+   */
+  extractMainDomain(url) {
+    try {
+      const domain = new URL(url).hostname;
+      // 移除 www. 前缀并转为小写
+      return domain.replace(/^www\./, '').toLowerCase();
+    } catch {
+      // 如果 URL 解析失败，尝试提取域名部分
+      const match = url.match(/^https?:\/\/([^\/]+)/);
+      if (match) {
+        return match[1].replace(/^www\./, '').toLowerCase();
+      }
+      return url;
+    }
+  }
+
+  /**
+   * 初始化域名索引 - 单次API调用获取全量数据
+   */
+  async initializeDomainIndex() {
+    if (this.domainIndexInitialized) return;
+    
+    try {
+      // 单次API调用获取所有历史记录
+      const history = await chrome.history.search({
+        text: '',
+        startTime: 0,
+        maxResults: 100000  // 获取足够多的记录
+      });
+      
+      // 构建域名访问次数索引
+      this.domainVisitIndex.clear();
+      this.urlToDomainMap.clear();
+      
+      history.forEach(item => {
+        const domain = this.extractMainDomain(item.url);
+        const currentCount = this.domainVisitIndex.get(domain) || 0;
+        this.domainVisitIndex.set(domain, currentCount + (item.visitCount || 1));
+        
+        // 限制URL映射数量，避免内存占用过大
+        if (this.urlToDomainMap.size < this.MAX_URL_CACHE_SIZE) {
+          this.urlToDomainMap.set(item.url, domain);
+        }
+      });
+      
+      // 如果域名数量过多，清理访问次数较少的域名
+      if (this.domainVisitIndex.size > this.MAX_DOMAIN_CACHE_SIZE) {
+        this.cleanupDomainCache();
+      }
+      
+      this.domainIndexInitialized = true;
+      console.log(`域名索引初始化完成，处理了 ${history.length} 条历史记录，${this.domainVisitIndex.size} 个域名`);
+    } catch (error) {
+      console.error('初始化域名索引失败:', error);
+      this.domainIndexInitialized = false;
+      throw error;
+    }
+  }
+
+  /**
+   * 清理域名缓存 - 保留高访问次数的域名
+   */
+  cleanupDomainCache() {
+    if (this.domainVisitIndex.size <= this.MAX_DOMAIN_CACHE_SIZE) return;
+    
+    // 按访问次数排序，保留访问次数最多的域名
+    const sortedDomains = Array.from(this.domainVisitIndex.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, this.MAX_DOMAIN_CACHE_SIZE);
+    
+    this.domainVisitIndex.clear();
+    sortedDomains.forEach(([domain, count]) => {
+      this.domainVisitIndex.set(domain, count);
+    });
+    
+    console.log(`域名缓存清理完成，保留前 ${this.MAX_DOMAIN_CACHE_SIZE} 个高访问次数域名`);
+  }
+
+  /**
+   * 确保域名索引已初始化 - 懒加载机制
+   */
+  async ensureDomainIndex() {
+    if (this.domainIndexInitialized) return;
+    
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+    
+    this.initializationPromise = this.initializeDomainIndex();
+    return this.initializationPromise;
+  }
+
+  /**
+   * 获取域名级别访问次数 - O(1)复杂度
+   */
+  async getDomainVisitCount(url) {
+    try {
+      await this.ensureDomainIndex();
+      
+      const domain = this.extractMainDomain(url);
+      return this.domainVisitIndex.get(domain) || 0;
+    } catch (error) {
+      console.warn('域名级别访问次数获取失败，降级到URL级别:', error);
+      // 自动降级到URL级别统计
+      this.useDomainStats = false;
+      return await this.getVisitCount(url);
+    }
+  }
+
+  /**
+   * 批量获取域名级别访问次数 - 复用同一索引
+   */
+  async batchGetDomainVisitCounts(urls) {
+    await this.ensureDomainIndex();
+    
+    const results = new Map();
+    urls.forEach(url => {
+      const domain = this.extractMainDomain(url);
+      results.set(url, this.domainVisitIndex.get(domain) || 0);
+    });
+    
+    return results;
   }
 
   escapeHtml(text) {
