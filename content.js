@@ -1,20 +1,24 @@
-// 内容脚本 - 智能提醒弹窗显示
+// 内容脚本 - 弹窗显示功能
 
 // 监听来自popup的消息
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  if (request.action === 'getPageInfo') {
-    const pageInfo = {
-      title: document.title,
-      url: window.location.href,
-      description: getMetaDescription()
-    };
-    sendResponse(pageInfo);
-  } else if (request.action === 'showReminder') {
-    // 显示智能提醒弹窗
-    showReminderToast(request.data);
-    sendResponse({success: true});
-  }
-});
+try {
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === 'getPageInfo') {
+      const pageInfo = {
+        title: document.title,
+        url: window.location.href,
+        description: safeGetMetaDescription()
+      };
+      sendResponse(pageInfo);
+    } else if (request.action === 'showReminder') {
+      // 显示提醒弹窗
+      showReminderToast(request.data);
+      sendResponse({success: true});
+    }
+  });
+} catch (error) {
+  console.warn('消息监听器设置失败:', error);
+}
 
 // 显示提醒弹窗
 function showReminderToast(data) {
@@ -177,43 +181,31 @@ function showReminderToast(data) {
   
   if (addBtn) {
     addBtn.onclick = () => {
-      // 发送添加书签消息
-      chrome.runtime.sendMessage({
+      // 安全地发送添加书签消息
+      safeSendMessage({
         action: 'addBookmarkFromReminder',
         data: {
           url: data.url,
           title: data.title,
           type: data.type
         }
+      }).then(() => {
+        hideToast();
+      }).catch(error => {
+        console.error('添加书签失败:', error);
+        showExtensionErrorTip();
       });
-      hideToast();
     };
   }
   
   if (snoozeBtn) {
     snoozeBtn.onclick = () => {
-      // 发送稍后提醒消息
-      chrome.runtime.sendMessage({
-        action: 'snoozeReminder',
-        data: {
-          type: data.type,
-          target: data.type === 'domain' ? data.domain : data.url
-        }
-      });
       hideToast();
     };
   }
   
   if (dismissBtn) {
     dismissBtn.onclick = () => {
-      // 发送不再提醒消息
-      chrome.runtime.sendMessage({
-        action: 'dismissReminder',
-        data: {
-          type: data.type,
-          target: data.type === 'domain' ? data.domain : data.url
-        }
-      });
       hideToast();
     };
   }
@@ -240,37 +232,102 @@ function hideToast() {
   }
 }
 
-// 获取页面描述
-function getMetaDescription() {
-  const metaDescription = document.querySelector('meta[name="description"]');
-  return metaDescription ? metaDescription.getAttribute('content') : '';
+// 安全获取页面描述
+function safeGetMetaDescription() {
+  try {
+    const metaDescription = document.querySelector('meta[name="description"]');
+    return metaDescription ? metaDescription.getAttribute('content') : '';
+  } catch (error) {
+    console.warn('获取页面描述失败:', error);
+    return '';
+  }
 }
 
-// 添加右键菜单功能
-document.addEventListener('contextmenu', function(event) {
-  // 可以在这里添加右键菜单相关的功能
-});
+// 获取页面描述（保持向后兼容）
+function getMetaDescription() {
+  return safeGetMetaDescription();
+}
 
 // 添加键盘快捷键
-document.addEventListener('keydown', function(event) {
-  // Ctrl+Shift+B 快速添加书签
-  if (event.ctrlKey && event.shiftKey && event.key === 'B') {
-    event.preventDefault();
-    const pageInfo = {
-      title: document.title,
-      url: window.location.href,
-      description: getMetaDescription()
-    };
-    
-    // 发送消息到background script
-    chrome.runtime.sendMessage({
-      action: 'quickAddBookmark',
-      data: pageInfo
-    });
-  }
-});
+try {
+  document.addEventListener('keydown', function(event) {
+    // Ctrl+Shift+B 快速添加书签
+    if (event.ctrlKey && event.shiftKey && event.key === 'B') {
+      event.preventDefault();
+      const pageInfo = {
+        title: document.title,
+        url: window.location.href,
+        description: safeGetMetaDescription()
+      };
+      
+      // 安全地发送消息到background script
+      safeSendMessage({
+        action: 'quickAddBookmark',
+        data: pageInfo
+      });
+    }
+  });
+} catch (error) {
+  console.warn('键盘快捷键监听器设置失败:', error);
+}
 
-// 页面加载完成后的初始化
-document.addEventListener('DOMContentLoaded', function() {
-  // 可以在这里添加页面加载完成后的功能
-});
+// 安全的消息发送函数
+function safeSendMessage(message) {
+  return new Promise((resolve, reject) => {
+    try {
+      // 检查扩展上下文是否有效
+      if (!chrome.runtime || !chrome.runtime.id) {
+        throw new Error('扩展上下文已失效');
+      }
+      
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// 显示扩展错误提示
+function showExtensionErrorTip() {
+  // 移除已存在的提示
+  const existingTip = document.getElementById('extension-error-tip');
+  if (existingTip) {
+    existingTip.remove();
+  }
+  
+  // 创建提示元素
+  const tip = document.createElement('div');
+  tip.id = 'extension-error-tip';
+  tip.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ff6b6b;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 1000000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-width: 300px;
+  `;
+  tip.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 4px;">⚠️ 扩展需要重新加载</div>
+    <div style="font-size: 12px; opacity: 0.9;">请刷新此页面或重新加载扩展</div>
+  `;
+  
+  document.body.appendChild(tip);
+  
+  // 5秒后自动移除
+  setTimeout(() => {
+    if (tip.parentNode) {
+      tip.remove();
+    }
+  }, 5000);
+}

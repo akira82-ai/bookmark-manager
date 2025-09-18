@@ -363,43 +363,6 @@ function findRecentFolder(node) {
 
 // quickAddDialog 函数已移除，简化用户界面
 
-// 测试URL过滤逻辑（开发时使用）
-function testUrlFilter() {
-  const testUrls = [
-    // 应该被过滤的URL
-    'chrome://settings',
-    'chrome://extensions',
-    'chrome-extension://abcdefghijklmnoprstuvwxyz/popup.html',
-    'about:blank',
-    'about:preferences',
-    'data:text/plain,Hello',
-    'file:///Users/user/test.html',
-    'javascript:alert("test")',
-    'mailto:test@example.com',
-    'tel:+1234567890',
-    'ftp://example.com',
-    'ws://example.com',
-    'localhost:8080',
-    '127.0.0.1:3000',
-    '192.168.1.1',
-    '10.0.0.1',
-    
-    // 应该通过的URL
-    'https://www.google.com',
-    'http://example.com',
-    'https://github.com/user/repo',
-    'https://stackoverflow.com/questions/123456/test'
-  ];
-  
-  console.log('=== URL过滤测试 ===');
-  testUrls.forEach(url => {
-    const result = validateUrlForBookmark(url);
-    console.log(`${url}: ${result.valid ? '✅ 通过' : '❌ 过滤'} - ${result.reason}`);
-  });
-}
-
-// 取消注释下面这行来测试过滤逻辑
-// testUrlFilter();
 
 async function loadRecentBookmarks() {
   try {

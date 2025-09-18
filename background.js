@@ -1,21 +1,4 @@
-// 后台脚本 - 智能书签提醒核心逻辑
-
-// 智能提醒数据存储
-let reminderData = {
-  domainAccessData: new Map(), // 域名访问数据
-  urlAccessData: new Map(), // URL访问数据
-  snoozedDomains: new Map(), // 稍后提醒的域名
-  snoozedUrls: new Map(), // 稍后提醒的URL
-  dismissedDomains: new Set(), // 不再提醒的域名
-  dismissedUrls: new Set(), // 不再提醒的URL
-  reminderSettings: {
-    domainThreshold: 5, // 域名提醒阈值
-    urlThreshold: 3, // URL提醒阈值
-    domainTimeWindow: 7 * 24 * 60 * 60 * 1000, // 7天
-    urlTimeWindow: 3 * 24 * 60 * 60 * 1000, // 3天
-    enabled: true // 是否启用提醒
-  }
-};
+// 后台脚本 - 核心功能
 
 // 插件安装时的初始化
 chrome.runtime.onInstalled.addListener(function(details) {
@@ -25,12 +8,6 @@ chrome.runtime.onInstalled.addListener(function(details) {
     title: '添加到书签管理器',
     contexts: ['page', 'link']
   });
-  
-  // 加载保存的提醒数据
-  loadReminderData();
-  
-  // 启动定期检查
-  setInterval(checkReminderConditions, 30000); // 每30秒检查一次
 });
 
 // 处理右键菜单点击
@@ -61,31 +38,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // 从提醒弹窗添加书签
     addBookmarkToRecent(request.data.title, request.data.url);
     sendResponse({success: true});
-  } else if (request.action === 'snoozeReminder') {
-    // 稍后提醒
-    snoozeReminder(request.data.type, request.data.target);
-    sendResponse({success: true});
-  } else if (request.action === 'dismissReminder') {
-    // 不再提醒
-    dismissReminder(request.data.type, request.data.target);
-    sendResponse({success: true});
   }
-});
-
-// 监听标签页更新事件
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-  if (changeInfo.status === 'complete' && tab.url) {
-    recordPageVisit(tab.url, tab.title);
-  }
-});
-
-// 监听标签页激活事件
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-  chrome.tabs.get(activeInfo.tabId, function(tab) {
-    if (tab.url) {
-      recordPageVisit(tab.url, tab.title);
-    }
-  });
 });
 
 // 添加书签函数 - 使用Chrome书签API
@@ -228,185 +181,5 @@ function showNotification(message) {
     iconUrl: 'icons/icon48.png',
     title: '书签管理器',
     message: message
-  });
-}
-
-// 记录页面访问
-function recordPageVisit(url, title) {
-  if (!reminderData.reminderSettings.enabled) return;
-  
-  try {
-    const domain = extractDomain(url);
-    const now = Date.now();
-    
-    // 记录域名访问
-    if (!reminderData.domainAccessData.has(domain)) {
-      reminderData.domainAccessData.set(domain, []);
-    }
-    reminderData.domainAccessData.get(domain).push({
-      time: now,
-      title: title,
-      url: url
-    });
-    
-    // 记录URL访问
-    if (!reminderData.urlAccessData.has(url)) {
-      reminderData.urlAccessData.set(url, []);
-    }
-    reminderData.urlAccessData.get(url).push({
-      time: now,
-      title: title
-    });
-    
-    // 保存数据
-    saveReminderData();
-    
-  } catch (error) {
-    console.error('记录页面访问失败:', error);
-  }
-}
-
-// 提取域名
-function extractDomain(url) {
-  try {
-    const urlObj = new URL(url);
-    return urlObj.hostname.replace('www.', '');
-  } catch (error) {
-    return url;
-  }
-}
-
-// 检查提醒条件
-function checkReminderConditions() {
-  if (!reminderData.reminderSettings.enabled) return;
-  
-  const now = Date.now();
-  
-  // 检查域名级别提醒
-  for (const [domain, visits] of reminderData.domainAccessData) {
-    if (reminderData.dismissedDomains.has(domain)) continue;
-    
-    const snoozeUntil = reminderData.snoozedDomains.get(domain);
-    if (snoozeUntil && now < snoozeUntil) continue;
-    
-    const recentVisits = visits.filter(v => now - v.time < reminderData.reminderSettings.domainTimeWindow);
-    if (recentVisits.length >= reminderData.reminderSettings.domainThreshold) {
-      showDomainReminder(domain, recentVisits);
-      break;
-    }
-  }
-  
-  // 检查URL级别提醒
-  for (const [url, visits] of reminderData.urlAccessData) {
-    if (reminderData.dismissedUrls.has(url)) continue;
-    
-    const snoozeUntil = reminderData.snoozedUrls.get(url);
-    if (snoozeUntil && now < snoozeUntil) continue;
-    
-    const recentVisits = visits.filter(v => now - v.time < reminderData.reminderSettings.urlTimeWindow);
-    if (recentVisits.length >= reminderData.reminderSettings.urlThreshold) {
-      showUrlReminder(url, recentVisits);
-      break;
-    }
-  }
-}
-
-// 显示域名级别提醒
-function showDomainReminder(domain, visits) {
-  const latestVisit = visits[visits.length - 1];
-  const message = `您最近访问了 ${domain} ${visits.length} 次，是否要添加书签？`;
-  
-  // 发送消息到当前页面的content script
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    if (tabs[0]) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: 'showReminder',
-        data: {
-          type: 'domain',
-          domain: domain,
-          url: `https://${domain}`,
-          title: latestVisit.title,
-          message: message
-        }
-      });
-    }
-  });
-}
-
-// 显示URL级别提醒
-function showUrlReminder(url, visits) {
-  const latestVisit = visits[visits.length - 1];
-  const message = '您最近多次访问了这个页面，是否要添加书签？';
-  
-  // 发送消息到当前页面的content script
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    if (tabs[0]) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: 'showReminder',
-        data: {
-          type: 'url',
-          url: url,
-          title: latestVisit.title,
-          message: message
-        }
-      });
-    }
-  });
-}
-
-// 稍后提醒
-function snoozeReminder(type, target) {
-  const snoozeTime = Date.now() + 5 * 60 * 1000; // 5分钟后
-  
-  if (type === 'domain') {
-    reminderData.snoozedDomains.set(target, snoozeTime);
-  } else {
-    reminderData.snoozedUrls.set(target, snoozeTime);
-  }
-  
-  saveReminderData();
-  showNotification('已设置为5分钟后提醒');
-}
-
-// 不再提醒
-function dismissReminder(type, target) {
-  if (type === 'domain') {
-    reminderData.dismissedDomains.add(target);
-  } else {
-    reminderData.dismissedUrls.add(target);
-  }
-  
-  saveReminderData();
-  showNotification('不再提醒此网站');
-}
-
-// 保存提醒数据
-function saveReminderData() {
-  const dataToSave = {
-    domainAccessData: Array.from(reminderData.domainAccessData.entries()),
-    urlAccessData: Array.from(reminderData.urlAccessData.entries()),
-    snoozedDomains: Array.from(reminderData.snoozedDomains.entries()),
-    snoozedUrls: Array.from(reminderData.snoozedUrls.entries()),
-    dismissedDomains: Array.from(reminderData.dismissedDomains),
-    dismissedUrls: Array.from(reminderData.dismissedUrls),
-    reminderSettings: reminderData.reminderSettings
-  };
-  
-  chrome.storage.local.set({reminderData: dataToSave});
-}
-
-// 加载提醒数据
-function loadReminderData() {
-  chrome.storage.local.get(['reminderData'], function(result) {
-    if (result.reminderData) {
-      const data = result.reminderData;
-      reminderData.domainAccessData = new Map(data.domainAccessData || []);
-      reminderData.urlAccessData = new Map(data.urlAccessData || []);
-      reminderData.snoozedDomains = new Map(data.snoozedDomains || []);
-      reminderData.snoozedUrls = new Map(data.snoozedUrls || []);
-      reminderData.dismissedDomains = new Set(data.dismissedDomains || []);
-      reminderData.dismissedUrls = new Set(data.dismissedUrls || []);
-      reminderData.reminderSettings = data.reminderSettings || reminderData.reminderSettings;
-    }
   });
 }

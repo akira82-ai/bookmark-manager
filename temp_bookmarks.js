@@ -2540,62 +2540,13 @@ createSearchResultCard(bookmark) {
     return results;
   }
 
-  /**
-   * 添加到「最近收藏」
-   */
-  async addToRecentFolder(url, title) {
-    try {
-      const recentFolderId = await this.getOrCreateRecentFolder();
-      
-      // 检查是否已存在相同的URL
-      const isDuplicate = await this.checkDuplicateInRecentFolder(url, recentFolderId);
-      if (isDuplicate) {
-        this.showMessage('已在「最近收藏」中！');
-        return;
-      }
-      
-      // 添加书签到最近收藏文件夹
-      await chrome.bookmarks.create({
-        title: title || '无标题',
-        url: url,
-        parentId: recentFolderId
-      });
-      
-      // 显示成功消息
-      this.showMessage('书签已添加到「最近收藏」！');
-      
-    } catch (error) {
-      console.error('添加到最近收藏失败:', error);
-      this.showMessage('添加失败，请重试');
-    }
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
-  /**
-   * 获取或创建「最近收藏」文件夹
-   */
-  async getOrCreateRecentFolder() {
-    try {
-      const bookmarkTree = await chrome.bookmarks.getTree();
-      const recentFolder = this.findRecentFolder(bookmarkTree[0]);
-      
-      if (recentFolder) {
-        return recentFolder.id;
-      } else {
-        const newFolder = await chrome.bookmarks.create({
-          title: '📌 最近收藏',
-          parentId: '1'
-        });
-        return newFolder.id;
-      }
-    } catch (error) {
-      console.error('获取或创建最近收藏文件夹失败:', error);
-      return '1';
-    }
-  }
 
-  /**
-   * 查找「最近收藏」文件夹
-   */
   findRecentFolder(node) {
     if (node.title === '📌 最近收藏' && !node.url) {
       return node;
@@ -2627,33 +2578,207 @@ createSearchResultCard(bookmark) {
   }
 
   /**
+   * 显示文件夹选择器
+   */
+  showFolderSelector(url, title) {
+    const selector = document.createElement('div');
+    selector.className = 'folder-selector';
+    selector.innerHTML = `
+      <div class="selector-content">
+        <div class="selector-header">
+          <h3>选择文件夹</h3>
+          <button class="selector-close">&times;</button>
+        </div>
+        <div class="selector-body">
+          <div class="folder-list">
+            <!-- 文件夹列表将通过JavaScript生成 -->
+          </div>
+          <div class="new-folder">
+            <input type="text" placeholder="新建文件夹名称" class="new-folder-input">
+            <button class="create-folder-btn">创建</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(selector);
+
+    // 生成文件夹列表
+    chrome.bookmarks.getTree((bookmarkTreeNodes) => {
+      const folderList = selector.querySelector('.folder-list');
+      this.renderFolderOptions(bookmarkTreeNodes, folderList, url, title);
+    });
+
+    // 绑定事件
+    selector.querySelector('.selector-close').onclick = () => selector.remove();
+    selector.querySelector('.create-folder-btn').onclick = () => {
+      const input = selector.querySelector('.new-folder-input');
+      const folderName = input.value.trim();
+      if (folderName) {
+        this.createNewFolder(folderName, url, title);
+        selector.remove();
+      }
+    };
+  }
+
+  /**
+   * 渲染文件夹选项
+   */
+  renderFolderOptions(bookmarkTreeNodes, container, url, title) {
+    bookmarkTreeNodes.forEach(node => {
+      if (node.children) {
+        node.children.forEach(child => {
+          if (child.children) { // 是文件夹
+            const folderItem = document.createElement('div');
+            folderItem.className = 'folder-item';
+            folderItem.innerHTML = `
+              <span class="folder-icon">📁</span>
+              <span class="folder-name">${child.title}</span>
+            `;
+            folderItem.onclick = () => this.addBookmarkToFolder(child.id, url, title);
+            container.appendChild(folderItem);
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * 创建新文件夹
+   */
+  createNewFolder(folderName, url, title) {
+    chrome.bookmarks.create({
+      title: folderName
+    }, (folder) => {
+      this.addBookmarkToFolder(folder.id, url, title);
+    });
+  }
+
+  /**
+   * 添加书签到文件夹
+   */
+  addBookmarkToFolder(folderId, url, title) {
+    chrome.bookmarks.create({
+      parentId: folderId,
+      title: title,
+      url: url
+    }, () => {
+      this.showMessage('书签添加成功！');
+    });
+  }
+
+  /**
+   * 稍后提醒
+   */
+  snoozeReminder(type, data) {
+    const snoozeTime = Date.now() + (5 * 24 * 60 * 60 * 1000); // 5天后
+    if (type === 'domain') {
+      this.snoozedDomains.set(data, snoozeTime);
+    } else {
+      this.snoozedUrls.set(data, snoozeTime);
+    }
+    this.hideActiveReminder();
+    this.showMessage('已设置为5天后提醒');
+  }
+
+  /**
+   * 不再提醒
+   */
+  dismissReminder(type, data) {
+    if (type === 'domain') {
+      this.dismissedDomains.add(data);
+    } else {
+      this.dismissedUrls.add(data);
+    }
+    this.hideActiveReminder();
+  }
+
+  /**
+   * 隐藏活动提醒
+   */
+  hideActiveReminder() {
+    if (this.activeReminder) {
+      this.activeReminder.element.remove();
+      this.activeReminder = null;
+    }
+  }
+
+  /**
    * 显示消息
    */
   showMessage(message) {
     const messageEl = document.createElement('div');
-    messageEl.className = 'bookmark-message';
+    messageEl.className = 'reminder-message';
     messageEl.textContent = message;
     document.body.appendChild(messageEl);
     
     setTimeout(() => {
       messageEl.classList.add('show');
     }, 10);
-    
+
     setTimeout(() => {
       messageEl.classList.remove('show');
-      setTimeout(() => {
-        messageEl.remove();
-      }, 300);
+      setTimeout(() => messageEl.remove(), 300);
     }, 2000);
   }
 
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  /**
+   * 清理过期数据
+   */
+  cleanupOldData() {
+    const now = Date.now();
+    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30天
+
+    // 清理域名访问数据
+    for (const [domain, visits] of this.domainAccessData) {
+      const validVisits = visits.filter(v => now - v.time < maxAge);
+      if (validVisits.length === 0) {
+        this.domainAccessData.delete(domain);
+      } else {
+        this.domainAccessData.set(domain, validVisits);
+      }
+    }
+
+    // 清理URL访问数据
+    for (const [url, visits] of this.urlAccessData) {
+      const validVisits = visits.filter(v => now - v.time < maxAge);
+      if (validVisits.length === 0) {
+        this.urlAccessData.delete(url);
+      } else {
+        this.urlAccessData.set(url, validVisits);
+      }
+    }
+
+    // 清理过期的稍后提醒
+    for (const [domain, snoozeTime] of this.snoozedDomains) {
+      if (now >= snoozeTime) {
+        this.snoozedDomains.delete(domain);
+      }
+    }
+
+    for (const [url, snoozeTime] of this.snoozedUrls) {
+      if (now >= snoozeTime) {
+        this.snoozedUrls.delete(url);
+      }
+    }
+  }
+
+  /**
+   * 提取主域名
+   */
+  extractMainDomain(url) {
+    try {
+      const domain = new URL(url).hostname;
+      return domain.replace(/^www\./, '').toLowerCase();
+    } catch {
+      const match = url.match(/^https?:\/\/([^\/]+)/);
+      if (match) {
+        return match[1].replace(/^www\./, '').toLowerCase();
+      }
+      return url;
+    }
   }
 }
-
 
 /**
  * 深色模式管理器
@@ -2664,11 +2789,17 @@ class DarkModeManager {
     this.init();
   }
 
+  /**
+   * 初始化深色模式
+   */
   init() {
     this.applyTheme();
     this.bindEvents();
   }
 
+  /**
+   * 绑定事件
+   */
   bindEvents() {
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
@@ -2678,6 +2809,9 @@ class DarkModeManager {
     }
   }
 
+  /**
+   * 切换主题
+   */
   toggleTheme() {
     this.isDarkMode = !this.isDarkMode;
     this.applyTheme();
@@ -2685,6 +2819,9 @@ class DarkModeManager {
     this.updateThemeIcon();
   }
 
+  /**
+   * 应用主题
+   */
   applyTheme() {
     if (this.isDarkMode) {
       document.body.classList.add('dark-mode');
@@ -2693,6 +2830,9 @@ class DarkModeManager {
     }
   }
 
+  /**
+   * 更新主题图标
+   */
   updateThemeIcon() {
     const themeIcon = document.querySelector('.theme-icon');
     if (themeIcon) {
@@ -2700,6 +2840,9 @@ class DarkModeManager {
     }
   }
 
+  /**
+   * 保存主题设置
+   */
   saveTheme() {
     try {
       localStorage.setItem('darkMode', this.isDarkMode);
@@ -2708,6 +2851,9 @@ class DarkModeManager {
     }
   }
 
+  /**
+   * 加载主题设置
+   */
   loadTheme() {
     try {
       const saved = localStorage.getItem('darkMode');
@@ -2727,10 +2873,166 @@ class DarkModeManager {
   }
 }
 
+/**
+ * 智能提醒设置管理器
+ */
+class ReminderSettingsManager {
+  constructor() {
+    this.settings = {
+      enabled: true,
+      threshold: 5,
+      snoozeDelay: 5
+    };
+    this.initializeSettings();
+  }
+
+  /**
+   * 初始化设置
+   */
+  async initializeSettings() {
+    try {
+      // 从存储中加载设置
+      const result = await chrome.storage.local.get(['reminderSettings']);
+      if (result.reminderSettings) {
+        this.settings = { ...this.settings, ...result.reminderSettings };
+      }
+      
+      // 绑定UI元素
+      this.bindUIElements();
+      
+      // 初始化UI状态
+      this.updateUIState();
+      
+      // 绑定事件监听器
+      this.bindEventListeners();
+      
+    } catch (error) {
+      console.error('初始化提醒设置失败:', error);
+    }
+  }
+
+  /**
+   * 绑定UI元素
+   */
+  bindUIElements() {
+    this.elements = {
+      settingsToggle: document.getElementById('settings-toggle'),
+      settingsContent: document.getElementById('reminder-settings-content'),
+      enabledCheckbox: document.getElementById('reminder-enabled'),
+      thresholdInput: document.getElementById('reminder-threshold'),
+      snoozeDelayInput: document.getElementById('snooze-delay')
+    };
+  }
+
+  /**
+   * 更新UI状态
+   */
+  updateUIState() {
+    if (!this.elements.enabledCheckbox) return;
+    
+    this.elements.enabledCheckbox.checked = this.settings.enabled;
+    this.elements.thresholdInput.value = this.settings.threshold;
+    this.elements.snoozeDelayInput.value = this.settings.snoozeDelay;
+  }
+
+  /**
+   * 绑定事件监听器
+   */
+  bindEventListeners() {
+    // 设置面板展开/收起
+    if (this.elements.settingsToggle) {
+      this.elements.settingsToggle.addEventListener('click', () => {
+        this.toggleSettingsPanel();
+      });
+    }
+
+    // 启用/禁用开关
+    if (this.elements.enabledCheckbox) {
+      this.elements.enabledCheckbox.addEventListener('change', (e) => {
+        this.updateSetting('enabled', e.target.checked);
+      });
+    }
+
+    // 触发阈值设置
+    if (this.elements.thresholdInput) {
+      this.elements.thresholdInput.addEventListener('change', (e) => {
+        const value = parseInt(e.target.value);
+        if (value >= 2 && value <= 20) {
+          this.updateSetting('threshold', value);
+        } else {
+          e.target.value = this.settings.threshold;
+        }
+      });
+    }
+
+    // 稍后提醒延迟设置
+    if (this.elements.snoozeDelayInput) {
+      this.elements.snoozeDelayInput.addEventListener('change', (e) => {
+        const value = parseInt(e.target.value);
+        if (value >= 1 && value <= 30) {
+          this.updateSetting('snoozeDelay', value);
+        } else {
+          e.target.value = this.settings.snoozeDelay;
+        }
+      });
+    }
+  }
+
+  /**
+   * 切换设置面板显示状态
+   */
+  toggleSettingsPanel() {
+    const header = this.elements.settingsToggle.parentElement;
+    const isExpanded = header.classList.contains('expanded');
+    
+    if (isExpanded) {
+      header.classList.remove('expanded');
+      this.elements.settingsContent.style.display = 'none';
+    } else {
+      header.classList.add('expanded');
+      this.elements.settingsContent.style.display = 'block';
+    }
+  }
+
+  /**
+   * 更新设置并保存
+   */
+  async updateSetting(key, value) {
+    this.settings[key] = value;
+    
+    try {
+      await chrome.storage.local.set({
+        reminderSettings: this.settings
+      });
+      
+      console.log('提醒设置已更新:', this.settings);
+      
+    } catch (error) {
+      console.error('保存提醒设置失败:', error);
+    }
+  }
+
+  /**
+   * 获取设置值
+   */
+  getSetting(key) {
+    return this.settings[key];
+  }
+
+  /**
+   * 获取所有设置
+   */
+  getAllSettings() {
+    return { ...this.settings };
+  }
+}
+
 // 初始化书签管理器
 let bookmarkManager;
 let darkModeManager;
+let reminderSettingsManager;
 document.addEventListener('DOMContentLoaded', () => {
   bookmarkManager = new BookmarkManager();
   darkModeManager = new DarkModeManager();
+  reminderSettingsManager = new ReminderSettingsManager();
 });
