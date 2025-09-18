@@ -88,107 +88,22 @@
         }
 
         .clear-btn {
-            background: rgba(255,255,255,0.2);
+            background: rgba(50,50,60,0.2);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .clear-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(50,50,60,0.3);
         }
 
-        /* 方案一：悬浮水晶球 */
-        .toast-style1 {
-            position: fixed;
-            top: 80px;
-            right: 30px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            box-shadow: 
-                0 20px 40px rgba(0, 0, 0, 0.1),
-                0 0 20px rgba(79, 172, 254, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
-            padding: 20px;
-            min-width: 280px;
-            transform: translateX(400px) scale(0.8);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .toast-style1.show {
-            transform: translateX(0) scale(1);
-        }
-
-        .toast-style1 .toast-content {
-            text-align: center;
-            color: #2d3748;
-        }
-
-        .toast-style1 .toast-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .toast-style1 .toast-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin: 0 0 12px 0;
-            color: #4a5568;
-        }
-
-        .toast-style1 .toast-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(79, 172, 254, 0.3), transparent);
-            margin: 12px 0;
-        }
-
-        .toast-style1 .toast-info {
-            font-size: 14px;
-            margin: 8px 0;
-            color: #718096;
-        }
-
-        .toast-style1 .toast-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 16px;
-        }
-
-        .toast-style1 .toast-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: white;
-        }
-
-        .toast-style1 .btn-primary {
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
-        }
-
-        .toast-style1 .btn-secondary {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-        }
-
-        .toast-style1 .btn-close {
-            background: linear-gradient(45deg, #fc466b 0%, #3f5efb 100%);
-            box-shadow: 0 2px 8px rgba(252, 70, 107, 0.3);
-            padding: 6px 12px;
-        }
-
+        
         /* 方案二：聚焦卡片 - Windows窗口风格 */
         .toast-style2 {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(50, 50, 60, 0.15);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-radius: 8px;
@@ -197,16 +112,16 @@
                 0 8px 16px rgba(0, 0, 0, 0.12),
                 0 2px 4px rgba(0, 0, 0, 0.08),
                 /* 玻璃效果 */
-                0 0 0 1px rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
                 0 0 8px rgba(59, 130, 246, 0.05),
                 /* 内部高光 */
-                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
                 inset 0 -1px 0 rgba(0, 0, 0, 0.05);
             padding: 0;
             width: 320px;
             transform: translateX(400px) scale(0.8);
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             flex-direction: column;
         }
@@ -221,7 +136,7 @@
             align-items: center;
             gap: 8px;
             padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 8px 8px 0 0;
         }
 
@@ -266,7 +181,7 @@
             display: flex;
             gap: 8px;
             padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.01);
             border-radius: 0 0 8px 8px;
             justify-content: flex-start;
         }
@@ -308,8 +223,8 @@
             background: linear-gradient(135deg, #007AFF, #0051D5);
             color: white;
             box-shadow: 
-                0 2px 8px rgba(0, 122, 255, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                0 2px 8px rgba(0, 122, 255, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .toast-style2 .btn-primary:hover {
@@ -317,7 +232,7 @@
             transform: translateY(-1px);
             box-shadow: 
                 0 4px 12px rgba(0, 122, 255, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
         .toast-style2 .btn-primary:active {
@@ -326,32 +241,32 @@
         }
 
         .toast-style2 .btn-secondary {
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
             color: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 
                 0 1px 3px rgba(0, 0, 0, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .toast-style2 .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
             box-shadow: 
                 0 2px 6px rgba(0, 0, 0, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
         .toast-style2 .btn-secondary:active {
             transform: translateY(0);
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .toast-style2 .btn-close {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.05);
             color: rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             padding: 6px 12px;
             font-size: 12px;
             margin-left: auto;
@@ -366,81 +281,7 @@
                 0 2px 8px rgba(255, 59, 48, 0.3);
         }
 
-        /* 方案三：微光气泡 */
-        .toast-style3 {
-            position: fixed;
-            top: 80px;
-            right: 30px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            border-radius: 50px;
-            box-shadow: 
-                0 15px 35px rgba(0, 0, 0, 0.1),
-                0 0 25px rgba(168, 237, 234, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
-            padding: 20px 30px;
-            min-width: 200px;
-            transform: translateX(400px) scale(0.7);
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .toast-style3.show {
-            transform: translateX(0) scale(1);
-        }
-
-        .toast-style3 .toast-content {
-            text-align: center;
-            color: #2d3748;
-        }
-
-        .toast-style3 .toast-icon {
-            font-size: 20px;
-            margin-bottom: 6px;
-        }
-
-        .toast-style3 .toast-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 8px 0;
-            color: #4a5568;
-        }
-
-        .toast-style3 .toast-info {
-            font-size: 12px;
-            margin: 4px 0;
-            color: #718096;
-        }
-
-        .toast-style3 .toast-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 12px;
-        }
-
-        .toast-style3 .toast-btn {
-            padding: 6px 14px;
-            border: none;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: white;
-        }
-
-        .toast-style3 .btn-primary {
-            background: linear-gradient(45deg, #a8edea 0%, #fed6e3 100%);
-            box-shadow: 0 2px 6px rgba(168, 237, 234, 0.3);
-        }
-
-        .toast-style3 .btn-close {
-            background: linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%);
-            box-shadow: 0 2px 6px rgba(252, 182, 159, 0.3);
-            padding: 4px 10px;
-        }
-
+        
         /* 按钮悬停效果 */
         .toast-btn:hover {
             transform: translateY(-1px);
@@ -452,28 +293,6 @@
             body {
                 background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
             }
-            
-            .toast-style1 {
-                background: rgba(45, 55, 72, 0.95);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
-            .toast-style1 .toast-content,
-            .toast-style1 .toast-title,
-            .toast-style1 .toast-info {
-                color: #e2e8f0;
-            }
-            
-            .toast-style3 {
-                background: rgba(45, 55, 72, 0.9);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
-            .toast-style3 .toast-content,
-            .toast-style3 .toast-title,
-            .toast-style3 .toast-info {
-                color: #e2e8f0;
-            }
         }
     </style>
 </head>
@@ -483,38 +302,16 @@
         <p class="subtitle">点击下方按钮查看不同的弹窗效果</p>
         
         <div class="buttons">
-            <button class="btn btn-style1" onclick="showToast(1)">
-                ✨ 悬浮水晶球
-            </button>
             <button class="btn btn-style2" onclick="showToast(2)">
-                🎯 聚焦卡片
-            </button>
-            <button class="btn btn-style3" onclick="showToast(3)">
-                🌟 微光气泡
+                🎯 智能提醒弹窗
             </button>
             <button class="btn clear-btn" onclick="clearAllToasts()">
-                🗑️ 清除所有
+                🗑️ 清除弹窗
             </button>
         </div>
     </div>
 
-    <!-- 悬浮水晶球 -->
-    <div id="toast1" class="toast-style1">
-        <div class="toast-content">
-            <div class="toast-icon">📚</div>
-            <div class="toast-title">添加书签？</div>
-            <div class="toast-divider"></div>
-            <div class="toast-info">github.com</div>
-            <div class="toast-info">访问 5 次</div>
-            <div class="toast-actions">
-                <button class="toast-btn btn-primary" onclick="hideToast(1)">添加</button>
-                <button class="toast-btn btn-secondary" onclick="hideToast(1)">稍后</button>
-                <button class="toast-btn btn-close" onclick="hideToast(1)">×</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 聚焦卡片 - Windows窗口风格 -->
+    <!-- 智能提醒弹窗 -->
     <div id="toast2" class="toast-style2">
         <div class="toast-header">
             <div class="toast-icon">💡</div>
@@ -538,99 +335,46 @@
         </div>
     </div>
 
-    <!-- 微光气泡 -->
-    <div id="toast3" class="toast-style3">
-        <div class="toast-content">
-            <div class="toast-icon">🌟</div>
-            <div class="toast-title">要收藏吗？</div>
-            <div class="toast-info">github.com</div>
-            <div class="toast-info">(5次访问)</div>
-            <div class="toast-actions">
-                <button class="toast-btn btn-primary" onclick="hideToast(3)">收藏</button>
-                <button class="toast-btn btn-close" onclick="hideToast(3)">×</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        function showToast(styleNum) {
-            // 隐藏其他弹窗
-            for (let i = 1; i <= 3; i++) {
-                if (i !== styleNum) {
-                    hideToast(i);
-                }
-            }
-            
-            // 显示选中的弹窗
-            const toast = document.getElementById(`toast${styleNum}`);
+        function showToast() {
+            // 显示智能提醒弹窗
+            const toast = document.getElementById('toast2');
             setTimeout(() => {
                 toast.classList.add('show');
             }, 100);
             
             // 自动隐藏
             setTimeout(() => {
-                hideToast(styleNum);
+                hideToast();
             }, 10000);
         }
 
-        function hideToast(styleNum) {
-            const toast = document.getElementById(`toast${styleNum}`);
+        function hideToast() {
+            const toast = document.getElementById('toast2');
             toast.classList.remove('show');
         }
 
-        function handleBookmark(styleNum) {
+        function handleBookmark() {
             // 模拟添加书签的操作
-            const toast = document.getElementById(`toast${styleNum}`);
+            const toast = document.getElementById('toast2');
             const content = toast.querySelector('.toast-content');
             
             // 显示成功状态
             content.innerHTML = `
-                <div class="toast-header">
-                    <div class="toast-icon">✓</div>
-                    <div class="toast-title">添加成功</div>
-                </div>
-                <div class="toast-divider"></div>
                 <div class="toast-info">
-                    已添加到「最近收藏」
-                </div>
-                <div class="toast-actions">
-                    <button class="toast-btn btn-primary" onclick="hideToast(${styleNum})">
-                        完成
-                    </button>
+                    ✓ 已添加到「最近收藏」
                 </div>
             `;
             
             // 2秒后自动关闭
             setTimeout(() => {
-                hideToast(styleNum);
+                hideToast();
             }, 2000);
         }
 
         function clearAllToasts() {
-            for (let i = 1; i <= 3; i++) {
-                hideToast(i);
-            }
+            hideToast();
         }
-
-        // 键盘快捷键测试
-        document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey && event.shiftKey) {
-                switch(event.key) {
-                    case '1':
-                        event.preventDefault();
-                        showToast(1);
-                        break;
-                    case '2':
-                        event.preventDefault();
-                        showToast(2);
-                        break;
-                    case '3':
-                        event.preventDefault();
-                        showToast(3);
-                        break;
-                }
-            }
-        });
     </script>
 </body>
 </html>

@@ -596,7 +596,7 @@ body.dark-mode .folder-item .folder-count {
 }
 
 .folder-item.active .folder-count {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(100, 100, 120, 0.3);
   color: white;
 }
 
@@ -1281,7 +1281,7 @@ body.dark-mode .bookmark-action-btn.edit-btn {
 
 body.dark-mode .bookmark-action-btn.edit-btn:hover {
   color: #f8f9fa;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(100, 100, 120, 0.2);
 }
 
 /* 保存按钮 - 蓝色 */
