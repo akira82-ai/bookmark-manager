@@ -2733,18 +2733,109 @@ createSearchResultCard(bookmark) {
   /**
    * 添加域名书签
    */
-  addDomainBookmark(domain, title) {
+  async addDomainBookmark(domain, title) {
     const url = `https://${domain}`;
-    this.showFolderSelector(url, title || domain);
+    await this.addToRecentFolder(url, title || domain);
     this.hideActiveReminder();
   }
 
   /**
    * 添加URL书签
    */
-  addUrlBookmark(url, title) {
-    this.showFolderSelector(url, title);
+  async addUrlBookmark(url, title) {
+    await this.addToRecentFolder(url, title);
     this.hideActiveReminder();
+  }
+
+  /**
+   * 添加书签到「最近收藏」文件夹
+   */
+  async addToRecentFolder(url, title) {
+    try {
+      // 获取或创建「最近收藏」文件夹
+      const recentFolderId = await this.getOrCreateRecentFolder();
+      
+      // 检查是否已存在相同的URL
+      const isDuplicate = await this.checkDuplicateInRecentFolder(url, recentFolderId);
+      if (isDuplicate) {
+        this.showMessage('已在「最近收藏」中！');
+        return;
+      }
+      
+      // 添加书签到最近收藏文件夹
+      await chrome.bookmarks.create({
+        title: title || '无标题',
+        url: url,
+        parentId: recentFolderId
+      });
+      
+      // 显示成功消息
+      this.showMessage('书签已添加到「最近收藏」！');
+      
+    } catch (error) {
+      console.error('添加到最近收藏失败:', error);
+      this.showMessage('添加失败，请重试');
+    }
+  }
+
+  /**
+   * 获取或创建「最近收藏」文件夹
+   */
+  async getOrCreateRecentFolder() {
+    try {
+      // 获取所有书签
+      const bookmarkTree = await chrome.bookmarks.getTree();
+      
+      // 查找是否已存在「最近收藏」文件夹
+      const recentFolder = this.findRecentFolder(bookmarkTree[0]);
+      
+      if (recentFolder) {
+        return recentFolder.id;
+      } else {
+        // 创建「最近收藏」文件夹
+        const newFolder = await chrome.bookmarks.create({
+          title: '📌 最近收藏',
+          parentId: '1' // 添加到书签栏
+        });
+        return newFolder.id;
+      }
+    } catch (error) {
+      console.error('获取或创建最近收藏文件夹失败:', error);
+      return '1'; // 如果失败，返回书签栏根目录
+    }
+  }
+
+  /**
+   * 查找「最近收藏」文件夹
+   */
+  findRecentFolder(node) {
+    if (node.title === '📌 最近收藏' && !node.url) {
+      return node;
+    }
+    
+    if (node.children) {
+      for (const child of node.children) {
+        const found = this.findRecentFolder(child);
+        if (found) return found;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * 检查URL是否在「最近收藏」文件夹中已存在
+   */
+  async checkDuplicateInRecentFolder(url, recentFolderId) {
+    try {
+      if (!recentFolderId) return false;
+      
+      const bookmarks = await chrome.bookmarks.getChildren(recentFolderId);
+      return bookmarks.some(bookmark => bookmark.url === url);
+    } catch (error) {
+      console.error('检查重复失败:', error);
+      return false;
+    }
   }
 
   /**
