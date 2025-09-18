@@ -1,4 +1,4 @@
-// 内容脚本 - 在网页中运行的脚本
+// 内容脚本 - 智能提醒弹窗显示
 
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
@@ -274,5 +274,3 @@ document.addEventListener('keydown', function(event) {
 document.addEventListener('DOMContentLoaded', function() {
   // 可以在这里添加页面加载完成后的功能
 });
-
-console.log('Bookmark Manager content script loaded');
