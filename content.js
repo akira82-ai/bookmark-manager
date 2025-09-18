@@ -266,6 +266,12 @@ try {
         data: pageInfo
       });
     }
+    
+    // Ctrl+Shift+T 触发测试弹窗
+    if (event.ctrlKey && event.shiftKey && event.key === 'T') {
+      event.preventDefault();
+      showTestReminder();
+    }
   });
 } catch (error) {
   console.warn('键盘快捷键监听器设置失败:', error);
@@ -291,6 +297,29 @@ function safeSendMessage(message) {
       reject(error);
     }
   });
+}
+
+// 显示测试弹窗
+function showTestReminder() {
+  const testData = {
+    type: 'domain',
+    domain: extractDomain(window.location.href),
+    url: window.location.href,
+    title: document.title,
+    message: `您最近访问了 ${extractDomain(window.location.href)} 多次，是否要添加书签？`
+  };
+  
+  showReminderToast(testData);
+}
+
+// 从URL提取域名
+function extractDomain(url) {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace('www.', '');
+  } catch (error) {
+    return url;
+  }
 }
 
 // 显示扩展错误提示
