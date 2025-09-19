@@ -45,11 +45,11 @@ function showReminderToast(data) {
   `;
   
   toast.innerHTML = `
-    <div style="font-weight: bold; margin-bottom: 10px;">💡 智能提醒</div>
-    <div style="margin-bottom: 15px; font-size: 14px;">您近期已访问多次当前网站，需要收藏吗？</div>
+    <div style="font-weight: bold; margin-bottom: 10px; color: #333;">💡 智能提醒</div>
+    <div style="margin-bottom: 15px; font-size: 14px; color: #333;">您近期已访问多次当前网站，需要收藏吗？</div>
     <div style="display: flex; gap: 5px;">
       <button id="btnAdd" style="padding: 5px 10px; border: none; background: #007bff; color: white; border-radius: 3px; cursor: pointer;">收藏</button>
-      <button id="btnDismiss" style="padding: 5px 10px; border: 1px solid #ccc; background: white; border-radius: 3px; cursor: pointer; margin-left: auto;">关闭</button>
+      <button id="btnDismiss" style="padding: 5px 10px; border: 1px solid #ccc; background: white; color: #333; border-radius: 3px; cursor: pointer; margin-left: auto;">关闭</button>
     </div>
   `;
   
@@ -65,7 +65,7 @@ function showReminderToast(data) {
         type: data.type
       }
     }).then(() => {
-      toast.innerHTML = '<div style="text-align: center; color: green;">✓ 已添加到收藏</div>';
+      toast.innerHTML = '<div style="text-align: center; color: #333;">✓ 已添加到收藏</div>';
       setTimeout(() => toast.remove(), 2000);
     }).catch(error => {
       console.error('添加书签失败:', error);
