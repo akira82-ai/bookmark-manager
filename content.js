@@ -19,6 +19,65 @@ try {
   console.warn('消息监听器设置失败:', error);
 }
 
+// URL解析函数
+function analyzeURL(url) {
+  try {
+    // 处理没有协议的情况
+    if (!url.match(/^https?:\/\//)) {
+      url = 'https://' + url;
+    }
+    
+    const urlObj = new URL(url);
+    
+    // 提取域名信息
+    const domainParts = urlObj.hostname.split('.');
+    let topLevelDomain = '';
+    
+    if (domainParts.length >= 2) {
+      topLevelDomain = domainParts.slice(-2).join('.');
+    } else {
+      topLevelDomain = urlObj.hostname;
+    }
+    
+    // 提取路径层级
+    const pathParts = urlObj.pathname.split('/').filter(p => p);
+    const firstLevelPath = pathParts[0] || '';
+    const secondLevelPath = pathParts[1] || '';
+    const thirdLevelPath = pathParts[2] || '';
+    
+    // 构建一级和二级地址
+    let firstLevelAddress = '';
+    let secondLevelAddress = '';
+    
+    if (firstLevelPath) {
+      firstLevelAddress = urlObj.protocol + '//' + urlObj.hostname + '/' + firstLevelPath;
+      if (secondLevelPath) {
+        secondLevelAddress = urlObj.protocol + '//' + urlObj.hostname + '/' + firstLevelPath + '/' + secondLevelPath;
+      }
+    }
+    
+    return {
+      fullUrl: urlObj.href,
+      protocol: urlObj.protocol,
+      domain: urlObj.hostname,
+      topLevelDomain: topLevelDomain,
+      subdomain: urlObj.protocol + '//' + urlObj.hostname, // 完整域名作为子域名，加协议
+      topLevelDomainWithProtocol: urlObj.protocol + '//' + topLevelDomain, // 主域名加协议
+      path: urlObj.pathname,
+      firstLevelPath: firstLevelPath,
+      secondLevelPath: secondLevelPath,
+      thirdLevelPath: thirdLevelPath,
+      pathDepth: pathParts.length,
+      firstLevelAddress: firstLevelAddress,
+      secondLevelAddress: secondLevelAddress,
+      search: urlObj.search,
+      hash: urlObj.hash
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
 // 显示提醒弹窗
 function showReminderToast(data) {
   // 移除已存在的弹窗
@@ -26,6 +85,10 @@ function showReminderToast(data) {
   if (existingToast) {
     existingToast.remove();
   }
+  
+  // 分析当前URL
+  const currentUrl = window.location.href;
+  const analysis = analyzeURL(currentUrl);
   
   // 创建弹窗元素
   const toast = document.createElement('div');
@@ -41,7 +104,7 @@ function showReminderToast(data) {
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 14px;
     padding: 16px;
-    width: 260px;
+    width: 320px;
     box-shadow: 
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -49,43 +112,123 @@ function showReminderToast(data) {
     transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   `;
   
+  // 生成URL选项HTML
+  let urlOptionsHTML = '';
+  
+  if (analysis) {
+    // 主域名
+    urlOptionsHTML += `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="color: #f5f5f7; font-size: 13px; flex: 1; margin-right: 8px; word-break: break-all;">🌐 ${analysis.topLevelDomainWithProtocol}</span>
+        <button class="bookmark-btn" data-url="${analysis.topLevelDomainWithProtocol}" data-title="${analysis.topLevelDomain}" style="
+          padding: 4px 12px;
+          border: none;
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        ">收藏</button>
+      </div>
+    `;
+    
+    // 子域名（如果和主域名不同且不包含www）
+    const showSubdomain = analysis.topLevelDomainWithProtocol !== analysis.subdomain && 
+                         !analysis.subdomain.includes('www.');
+    
+    if (showSubdomain) {
+      urlOptionsHTML += `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="color: #f5f5f7; font-size: 13px; flex: 1; margin-right: 8px; word-break: break-all;">🔧 ${analysis.subdomain}</span>
+          <button class="bookmark-btn" data-url="${analysis.subdomain}" data-title="${analysis.domain}" style="
+            padding: 4px 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+          ">收藏</button>
+        </div>
+      `;
+    }
+    
+    // 一级地址
+    if (analysis.firstLevelAddress) {
+      urlOptionsHTML += `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="color: #f5f5f7; font-size: 13px; flex: 1; margin-right: 8px; word-break: break-all;">📚 ${analysis.firstLevelAddress}</span>
+          <button class="bookmark-btn" data-url="${analysis.firstLevelAddress}" data-title="${analysis.firstLevelPath}" style="
+            padding: 4px 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+          ">收藏</button>
+        </div>
+      `;
+    }
+    
+    // 二级地址
+    if (analysis.secondLevelAddress) {
+      urlOptionsHTML += `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="color: #f5f5f7; font-size: 13px; flex: 1; margin-right: 8px; word-break: break-all;">📄 ${analysis.secondLevelAddress}</span>
+          <button class="bookmark-btn" data-url="${analysis.secondLevelAddress}" data-title="${analysis.secondLevelPath}" style="
+            padding: 4px 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+          ">收藏</button>
+        </div>
+      `;
+    }
+  }
+  
   toast.innerHTML = `
-    <div style="font-weight: 600; margin-bottom: 10px; color: #f5f5f7; font-size: 15px; letter-spacing: -0.2px;">💡 智能提醒</div>
-    <div style="margin-bottom: 12px; font-size: 14px; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); line-height: 1.4; letter-spacing: -0.1px;">您近期已访问多次当前网站，需要收藏吗？</div>
-    <div style="margin-bottom: 16px; font-size: 12px; color: rgba(255, 255, 255, 0.8); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); word-break: break-all; line-height: 1.3;">${window.location.href}</div>
-    <div style="display: flex; gap: 8px;">
-      <button id="btnAdd" style="
-        padding: 8px 16px;
-        border: none;
-        background: #007aff;
-        color: white;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        letter-spacing: -0.1px;
-        box-shadow: 
-          0 2px 8px rgba(0, 122, 255, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        transition: all 0.2s ease;
-      ">收藏</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div style="font-weight: 600; color: #f5f5f7; font-size: 15px; letter-spacing: -0.2px;">💡 为您准备的收藏建议</div>
       <button id="btnDismiss" style="
-        padding: 8px 16px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(255, 255, 255, 0.1);
-        color: #f5f5f7;
-        border-radius: 10px;
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 16px;
         cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        letter-spacing: -0.1px;
-        margin-left: auto;
-        box-shadow: 
-          0 1px 3px rgba(0, 0, 0, 0.2),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        padding: 4px;
+        border-radius: 4px;
         transition: all 0.2s ease;
-      ">关闭</button>
+      ">❌</button>
     </div>
+    
+    <div style="margin-bottom: 12px; font-size: 14px; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); line-height: 1.4; letter-spacing: -0.1px;">
+      看来您很喜欢这里，帮您整理了几个收藏选项：
+    </div>
+    
+    <div style="margin-bottom: 12px; font-size: 12px; color: rgba(255, 255, 255, 0.8); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); word-break: break-all; line-height: 1.3;">
+      当前页面: ${currentUrl}
+    </div>
+    
+    <div style="margin-bottom: 8px; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500;">
+    </div>
+    
+    ${urlOptionsHTML}
   `;
   
   document.body.appendChild(toast);
@@ -95,30 +238,46 @@ function showReminderToast(data) {
     toast.style.transform = 'translateX(0)';
   }, 10);
   
-  // 绑定事件
-  document.getElementById('btnAdd').onclick = () => {
-    safeSendMessage({
-      action: 'addBookmarkFromReminder',
-      data: {
-        url: window.location.href,
-        title: document.title,
-        type: 'domain'
-      }
-    }).then(() => {
-      toast.innerHTML = '<div style="text-align: center; color: #34c759; font-size: 15px; font-weight: 500; letter-spacing: -0.1px;">✓ 已添加到收藏</div>';
-      setTimeout(() => {
+  // 绑定收藏按钮事件
+  const bookmarkButtons = toast.querySelectorAll('.bookmark-btn');
+  bookmarkButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const url = this.getAttribute('data-url');
+      const title = this.getAttribute('data-title');
+      
+      safeSendMessage({
+        action: 'addBookmarkFromReminder',
+        data: {
+          url: url,
+          title: title,
+          type: 'domain'
+        }
+      }).then(() => {
+        toast.innerHTML = '<div style="text-align: center; color: #34c759; font-size: 15px; font-weight: 500; letter-spacing: -0.1px; padding: 20px;">✓ 已添加到收藏</div>';
+        setTimeout(() => {
+          // 出场动画
+          toast.style.transform = 'translateX(400px)';
+          setTimeout(() => toast.remove(), 400);
+        }, 1500);
+      }).catch(error => {
+        console.error('添加书签失败:', error);
         // 出场动画
         toast.style.transform = 'translateX(400px)';
         setTimeout(() => toast.remove(), 400);
-      }, 1500);
-    }).catch(error => {
-      console.error('添加书签失败:', error);
-      // 出场动画
-      toast.style.transform = 'translateX(400px)';
-      setTimeout(() => toast.remove(), 400);
+      });
     });
-  };
+    
+    // 添加悬停效果
+    button.addEventListener('mouseenter', function() {
+      this.style.background = 'rgba(255, 255, 255, 0.3)';
+    });
+    
+    button.addEventListener('mouseleave', function() {
+      this.style.background = 'rgba(255, 255, 255, 0.2)';
+    });
+  });
   
+  // 绑定关闭按钮事件
   document.getElementById('btnDismiss').onclick = () => {
     // 出场动画
     toast.style.transform = 'translateX(400px)';
