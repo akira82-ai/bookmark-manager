@@ -57,22 +57,20 @@ function showReminderToast(data) {
       top: 20px;
       right: 20px;
       z-index: 999999;
-      background: rgba(50, 50, 60, 0.15);
+      background: rgba(255, 255, 255, 0.3);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-radius: 8px;
+      border-radius: 12px;
       box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.15),
-        0 2px 8px rgba(0, 0, 0, 0.08),
-        0 0 0 1px rgba(255, 255, 255, 0.05),
-        0 0 16px rgba(59, 130, 246, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        0 10px 40px rgba(0, 0, 0, 0.1),
+        0 2px 8px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.4),
+        0 0 20px rgba(102, 126, 234, 0.1);
       padding: 0;
       width: 320px;
-      transform: translateX(400px) scale(0.8);
+      transform: translateX(400px) scale(0.95);
       transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.4);
       display: flex;
       flex-direction: column;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -82,146 +80,144 @@ function showReminderToast(data) {
       transform: translateX(0) scale(1);
     }
     
-    /* Windows风格标题栏 */
+    /* 白色标题栏 */
     .bookmark-reminder-toast .toast-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px 8px 0 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 12px 12px 0 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     .bookmark-reminder-toast .toast-icon {
-      font-size: 14px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      font-size: 16px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      filter: drop-shadow(0 1px 2px rgba(59, 130, 246, 0.3));
+      filter: drop-shadow(0 1px 2px rgba(102, 126, 234, 0.3));
     }
     
     .bookmark-reminder-toast .toast-title {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      color: #ffffff;
-      letter-spacing: 0.02em;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      color: #2c3e50;
+      letter-spacing: 0.01em;
     }
     
-    /* 主要内容区域 */
+    /* 白色内容区域 */
     .bookmark-reminder-toast .toast-content {
       flex: 1;
-      padding: 20px;
+      padding: 24px 20px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
-      color: #ffffff;
+      color: #2c3e50;
       min-height: 80px;
+      background: rgba(255, 255, 255, 0.3);
     }
     
     .bookmark-reminder-toast .toast-info {
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1.5;
       font-weight: 500;
       margin: 0;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 8px rgba(0, 0, 0, 0.3);
+      color: #34495e;
     }
     
-    /* 底部操作栏 */
+    /* 白色底部操作栏 */
     .bookmark-reminder-toast .toast-actions {
       display: flex;
-      gap: 8px;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.01);
-      border-radius: 0 0 8px 8px;
+      gap: 10px;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 0 0 12px 12px;
       justify-content: flex-start;
-      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* 苹果风格按钮 */
+    /* 现代风格按钮 */
     .bookmark-reminder-toast .toast-btn {
-      padding: 8px 16px;
+      padding: 10px 18px;
       border: none;
       border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       letter-spacing: 0.01em;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      min-width: 60px;
-      height: 32px;
+      min-width: 70px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     
     .bookmark-reminder-toast .btn-primary {
-      background: linear-gradient(135deg, #007AFF, #0051D5);
+      background: linear-gradient(135deg, #667eea, #764ba2);
       color: white;
       box-shadow: 
-        0 2px 8px rgba(0, 122, 255, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 2px 8px rgba(102, 126, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .bookmark-reminder-toast .btn-primary:hover {
-      background: linear-gradient(135deg, #0051D5, #003D99);
+      background: linear-gradient(135deg, #5a6fd8, #6a4190);
       transform: translateY(-1px);
       box-shadow: 
-        0 4px 12px rgba(0, 122, 255, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 4px 12px rgba(102, 126, 234, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
     
     .bookmark-reminder-toast .btn-primary:active {
       transform: translateY(0);
-      background: linear-gradient(135deg, #003D99, #002966);
+      background: linear-gradient(135deg, #4c5fd4, #5e3784);
     }
     
     .bookmark-reminder-toast .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.3);
+      color: #495057;
+      border: 1px solid rgba(255, 255, 255, 0.3);
       box-shadow: 
-        0 1px 3px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
     
     .bookmark-reminder-toast .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.5);
+      border-color: rgba(255, 255, 255, 0.5);
       transform: translateY(-1px);
       box-shadow: 
-        0 2px 6px rgba(0, 0, 0, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 2px 6px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
     
     .bookmark-reminder-toast .btn-secondary:active {
       transform: translateY(0);
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.6);
     }
     
     .bookmark-reminder-toast .btn-close {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 6px 12px;
-      font-size: 12px;
+      background: rgba(255, 255, 255, 0.3);
+      color: #6c757d;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 8px 16px;
+      font-size: 13px;
       margin-left: auto;
-      min-width: 44px;
+      min-width: 50px;
     }
     
     .bookmark-reminder-toast .btn-close:hover {
-      background: linear-gradient(135deg, #FF3B30, #D70015);
-      border-color: rgba(255, 59, 48, 0.8);
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      border-color: #e74c3c;
       color: white;
       box-shadow: 
-        0 2px 8px rgba(255, 59, 48, 0.3);
+        0 2px 8px rgba(231, 76, 60, 0.3);
     }
   `;
   
