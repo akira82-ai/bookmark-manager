@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL组件提取工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        #urlInput {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            transition: border-color 0.3s ease;
+        }
+
+        #urlInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #extractBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        #extractBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        #clearBtn {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e0e0e0;
+        }
+
+        #clearBtn:hover {
+            background: #e9ecef;
+            border-color: #dee2e6;
+        }
+
+        .results {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            min-height: 200px;
+        }
+
+        .results h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .result-value {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            color: #333;
+            font-size: 14px;
+            max-width: 60%;
+            text-align: right;
+            word-break: break-all;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 40px 0;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #fcc;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #cfc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 URL组件提取工具</h1>
+        
+        <div class="input-group">
+            <label for="urlInput">请输入URL地址：</label>
+            <input type="text" id="urlInput" placeholder="https://example.com/path/to/resource?param=value" />
+        </div>
+        
+        <div class="button-group">
+            <button id="extractBtn">🔍 提取组件</button>
+            <button id="clearBtn">🗑️ 清空</button>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="empty-state">
+                在上方输入URL地址，然后点击"提取组件"按钮查看解析结果
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL解析函数
+        function analyzeURL(url) {
+            try {
+                // 处理没有协议的情况
+                if (!url.match(/^https?:\/\//)) {
+                    url = 'https://' + url;
+                }
+                
+                const urlObj = new URL(url);
+                
+                // 提取域名信息
+                const domainParts = urlObj.hostname.split('.');
+                let topLevelDomain = '';
+                
+                if (domainParts.length >= 2) {
+                    topLevelDomain = domainParts.slice(-2).join('.');
+                } else {
+                    topLevelDomain = urlObj.hostname;
+                }
+                
+                // 提取路径层级
+                const pathParts = urlObj.pathname.split('/').filter(p => p);
+                const firstLevelPath = pathParts[0] || '';
+                const secondLevelPath = pathParts[1] || '';
+                const thirdLevelPath = pathParts[2] || '';
+                
+                // 构建一级和二级地址
+                let firstLevelAddress = '';
+                let secondLevelAddress = '';
+                
+                if (firstLevelPath) {
+                    firstLevelAddress = urlObj.protocol + '//' + urlObj.hostname + '/' + firstLevelPath;
+                    if (secondLevelPath) {
+                        secondLevelAddress = urlObj.protocol + '//' + urlObj.hostname + '/' + firstLevelPath + '/' + secondLevelPath;
+                    }
+                }
+                
+                return {
+                    fullUrl: urlObj.href,
+                    protocol: urlObj.protocol,
+                    domain: urlObj.hostname,
+                    topLevelDomain: topLevelDomain,
+                    subdomain: urlObj.protocol + '//' + urlObj.hostname, // 完整域名作为子域名，加协议
+                    topLevelDomainWithProtocol: urlObj.protocol + '//' + topLevelDomain, // 主域名加协议
+                    path: urlObj.pathname,
+                    firstLevelPath: firstLevelPath,
+                    secondLevelPath: secondLevelPath,
+                    thirdLevelPath: thirdLevelPath,
+                    pathDepth: pathParts.length,
+                    firstLevelAddress: firstLevelAddress,
+                    secondLevelAddress: secondLevelAddress,
+                    search: urlObj.search,
+                    hash: urlObj.hash
+                };
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // 显示结果
+        function displayResults(analysis) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (!analysis) {
+                resultsDiv.innerHTML = '<div class="error">❌ URL格式不正确，请检查输入</div>';
+                return;
+            }
+            
+            // 检查主域名和子域名是否相同，以及子域名是否包含www
+                const showSubdomain = analysis.topLevelDomainWithProtocol !== analysis.subdomain && 
+                                     !analysis.subdomain.includes('www.');
+                
+                const resultsHTML = `
+                <h3>📋 URL组件解析结果</h3>
+                <div class="result-item">
+                    <span class="result-label">主域名</span>
+                    <span class="result-value">${analysis.topLevelDomainWithProtocol}</span>
+                </div>
+                ${showSubdomain ? `
+                <div class="result-item">
+                    <span class="result-label">子域名</span>
+                    <span class="result-value">${analysis.subdomain}</span>
+                </div>
+                ` : ''}
+                <div class="result-item">
+                    <span class="result-label">一级地址</span>
+                    <span class="result-value">${analysis.firstLevelAddress || '无'}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">二级地址</span>
+                    <span class="result-value">${analysis.secondLevelAddress || '无'}</span>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = resultsHTML;
+        }
+
+        // 事件监听器
+        document.getElementById('extractBtn').addEventListener('click', function() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                document.getElementById('results').innerHTML = '<div class="error">❌ 请输入URL地址</div>';
+                return;
+            }
+            
+            const analysis = analyzeURL(url);
+            displayResults(analysis);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            document.getElementById('urlInput').value = '';
+            document.getElementById('results').innerHTML = '<div class="empty-state">在上方输入URL地址，然后点击"提取组件"按钮查看解析结果</div>';
+        });
+
+        // 支持回车键提交
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('extractBtn').click();
+            }
+        });
+
+        // 页面加载时添加示例
+        window.addEventListener('load', function() {
+            const exampleUrl = 'http://a.b.com/1/2/3';
+            document.getElementById('urlInput').value = exampleUrl;
+        });
+    </script>
+</body>
+</html>
