@@ -51,7 +51,8 @@ function showReminderToast(data) {
   
   toast.innerHTML = `
     <div style="font-weight: 600; margin-bottom: 10px; color: #f5f5f7; font-size: 15px; letter-spacing: -0.2px;">💡 智能提醒</div>
-    <div style="margin-bottom: 16px; font-size: 14px; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); line-height: 1.4; letter-spacing: -0.1px;">您近期已访问多次当前网站，需要收藏吗？</div>
+    <div style="margin-bottom: 12px; font-size: 14px; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); line-height: 1.4; letter-spacing: -0.1px;">您近期已访问多次当前网站，需要收藏吗？</div>
+    <div style="margin-bottom: 16px; font-size: 12px; color: rgba(255, 255, 255, 0.8); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); word-break: break-all; line-height: 1.3;">${window.location.href}</div>
     <div style="display: flex; gap: 8px;">
       <button id="btnAdd" style="
         padding: 8px 16px;
@@ -99,9 +100,9 @@ function showReminderToast(data) {
     safeSendMessage({
       action: 'addBookmarkFromReminder',
       data: {
-        url: data.url,
-        title: data.title,
-        type: data.type
+        url: window.location.href,
+        title: document.title,
+        type: 'domain'
       }
     }).then(() => {
       toast.innerHTML = '<div style="text-align: center; color: #34c759; font-size: 15px; font-weight: 500; letter-spacing: -0.1px;">✓ 已添加到收藏</div>';
