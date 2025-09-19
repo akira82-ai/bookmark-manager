@@ -2766,6 +2766,127 @@ body.dark-mode .setting-description {
   background: var(--info-background, #1e1e1e);
 }
 
+/* 自动触发条件配置样式 */
+.setting-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color, #333);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 实时统计数据样式 */
+.realtime-stats {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--hover-background, #f8f9fa);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.stats-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color, #333);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.realtime-stats .stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.realtime-stats .stat-label {
+  color: var(--text-color, #666);
+  font-weight: 500;
+}
+
+.realtime-stats .stat-value {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.realtime-stats .stat-value.pending {
+  color: #6c757d;
+}
+
+.realtime-stats .stat-value.ready {
+  color: #28a745;
+}
+
+/* 深色模式适配 */
+body.dark-mode .setting-section {
+  border-top-color: var(--border-color, #404040);
+}
+
+body.dark-mode .section-title {
+  color: var(--text-color, #e0e0e0);
+}
+
+body.dark-mode .realtime-stats {
+  background: var(--hover-background, #404040);
+  border-color: var(--border-color, #404040);
+}
+
+body.dark-mode .stats-title {
+  color: var(--text-color, #e0e0e0);
+}
+
+body.dark-mode .realtime-stats .stat-label {
+  color: var(--text-color, #b0b0b0);
+}
+
+.save-config-btn {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.75rem;
+  background: var(--primary-color, #667eea);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-config-btn:hover {
+  background: var(--primary-hover, #5a67d8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.save-config-btn:active {
+  transform: translateY(0);
+}
+
+body.dark-mode .save-config-btn {
+  background: var(--primary-color, #667eea);
+}
+
+body.dark-mode .save-config-btn:hover {
+  background: var(--primary-hover, #5a67d8);
+}
+
 /* 响应式设计 */
 @media (max-width: 480px) {
   .selector-content {

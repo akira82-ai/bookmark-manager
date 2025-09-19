@@ -2656,6 +2656,222 @@ createSearchResultCard(bookmark) {
 
 
 /**
+ * 智能提醒触发器管理器
+ */
+class TriggerConfigManager {
+  constructor() {
+    this.config = this.loadConfig();
+    this.currentStats = {
+      visitCount: 0,
+      timeOnPage: 0,
+      scrollDepth: 0,
+      startTime: Date.now(),
+      pageUrl: window.location.href
+    };
+    this.isTracking = false;
+    this.init();
+  }
+
+  init() {
+    this.bindEvents();
+    this.renderConfigValues();
+    this.startTracking();
+  }
+
+  bindEvents() {
+    // 设置展开/收起
+    const settingsToggle = document.getElementById('settings-toggle');
+    if (settingsToggle) {
+      settingsToggle.addEventListener('click', () => {
+        const content = document.getElementById('reminder-settings-content');
+        const icon = settingsToggle.querySelector('.toggle-icon');
+        
+        if (content.style.display === 'none') {
+          content.style.display = 'block';
+          icon.textContent = '▲';
+        } else {
+          content.style.display = 'none';
+          icon.textContent = '▼';
+        }
+      });
+    }
+
+    // 配置项保存
+    const configInputs = ['trigger-visit-count', 'trigger-time-on-page', 'trigger-scroll-depth'];
+    configInputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (input) {
+        input.addEventListener('change', () => {
+          this.saveConfig();
+          this.updateTriggerStatus();
+        });
+      }
+    });
+
+    // 自动触发开关
+    const autoTriggerEnabled = document.getElementById('auto-trigger-enabled');
+    if (autoTriggerEnabled) {
+      autoTriggerEnabled.addEventListener('change', () => {
+        this.saveConfig();
+        this.updateTriggerStatus();
+      });
+    }
+
+    // 保存配置按钮
+    const saveConfigBtn = document.getElementById('save-config');
+    if (saveConfigBtn) {
+      saveConfigBtn.addEventListener('click', () => {
+        this.saveConfig();
+        this.showMessage('配置已保存');
+      });
+    }
+  }
+
+  startTracking() {
+    if (this.isTracking) return;
+    
+    this.isTracking = true;
+    
+    // 监听滚动事件
+    window.addEventListener('scroll', () => {
+      const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+      this.currentStats.scrollDepth = Math.round(scrollPercent);
+      this.updateDisplay();
+    });
+
+    // 更新时间
+    setInterval(() => {
+      this.currentStats.timeOnPage = Math.floor((Date.now() - this.currentStats.startTime) / 1000);
+      this.updateDisplay();
+    }, 1000);
+
+    // 更新访问次数 (模拟，实际需要从后端获取)
+    this.updateVisitCount();
+    
+    // 定期更新触发状态
+    setInterval(() => {
+      this.updateTriggerStatus();
+    }, 2000);
+  }
+
+  updateVisitCount() {
+    // 这里应该从实际的访问统计系统获取数据
+    // 暂时使用随机数据模拟
+    this.currentStats.visitCount = Math.floor(Math.random() * 10) + 1;
+    this.updateDisplay();
+  }
+
+  updateDisplay() {
+    // 更新实时数据显示
+    const visitsEl = document.getElementById('current-visits');
+    const timeEl = document.getElementById('current-time');
+    const scrollEl = document.getElementById('current-scroll');
+    
+    if (visitsEl) visitsEl.textContent = `${this.currentStats.visitCount}`;
+    if (timeEl) timeEl.textContent = `${this.currentStats.timeOnPage}s`;
+    if (scrollEl) scrollEl.textContent = `${this.currentStats.scrollDepth}%`;
+  }
+
+  updateTriggerStatus() {
+    const statusEl = document.getElementById('trigger-status');
+    if (!statusEl) return;
+
+    const meetsConditions = this.checkTriggerConditions();
+    
+    if (meetsConditions) {
+      statusEl.textContent = '✅ 满足条件';
+      statusEl.className = 'stat-value ready';
+    } else {
+      statusEl.textContent = '❌ 不满足';
+      statusEl.className = 'stat-value pending';
+    }
+  }
+
+  checkTriggerConditions() {
+    if (!this.config.autoTriggerEnabled) return false;
+    
+    const { visitCount, timeOnPage, scrollDepth } = this.currentStats;
+    const { triggerVisitCount, triggerTimeOnPage, triggerScrollDepth } = this.config;
+    
+    return visitCount >= triggerVisitCount && 
+           timeOnPage >= triggerTimeOnPage && 
+           scrollDepth >= triggerScrollDepth;
+  }
+
+  renderConfigValues() {
+    // 渲染配置值到界面
+    const visitCountEl = document.getElementById('trigger-visit-count');
+    const timeOnPageEl = document.getElementById('trigger-time-on-page');
+    const scrollDepthEl = document.getElementById('trigger-scroll-depth');
+    const autoTriggerEl = document.getElementById('auto-trigger-enabled');
+    
+    if (visitCountEl) visitCountEl.value = this.config.triggerVisitCount;
+    if (timeOnPageEl) timeOnPageEl.value = this.config.triggerTimeOnPage;
+    if (scrollDepthEl) scrollDepthEl.value = this.config.triggerScrollDepth;
+    if (autoTriggerEl) autoTriggerEl.checked = this.config.autoTriggerEnabled;
+  }
+
+  saveConfig() {
+    // 保存配置到localStorage
+    try {
+      localStorage.setItem('triggerConfig', JSON.stringify(this.config));
+    } catch (error) {
+      console.warn('无法保存触发配置:', error);
+    }
+  }
+
+  loadConfig() {
+    // 从localStorage加载配置
+    try {
+      const saved = localStorage.getItem('triggerConfig');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.warn('无法加载触发配置:', error);
+    }
+    
+    // 默认配置
+    return {
+      triggerVisitCount: 3,
+      triggerTimeOnPage: 120,
+      triggerScrollDepth: 50,
+      autoTriggerEnabled: false
+    };
+  }
+
+  showMessage(message) {
+    // 显示保存成功消息
+    const messageEl = document.createElement('div');
+    messageEl.className = 'config-message';
+    messageEl.textContent = message;
+    messageEl.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      z-index: 10000;
+      font-size: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    `;
+    
+    document.body.appendChild(messageEl);
+    
+    setTimeout(() => {
+      messageEl.style.opacity = '0';
+      messageEl.style.transition = 'opacity 0.3s ease';
+    }, 2000);
+    
+    setTimeout(() => {
+      messageEl.remove();
+    }, 2500);
+  }
+}
+
+/**
  * 深色模式管理器
  */
 class DarkModeManager {
@@ -2730,7 +2946,9 @@ class DarkModeManager {
 // 初始化书签管理器
 let bookmarkManager;
 let darkModeManager;
+let triggerConfigManager;
 document.addEventListener('DOMContentLoaded', () => {
   bookmarkManager = new BookmarkManager();
   darkModeManager = new DarkModeManager();
+  triggerConfigManager = new TriggerConfigManager();
 });

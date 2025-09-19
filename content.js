@@ -104,7 +104,7 @@ function showReminderToast(data) {
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 14px;
     padding: 16px;
-    width: 320px;
+    width: 380px;
     box-shadow: 
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -217,11 +217,11 @@ function showReminderToast(data) {
       ">❌</button>
     </div>
     
-    <div style="margin-bottom: 12px; font-size: 14px; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); line-height: 1.4; letter-spacing: -0.1px;">
+    <div style="margin-bottom: 12px; font-size: 14px; color: #ffffff; line-height: 1.4; letter-spacing: -0.1px;">
       看来您很喜欢这里，帮您整理了几个收藏选项：
     </div>
     
-    <div style="margin-bottom: 12px; font-size: 12px; color: rgba(255, 255, 255, 0.8); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); word-break: break-all; line-height: 1.3;">
+    <div style="margin-bottom: 12px; font-size: 12px; color: rgba(255, 255, 255, 0.8); word-break: break-all; line-height: 1.3;">
       当前页面: ${currentUrl}
     </div>
     
@@ -237,6 +237,41 @@ function showReminderToast(data) {
   setTimeout(() => {
     toast.style.transform = 'translateX(0)';
   }, 10);
+  
+  // 计时器管理
+  let autoCloseTimer = null;
+  let remainingTime = 10000; // 10秒总时间
+  let lastPauseTime = null;
+  
+  // 开始自动关闭计时
+  function startAutoCloseTimer() {
+    autoCloseTimer = setTimeout(() => {
+      if (toast.parentNode) {
+        // 出场动画
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => toast.remove(), 400);
+      }
+    }, remainingTime);
+  }
+  
+  // 暂停计时
+  function pauseTimer() {
+    if (autoCloseTimer) {
+      clearTimeout(autoCloseTimer);
+      lastPauseTime = Date.now();
+      autoCloseTimer = null;
+    }
+  }
+  
+  // 恢复计时
+  function resumeTimer() {
+    if (lastPauseTime) {
+      const pausedDuration = Date.now() - lastPauseTime;
+      remainingTime = Math.max(0, remainingTime - pausedDuration);
+      lastPauseTime = null;
+    }
+    startAutoCloseTimer();
+  }
   
   // 绑定收藏按钮事件
   const bookmarkButtons = toast.querySelectorAll('.bookmark-btn');
@@ -284,14 +319,12 @@ function showReminderToast(data) {
     setTimeout(() => toast.remove(), 400);
   };
   
-  // 10秒后自动关闭
-  setTimeout(() => {
-    if (toast.parentNode) {
-      // 出场动画
-      toast.style.transform = 'translateX(400px)';
-      setTimeout(() => toast.remove(), 400);
-    }
-  }, 10000);
+  // 鼠标悬停暂停计时
+  toast.addEventListener('mouseenter', pauseTimer);
+  toast.addEventListener('mouseleave', resumeTimer);
+  
+  // 开始自动关闭计时
+  startAutoCloseTimer();
 }
 
 
