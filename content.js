@@ -51,7 +51,7 @@ function showReminderToast(data) {
   
   toast.innerHTML = `
     <div style="font-weight: 600; margin-bottom: 10px; color: #f5f5f7; font-size: 15px; letter-spacing: -0.2px;">💡 智能提醒</div>
-    <div style="margin-bottom: 16px; font-size: 14px; color: #d1d1d6; line-height: 1.4; letter-spacing: -0.1px;">您近期已访问多次当前网站，需要收藏吗？</div>
+    <div style="margin-bottom: 16px; font-size: 14px; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); line-height: 1.4; letter-spacing: -0.1px;">您近期已访问多次当前网站，需要收藏吗？</div>
     <div style="display: flex; gap: 8px;">
       <button id="btnAdd" style="
         padding: 8px 16px;
