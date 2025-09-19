@@ -35,21 +35,55 @@ function showReminderToast(data) {
     top: 20px;
     right: 20px;
     z-index: 999999;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 15px;
-    width: 250px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+    width: 280px;
+    box-shadow: 
+      0 12px 48px rgba(102, 126, 234, 0.4),
+      0 6px 18px rgba(118, 75, 162, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   `;
   
   toast.innerHTML = `
-    <div style="font-weight: bold; margin-bottom: 10px; color: #333;">💡 智能提醒</div>
-    <div style="margin-bottom: 15px; font-size: 14px; color: #333;">您近期已访问多次当前网站，需要收藏吗？</div>
-    <div style="display: flex; gap: 5px;">
-      <button id="btnAdd" style="padding: 5px 10px; border: none; background: #007bff; color: white; border-radius: 3px; cursor: pointer;">收藏</button>
-      <button id="btnDismiss" style="padding: 5px 10px; border: 1px solid #ccc; background: white; color: #333; border-radius: 3px; cursor: pointer; margin-left: auto;">关闭</button>
+    <div style="font-weight: 600; margin-bottom: 12px; color: #f5f5f7; font-size: 16px; letter-spacing: -0.2px;">💡 智能提醒</div>
+    <div style="margin-bottom: 20px; font-size: 15px; color: #d1d1d6; line-height: 1.4; letter-spacing: -0.1px;">您近期已访问多次当前网站，需要收藏吗？</div>
+    <div style="display: flex; gap: 8px;">
+      <button id="btnAdd" style="
+        padding: 10px 20px;
+        border: none;
+        background: #007aff;
+        color: white;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: -0.1px;
+        box-shadow: 
+          0 2px 8px rgba(0, 122, 255, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        transition: all 0.2s ease;
+      ">收藏</button>
+      <button id="btnDismiss" style="
+        padding: 10px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        color: #f5f5f7;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: -0.1px;
+        margin-left: auto;
+        box-shadow: 
+          0 1px 3px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+      ">关闭</button>
     </div>
   `;
   
@@ -65,7 +99,7 @@ function showReminderToast(data) {
         type: data.type
       }
     }).then(() => {
-      toast.innerHTML = '<div style="text-align: center; color: #333;">✓ 已添加到收藏</div>';
+      toast.innerHTML = '<div style="text-align: center; color: #34c759; font-size: 15px; font-weight: 500; letter-spacing: -0.1px;">✓ 已添加到收藏</div>';
       setTimeout(() => toast.remove(), 2000);
     }).catch(error => {
       console.error('添加书签失败:', error);
