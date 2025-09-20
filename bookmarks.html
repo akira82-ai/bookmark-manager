@@ -46,7 +46,7 @@
             <span id="total-folders" class="stat-value">0</span>
           </div>
         </div>
-        
+
         <!-- 智能提醒设置 -->
         <div class="reminder-settings">
           <div class="settings-header">
@@ -62,87 +62,58 @@
                 <span class="setting-text">启用智能提醒</span>
               </label>
             </div>
+
             <div class="setting-item">
-              <label class="setting-label">
-                <span class="setting-text">触发阈值：</span>
-                <input type="number" id="reminder-threshold" class="setting-input" min="2" max="20" value="5">
-                <span class="setting-unit">次</span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <label class="setting-label">
-                <span class="setting-text">稍后提醒延迟：</span>
-                <input type="number" id="snooze-delay" class="setting-input" min="1" max="30" value="5">
-                <span class="setting-unit">天</span>
-              </label>
-            </div>
-            
-            <!-- 自动触发条件配置 -->
-            <div class="setting-section">
-              <div class="section-title">🎯 自动触发条件</div>
-              
-              <div class="setting-item">
-                <label class="setting-label">
-                  <span class="setting-text">访问次数 ≥</span>
-                  <input type="number" id="trigger-visit-count" class="setting-input" min="1" max="10" value="3">
-                  <span class="setting-unit">次</span>
-                </label>
-              </div>
-              
-              <div class="setting-item">
-                <label class="setting-label">
-                  <span class="setting-text">停留时间 ≥</span>
-                  <input type="number" id="trigger-time-on-page" class="setting-input" min="30" max="600" value="120">
-                  <span class="setting-unit">秒</span>
-                </label>
-              </div>
-              
-              <div class="setting-item">
-                <label class="setting-label">
-                  <span class="setting-text">滚动深度 ≥</span>
-                  <input type="number" id="trigger-scroll-depth" class="setting-input" min="10" max="100" value="50">
-                  <span class="setting-unit">%</span>
-                </label>
-              </div>
-              
-              <div class="setting-item">
-                <label class="setting-label">
-                  <input type="checkbox" id="auto-trigger-enabled" class="setting-checkbox">
-                  <span class="setting-text">启用自动触发</span>
-                </label>
-              </div>
-              
-              <!-- 实时数据显示 -->
-              <div class="realtime-stats">
-                <div class="stats-title">📊 当前页面数据</div>
-                <div class="stats-grid">
-                  <div class="stat-item">
-                    <span class="stat-label">访问次数:</span>
-                    <span id="current-visits" class="stat-value">0</span>
+              <div class="sensitivity-container">
+                <div class="sensitivity-label">提醒敏感度:</div>
+                <div class="sensitivity-slider-container">
+                  <div class="sensitivity-track">
+                    <div class="sensitivity-fill"></div>
+                    <div class="sensitivity-thumb" data-level="4"></div>
                   </div>
-                  <div class="stat-item">
-                    <span class="stat-label">停留时间:</span>
-                    <span id="current-time" class="stat-value">0s</span>
+                  <div class="sensitivity-ticks">
+                    <div class="sensitivity-tick"></div>
+                    <div class="sensitivity-tick"></div>
+                    <div class="sensitivity-tick"></div>
+                    <div class="sensitivity-tick"></div>
+                    <div class="sensitivity-tick major"></div>
+                    <div class="sensitivity-tick"></div>
+                    <div class="sensitivity-tick"></div>
+                    <div class="sensitivity-tick"></div>
+                    <div class="sensitivity-tick major"></div>
                   </div>
-                  <div class="stat-item">
-                    <span class="stat-label">滚动深度:</span>
-                    <span id="current-scroll" class="stat-value">0%</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">触发状态:</span>
-                    <span id="trigger-status" class="stat-value pending">待触发</span>
+                  <div class="sensitivity-labels">
+                    <span class="label-conservative">深度</span>
+                    <span class="label-balance">投入</span>
+                    <span class="label-aggressive">浅尝</span>
                   </div>
                 </div>
-                <button id="save-config" class="save-config-btn">保存配置</button>
               </div>
             </div>
-            
+
+            <div class="setting-item">
+              <div class="current-mode-info">
+                <div class="mode-info-row">
+                  <span class="mode-icon">🔒</span>
+                  <span class="mode-text">当前模式: <strong id="current-mode-name">专题研究模式</strong></span>
+                </div>
+                <div class="mode-info-row">
+                  <span class="mode-icon">📊</span>
+                  <span class="mode-text">提醒频率: <strong id="reminder-frequency">每天3-5次</strong></span>
+                </div>
+                <div class="mode-info-row">
+                  <span class="mode-icon">💡</span>
+                  <span class="mode-text">说明: <span id="mode-description">专题研究和知识体系构建</span></span>
+                </div>
+              </div>
+            </div>
+
             <div class="setting-description">
               💡 当您频繁访问某个网站时，系统会提醒您添加书签
             </div>
           </div>
         </div>
-      </aside>
+        </aside>
 
       <!-- 主内容区 - 书签列表 -->
       <main class="content">

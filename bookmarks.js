@@ -285,6 +285,246 @@ class BookmarkManager {
     
     // 移除展开所有按钮相关代码
 
+    // 智能提醒设置展开/收起 - 点击整个横条区域
+    const settingsHeader = document.querySelector('.settings-header');
+    if (settingsHeader) {
+      settingsHeader.addEventListener('click', () => {
+        const content = document.getElementById('reminder-settings-content');
+        const icon = settingsHeader.querySelector('.toggle-icon');
+
+        if (content.style.display === 'none') {
+          content.style.display = 'block';
+          icon.textContent = '▲';
+        } else {
+          content.style.display = 'none';
+          icon.textContent = '▼';
+        }
+      });
+    }
+
+    // 敏感度滑块交互
+    class SensitivitySlider {
+      constructor() {
+        this.track = document.querySelector('.sensitivity-track');
+        this.thumb = document.querySelector('.sensitivity-thumb');
+        this.fill = document.querySelector('.sensitivity-fill');
+        this.isDragging = false;
+
+        // 从本地存储恢复设置，默认专题研究模式（第5刻度）
+        this.currentLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 4;
+
+        this.levels = [
+          {
+            name: '深度学习',
+            frequency: '每天0-1次',
+            description: '只有沉浸式深度学习才值得收藏',
+            weights: { visitCount: 0.3, stayTime: 0.2, browseDepth: 0.5 },
+            threshold: 8.5
+          },
+          {
+            name: '专注研读',
+            frequency: '每天0-2次',
+            description: '需要高度专注和深度思考的内容',
+            weights: { visitCount: 0.35, stayTime: 0.25, browseDepth: 0.4 },
+            threshold: 7.5
+          },
+          {
+            name: '认真研读',
+            frequency: '每天1-2次',
+            description: '值得认真研读和消化的知识',
+            weights: { visitCount: 0.4, stayTime: 0.3, browseDepth: 0.3 },
+            threshold: 6.5
+          },
+          {
+            name: '系统学习',
+            frequency: '每天2-3次',
+            description: '系统性学习的重要资料',
+            weights: { visitCount: 0.45, stayTime: 0.35, browseDepth: 0.2 },
+            threshold: 5.5
+          },
+          {
+            name: '专题研究',
+            frequency: '每天3-5次',
+            description: '专题研究和知识体系构建',
+            weights: { visitCount: 0.5, stayTime: 0.35, browseDepth: 0.15 },
+            threshold: 4.5
+          },
+          {
+            name: '走马观花',
+            frequency: '每天5-8次',
+            description: '快速浏览，获取关键信息即可',
+            weights: { visitCount: 0.55, stayTime: 0.3, browseDepth: 0.15 },
+            threshold: 3.5
+          },
+          {
+            name: '简单浏览',
+            frequency: '每天8-12次',
+            description: '简单了解，有初步印象即可',
+            weights: { visitCount: 0.6, stayTime: 0.25, browseDepth: 0.15 },
+            threshold: 2.5
+          },
+          {
+            name: '随意看看',
+            frequency: '每天12-18次',
+            description: '随意浏览，无需深入理解',
+            weights: { visitCount: 0.65, stayTime: 0.2, browseDepth: 0.15 },
+            threshold: 1.5
+          },
+          {
+            name: '浅尝辄止',
+            frequency: '每天18-25次',
+            description: '点到为止，最浅层的信息接触',
+            weights: { visitCount: 0.7, stayTime: 0.15, browseDepth: 0.15 },
+            threshold: 0.5
+          }
+        ];
+
+        this.init();
+      }
+
+      init() {
+        this.updateUI();
+        this.attachEvents();
+      }
+
+      attachEvents() {
+        // 鼠标事件
+        this.thumb.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        this.track.addEventListener('click', this.handleTrackClick.bind(this));
+
+        // 触摸事件
+        this.thumb.addEventListener('touchstart', this.handleTouchStart.bind(this));
+
+        // 全局事件
+        document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+        document.addEventListener('touchmove', this.handleTouchMove.bind(this));
+        document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+      }
+
+      handleMouseDown(e) {
+        e.preventDefault();
+        this.isDragging = true;
+        this.thumb.style.cursor = 'grabbing';
+      }
+
+      handleTouchStart(e) {
+        e.preventDefault();
+        this.isDragging = true;
+      }
+
+      handleMouseMove(e) {
+        if (!this.isDragging) return;
+        this.updatePosition(e.clientX);
+      }
+
+      handleTouchMove(e) {
+        if (!this.isDragging) return;
+        this.updatePosition(e.touches[0].clientX);
+      }
+
+      handleMouseUp() {
+        this.isDragging = false;
+        this.thumb.style.cursor = 'grab';
+      }
+
+      handleTouchEnd() {
+        this.isDragging = false;
+      }
+
+      handleTrackClick(e) {
+        if (e.target === this.thumb) return;
+        this.updatePosition(e.clientX);
+      }
+
+      updatePosition(clientX) {
+        const rect = this.track.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+        // 计算最近的档位 (0-8)，基于9个刻度点
+        const level = Math.round(percentage / 12.5); // 100% / 8个间隔 = 12.5%
+        this.setLevel(Math.max(0, Math.min(8, level)));
+      }
+
+      setLevel(level) {
+        this.currentLevel = level;
+        this.updateUI();
+      }
+
+      updateUI() {
+        // 更新滑块位置 - 使用transform确保滑块中心对齐刻度
+        const percentage = (this.currentLevel / 8) * 100;
+        this.thumb.style.left = `${percentage}%`;
+        this.fill.style.width = `${percentage}%`;
+
+        // 更新模式信息
+        const levelData = this.levels[this.currentLevel];
+        document.getElementById('current-mode-name').textContent = `${levelData.name}模式`;
+        document.getElementById('reminder-frequency').textContent = levelData.frequency;
+        document.getElementById('mode-description').textContent = levelData.description;
+
+        // 保存到本地存储
+        localStorage.setItem('reminder-sensitivity-level', this.currentLevel);
+      }
+
+      
+      /**
+       * 获取当前权重配置
+       * @returns {Object} 当前敏感度级别的权重和阈值
+       */
+      getCurrentConfig() {
+        const levelData = this.levels[this.currentLevel];
+        return {
+          sensitivity: levelData.name,
+          weights: levelData.weights,
+          threshold: levelData.threshold,
+          level: this.currentLevel
+        };
+      }
+
+      /**
+       * 计算智能提醒得分
+       * @param {Object} behaviorData - 用户行为数据 {visitCount, stayTime, browseDepth}
+       * @returns {number} 综合得分
+       */
+      calculateReminderScore(behaviorData) {
+        const config = this.getCurrentConfig();
+        const { weights } = config;
+
+        // 归一化处理：假设各指标的满分是10分
+        const normalizedVisitCount = Math.min(behaviorData.visitCount / 10, 1);
+        const normalizedStayTime = Math.min(behaviorData.stayTime / 600, 1); // 10分钟为满分
+        const normalizedBrowseDepth = Math.min(behaviorData.browseDepth / 5, 1); // 5层深度为满分
+
+        // 计算加权得分
+        const score =
+          (normalizedVisitCount * weights.visitCount) +
+          (normalizedStayTime * weights.stayTime) +
+          (normalizedBrowseDepth * weights.browseDepth);
+
+        return Math.round(score * 10) / 10; // 保留一位小数
+      }
+
+      /**
+       * 判断是否应该提醒
+       * @param {Object} behaviorData - 用户行为数据
+       * @returns {boolean} 是否应该提醒
+      */
+      shouldRemind(behaviorData) {
+        const score = this.calculateReminderScore(behaviorData);
+        const config = this.getCurrentConfig();
+        return score >= config.threshold;
+      }
+    }
+
+    // 初始化敏感度滑块
+    const sensitivitySlider = new SensitivitySlider();
+
+    // 暴露到全局作用域，供智能提醒功能使用
+    window.sensitivitySlider = sensitivitySlider;
+
+  
     // 模态框事件
     document.getElementById('modal-close').addEventListener('click', () => {
       this.closeModal();
@@ -2655,221 +2895,6 @@ createSearchResultCard(bookmark) {
 }
 
 
-/**
- * 智能提醒触发器管理器
- */
-class TriggerConfigManager {
-  constructor() {
-    this.config = this.loadConfig();
-    this.currentStats = {
-      visitCount: 0,
-      timeOnPage: 0,
-      scrollDepth: 0,
-      startTime: Date.now(),
-      pageUrl: window.location.href
-    };
-    this.isTracking = false;
-    this.init();
-  }
-
-  init() {
-    this.bindEvents();
-    this.renderConfigValues();
-    this.startTracking();
-  }
-
-  bindEvents() {
-    // 设置展开/收起
-    const settingsToggle = document.getElementById('settings-toggle');
-    if (settingsToggle) {
-      settingsToggle.addEventListener('click', () => {
-        const content = document.getElementById('reminder-settings-content');
-        const icon = settingsToggle.querySelector('.toggle-icon');
-        
-        if (content.style.display === 'none') {
-          content.style.display = 'block';
-          icon.textContent = '▲';
-        } else {
-          content.style.display = 'none';
-          icon.textContent = '▼';
-        }
-      });
-    }
-
-    // 配置项保存
-    const configInputs = ['trigger-visit-count', 'trigger-time-on-page', 'trigger-scroll-depth'];
-    configInputs.forEach(id => {
-      const input = document.getElementById(id);
-      if (input) {
-        input.addEventListener('change', () => {
-          this.saveConfig();
-          this.updateTriggerStatus();
-        });
-      }
-    });
-
-    // 自动触发开关
-    const autoTriggerEnabled = document.getElementById('auto-trigger-enabled');
-    if (autoTriggerEnabled) {
-      autoTriggerEnabled.addEventListener('change', () => {
-        this.saveConfig();
-        this.updateTriggerStatus();
-      });
-    }
-
-    // 保存配置按钮
-    const saveConfigBtn = document.getElementById('save-config');
-    if (saveConfigBtn) {
-      saveConfigBtn.addEventListener('click', () => {
-        this.saveConfig();
-        this.showMessage('配置已保存');
-      });
-    }
-  }
-
-  startTracking() {
-    if (this.isTracking) return;
-    
-    this.isTracking = true;
-    
-    // 监听滚动事件
-    window.addEventListener('scroll', () => {
-      const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-      this.currentStats.scrollDepth = Math.round(scrollPercent);
-      this.updateDisplay();
-    });
-
-    // 更新时间
-    setInterval(() => {
-      this.currentStats.timeOnPage = Math.floor((Date.now() - this.currentStats.startTime) / 1000);
-      this.updateDisplay();
-    }, 1000);
-
-    // 更新访问次数 (模拟，实际需要从后端获取)
-    this.updateVisitCount();
-    
-    // 定期更新触发状态
-    setInterval(() => {
-      this.updateTriggerStatus();
-    }, 2000);
-  }
-
-  updateVisitCount() {
-    // 这里应该从实际的访问统计系统获取数据
-    // 暂时使用随机数据模拟
-    this.currentStats.visitCount = Math.floor(Math.random() * 10) + 1;
-    this.updateDisplay();
-  }
-
-  updateDisplay() {
-    // 更新实时数据显示
-    const visitsEl = document.getElementById('current-visits');
-    const timeEl = document.getElementById('current-time');
-    const scrollEl = document.getElementById('current-scroll');
-    
-    if (visitsEl) visitsEl.textContent = `${this.currentStats.visitCount}`;
-    if (timeEl) timeEl.textContent = `${this.currentStats.timeOnPage}s`;
-    if (scrollEl) scrollEl.textContent = `${this.currentStats.scrollDepth}%`;
-  }
-
-  updateTriggerStatus() {
-    const statusEl = document.getElementById('trigger-status');
-    if (!statusEl) return;
-
-    const meetsConditions = this.checkTriggerConditions();
-    
-    if (meetsConditions) {
-      statusEl.textContent = '✅ 满足条件';
-      statusEl.className = 'stat-value ready';
-    } else {
-      statusEl.textContent = '❌ 不满足';
-      statusEl.className = 'stat-value pending';
-    }
-  }
-
-  checkTriggerConditions() {
-    if (!this.config.autoTriggerEnabled) return false;
-    
-    const { visitCount, timeOnPage, scrollDepth } = this.currentStats;
-    const { triggerVisitCount, triggerTimeOnPage, triggerScrollDepth } = this.config;
-    
-    return visitCount >= triggerVisitCount && 
-           timeOnPage >= triggerTimeOnPage && 
-           scrollDepth >= triggerScrollDepth;
-  }
-
-  renderConfigValues() {
-    // 渲染配置值到界面
-    const visitCountEl = document.getElementById('trigger-visit-count');
-    const timeOnPageEl = document.getElementById('trigger-time-on-page');
-    const scrollDepthEl = document.getElementById('trigger-scroll-depth');
-    const autoTriggerEl = document.getElementById('auto-trigger-enabled');
-    
-    if (visitCountEl) visitCountEl.value = this.config.triggerVisitCount;
-    if (timeOnPageEl) timeOnPageEl.value = this.config.triggerTimeOnPage;
-    if (scrollDepthEl) scrollDepthEl.value = this.config.triggerScrollDepth;
-    if (autoTriggerEl) autoTriggerEl.checked = this.config.autoTriggerEnabled;
-  }
-
-  saveConfig() {
-    // 保存配置到localStorage
-    try {
-      localStorage.setItem('triggerConfig', JSON.stringify(this.config));
-    } catch (error) {
-      console.warn('无法保存触发配置:', error);
-    }
-  }
-
-  loadConfig() {
-    // 从localStorage加载配置
-    try {
-      const saved = localStorage.getItem('triggerConfig');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.warn('无法加载触发配置:', error);
-    }
-    
-    // 默认配置
-    return {
-      triggerVisitCount: 3,
-      triggerTimeOnPage: 120,
-      triggerScrollDepth: 50,
-      autoTriggerEnabled: false
-    };
-  }
-
-  showMessage(message) {
-    // 显示保存成功消息
-    const messageEl = document.createElement('div');
-    messageEl.className = 'config-message';
-    messageEl.textContent = message;
-    messageEl.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #28a745;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 6px;
-      z-index: 10000;
-      font-size: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    `;
-    
-    document.body.appendChild(messageEl);
-    
-    setTimeout(() => {
-      messageEl.style.opacity = '0';
-      messageEl.style.transition = 'opacity 0.3s ease';
-    }, 2000);
-    
-    setTimeout(() => {
-      messageEl.remove();
-    }, 2500);
-  }
-}
 
 /**
  * 深色模式管理器
@@ -2943,12 +2968,9 @@ class DarkModeManager {
   }
 }
 
-// 初始化书签管理器
 let bookmarkManager;
 let darkModeManager;
-let triggerConfigManager;
 document.addEventListener('DOMContentLoaded', () => {
   bookmarkManager = new BookmarkManager();
   darkModeManager = new DarkModeManager();
-  triggerConfigManager = new TriggerConfigManager();
 });
