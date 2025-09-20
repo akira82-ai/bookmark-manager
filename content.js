@@ -340,8 +340,8 @@ function getMetaDescription() {
 
 // 添加键盘快捷键
 document.addEventListener('keydown', function(event) {
-  // Ctrl+Shift+T 触发智能提醒弹窗
-  if (event.ctrlKey && event.shiftKey && event.key === 'T') {
+  // Ctrl+Shift+X 触发智能提醒弹窗
+  if (event.ctrlKey && event.shiftKey && event.key === 'X') {
     event.preventDefault();
     showTestReminder();
   }
