@@ -38,6 +38,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // 从提醒弹窗添加书签
     addBookmarkToRecent(request.data.title, request.data.url);
     sendResponse({success: true});
+  } else if (request.action === 'getDomainHistory') {
+    // 获取指定主域名的历史记录
+    getDomainHistory(request.mainDomain, request.startTime).then(results => {
+      sendResponse({results: results});
+    }).catch(error => {
+      sendResponse({results: []});
+    });
+    return true; // 保持消息通道开放以支持异步响应
   }
 });
 
@@ -171,6 +179,66 @@ async function checkDuplicateInRecentFolder(url, recentFolderId) {
   } catch (error) {
     console.error('检查重复失败:', error);
     return false;
+  }
+}
+
+
+// 获取指定主域名的历史记录
+async function getDomainHistory(mainDomain, startTime) {
+  try {
+    // 获取近3天的所有历史记录
+    const historyResults = await new Promise((resolve, reject) => {
+      chrome.history.search({
+        text: '', // 空字符串获取所有历史记录
+        startTime: startTime,
+        maxResults: 10000 // 获取更多记录以确保准确性
+      }, (results) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    // 过滤出匹配主域名的记录
+    const filteredResults = historyResults.filter(item => {
+      // 跳过特殊页面
+      if (item.url.startsWith('chrome://') ||
+          item.url.startsWith('chrome-extension://') ||
+          item.url.startsWith('moz-extension://') ||
+          item.url.startsWith('edge://') ||
+          item.url.startsWith('about:')) {
+        return false;
+      }
+
+      // 提取主域名并比较
+      const itemMainDomain = getMainDomainFromUrl(item.url);
+      return itemMainDomain === mainDomain;
+    });
+
+    return filteredResults;
+  } catch (error) {
+    console.error('获取域名历史记录失败:', error);
+    return [];
+  }
+}
+
+// 从URL提取主域名
+function getMainDomainFromUrl(url) {
+  try {
+    if (!url.match(/^https?:\/\//)) {
+      url = 'https://' + url;
+    }
+    const urlObj = new URL(url);
+    const domainParts = urlObj.hostname.split('.');
+
+    if (domainParts.length >= 2) {
+      return domainParts.slice(-2).join('.');
+    }
+    return urlObj.hostname;
+  } catch (error) {
+    return '';
   }
 }
 

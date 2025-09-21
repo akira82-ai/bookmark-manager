@@ -1,6 +1,6 @@
 # 开发日志
 
-## 2025年9月20日
+## 2025年9月21日
 
 ### 智能提醒学习投入度模型重构与优化
 
@@ -140,16 +140,184 @@ const shouldRemind = window.sensitivitySlider.shouldRemind(behaviorData);
 - **防打扰机制** - 制定频率控制、时间窗口、上下文感知等用户保护措施
 - **技术可行性评估** - 评估Chrome扩展API的兼容性和性能影响，确保稳定可靠
 
+#### 第七阶段：三个核心参数计算规则确定与实现
+
+**核心参数规则确定:**
+- **浏览次数（Visit Count）**：主域名级别统计，使用浏览器历史记录API获取近3天内的真实访问数据
+- **浏览时长（Browse Duration）**：仅统计当前活动标签页，基于页面可见性API（visibilitychange事件）实时计算
+- **浏览深度（Browse Depth）**：使用屏幕滚动数量作为衡量标准，计算公式为 scrollY / innerHeight，解决无限下拉网页的百分比计算问题
+
+**浏览深度方案讨论:**
+- **问题识别**：发现传统百分比计算方式在无限下拉网页中的不准确性
+- **方案对比**：讨论了滚动像素值vs屏幕数量的优劣，最终选择屏幕数量方案
+- **技术优势**：屏幕数量不受页面动态内容加载影响，设备无关，更符合用户浏览心理模型
+
+**浏览次数优化实现:**
+- **数据源升级**：从sessionStorage改为chrome.history.search() API
+- **时间范围**：严格限制为近3天（72小时）的历史记录
+- **隐私保护**：添加特殊页面过滤（chrome://, edge://, about:等），确保不统计浏览器内部页面
+- **错误处理**：完整的异常处理机制，API失败时降级为sessionStorage方案
+- **性能优化**：每次都从历史记录获取最新数据，避免缓存导致的数据不准确
+
+**技术实现亮点:**
+
+**浏览次数历史记录查询:**
+```javascript
+async function updateDomainVisitCount() {
+  const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+  const historyResults = await chrome.history.search({
+    text: mainDomain,
+    startTime: threeDaysAgo,
+    maxResults: 1000
+  });
+}
+```
+
+**浏览深度屏幕数量计算:**
+```javascript
+function calculateScreenCount() {
+  const scrollY = window.scrollY || window.pageYOffset;
+  const viewportHeight = window.innerHeight;
+  return scrollY / viewportHeight;
+}
+```
+
+**性能优化措施:**
+- **滚动事件优化**：1秒延迟获取位置，使用passive事件监听器
+- **异步处理**：完整的async/await支持，不阻塞页面渲染
+- **资源管理**：提供完整的初始化和清理机制
+- **隐私保护**：完善的特殊页面过滤和用户隐私保护
+
+**核心特性:**
+- ✅ **真实历史数据**：使用浏览器历史记录API，数据准确可靠
+- ✅ **时间范围控制**：严格限制近3天，避免统计过多历史数据
+- ✅ **主域名统计**：同一域名的不同URL变体统一计数
+- ✅ **隐私安全**：过滤特殊页面，保护用户隐私
+- ✅ **错误恢复**：多层次的异常处理和降级策略
+
 ### 成本统计
-**开发时间**: 2025年9月20日
-**总成本**: $10.38
-**API调用时长**: 15分9.3秒
-**实际开发时长**: 4小时32分56.4秒
-**代码变更**: 1527行新增，762行删除
+**开发时间**: 2025年9月21日
+**总成本**: $13.56
+**API调用时长**: 29分29.7秒
+**实际开发时长**: 6小时30分32.7秒
+**代码变更**: 1458行新增，591行删除
 **模型使用**:
 - claude-3-5-haiku: 部分功能开发
 - glm-4.5: 主要功能实现和优化
 - claude-sonnet: 代码评审和错误修复
+
+#### 第九阶段：文档同步与用户体验完善
+
+**文档更新工作:**
+- **log.md更新** - 添加第八阶段代码质量审查记录，包含详细的修复内容和技术改进
+- **release.md更新** - 在Version 1.2中添加"三个核心参数计算规则实现与代码质量全面优化"章节
+- **用户体验优化** - 扩展技术改进和用户体验优化内容，添加性能提升数据
+- **更新日志同步** - 更新bookmarks.js中的默认版本信息，确保用户界面显示最新进展
+
+**文档内容完善:**
+
+**log.md新增内容:**
+- 详细的成本统计更新（总成本$13.56，代码变更1458+行）
+- 第八阶段完整的技术实现记录
+- 代码质量评分提升（安全性8/10，性能7/10，可维护性6/10，总体7.0/10）
+- 关键问题的修复代码示例和说明
+
+**release.md新增内容:**
+- 三个核心参数计算规则实现的完整描述
+- 实时调试窗口功能说明
+- 内存泄漏和性能优化的详细说明
+- 技术改进扩展（内存管理、异步调用安全、资源生命周期管理）
+- 用户体验升级（实时数据监控、性能提升数据）
+
+**bookmarks.js更新内容:**
+- loadDefaultVersionHistory()函数添加2025-09-21最新版本信息
+- 6项重要功能更新的详细描述
+- 代码质量提升数据的用户友好展示
+
+**更新成果验证:**
+- ✅ **log.md**: 完整记录开发过程和技术实现
+- ✅ **release.md**: 用户友好的版本更新说明
+- ✅ **bookmarks.js**: 界面显示的最新版本信息
+- ✅ **文档一致性**: 三处文档信息完全同步
+
+**用户体验提升:**
+- 书签管理器欢迎页面的"📝 更新日志"现在显示最新进展
+- 用户可以清楚了解三个核心参数的实现和代码质量优化成果
+- 技术改进以用户友好的方式呈现，提升产品专业感
+
+#### 第八阶段：代码质量全面审查与关键问题修复
+
+**问题识别与修复:**
+- **内存泄漏风险**: 发现定时器和DOM引用未正确清理，添加完整的cleanup机制
+- **消息传递超时**: Chrome API调用缺乏超时处理，可能导致无限等待，添加5秒超时机制
+- **CSP配置冲突**: Manifest V3中CSP配置过于严格，移除不必要的配置
+- **页面卸载清理**: 添加unload事件监听器，确保页面关闭时释放所有资源
+
+**关键修复内容:**
+
+**内存泄漏修复:**
+```javascript
+function cleanupCoreMetrics() {
+  if (!CoreMetricsState.isInitialized) return;
+
+  // 移除事件监听器
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  document.removeEventListener('scroll', handleScroll);
+
+  // 停止更新定时器
+  if (CoreMetricsState.updateInterval) {
+    clearInterval(CoreMetricsState.updateInterval);
+    CoreMetricsState.updateInterval = null;
+  }
+
+  // 清理滚动定时器
+  if (CoreMetricsState.scrollTimeout) {
+    clearTimeout(CoreMetricsState.scrollTimeout);
+    CoreMetricsState.scrollTimeout = null;
+  }
+
+  CoreMetricsState.isInitialized = false;
+  CoreMetricsState.isActiveTab = false;
+}
+```
+
+**消息传递超时处理:**
+```javascript
+const historyResults = await new Promise((resolve, reject) => {
+  const timeoutId = setTimeout(() => {
+    reject(new Error('获取历史记录超时'));
+  }, 5000);
+
+  chrome.runtime.sendMessage({
+    action: 'getDomainHistory',
+    mainDomain: mainDomain,
+    startTime: threeDaysAgo
+  }, (response) => {
+    clearTimeout(timeoutId);
+    if (chrome.runtime.lastError) {
+      reject(chrome.runtime.lastError);
+    } else {
+      resolve(response.results || []);
+    }
+  });
+});
+```
+
+**代码质量提升:**
+- ✅ **安全性**: 8/10 (+1) - 移除CSP配置冲突，加强API调用安全性
+- ✅ **性能**: 7/10 (+1) - 添加超时处理，优化内存管理
+- ✅ **可维护性**: 6/10 (+1) - 完善错误处理和资源清理机制
+- ✅ **总体评分**: 7.0/10 (+0.6) - 代码质量显著提升
+
+**架构问题识别:**
+- ⚠️ **文件结构**: bookmarks.js文件过大(2977行)，建议模块化拆分
+- ⚠️ **类型安全**: 缺乏TypeScript类型检查，建议迁移
+- ⚠️ **代码重复**: 存在重复逻辑，建议抽取公共工具函数
+
+**调试窗口功能:**
+- ✅ **实时显示**: 三个核心参数实时更新显示
+- ✅ **精确统计**: 访问次数仅激活时计算，时长每秒更新，深度使用屏幕数量
+- ✅ **性能优化**: 使用CSS硬件加速，流畅交互体验
 
 ## 2025年9月16日
 

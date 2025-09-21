@@ -1246,33 +1246,59 @@ bindCardEvents(card, bookmark) {
   loadDefaultVersionHistory() {
     const versions = [
       {
-        date: '2025-09-16',
+        date: '2025-09-21',
         changes: [
-          '新增书签访问次数统计功能，支持从浏览器历史记录获取真实访问数据',
-          '优化popup界面设计，实现简约单行布局，高度减半提升空间利用率',
-          '实现多线程并发查询机制，提升访问次数统计性能',
-          '添加缓存优化和错误隔离机制，确保功能稳定性',
-          '完善用户界面，添加加载状态和视觉反馈优化'
+          { icon: '🔧', text: '实现三个核心参数计算规则完整功能' },
+          { icon: '🐛', text: '修复内存泄漏和消息传递超时问题' },
+          { icon: '📊', text: '添加右下角实时调试窗口显示' },
+          { icon: '🔒', text: '移除CSP配置避免功能冲突' },
+          { icon: '📝', text: '完善文档同步和用户体验优化' }
         ]
       },
       {
-        date: '2025-09-15',
+        date: '2025-09-19',
         changes: [
-          '实现完整深色模式支持，包含主题切换按钮和智能记忆功能',
-          '建立CSS变量系统，便于主题维护和扩展',
-          '为所有UI组件添加深色模式适配，包括侧边栏、工具栏、卡片等',
-          '添加平滑过渡效果和自定义滚动条美化',
-          '优化深色模式配色方案，确保视觉舒适度'
+          { icon: '🌐', text: '实现URL组件提取和多选项收藏功能' },
+          { icon: '🎨', text: '设计个性化弹窗标题和引导文案' },
+          { icon: '🏗️', text: '重新设计弹窗布局和宽度优化' },
+          { icon: '🧠', text: '开发智能推荐矩阵决策模型' }
+        ]
+      },
+      {
+        date: '2025-09-18',
+        changes: [
+          { icon: '🗑️', text: '彻底清理智能提醒逻辑代码' },
+          { icon: '⌨️', text: '实现Ctrl+Shift+T全局快捷键' },
+          { icon: '💎', text: '设计三套酷炫弹窗UI方案' },
+          { icon: '🎯', text: '创建综合测试页面' }
+        ]
+      },
+      {
+        date: '2025-09-17',
+        changes: [
+          { icon: '🔍', text: '设计智能书签提醒完整架构' },
+          { icon: '📊', text: '实现访问记录和触发条件机制' },
+          { icon: '🚫', text: '添加排除列表和数据清理功能' },
+          { icon: '🎨', text: '开发非侵入式弹出提醒界面' }
+        ]
+      },
+      {
+        date: '2025-09-16',
+        changes: [
+          { icon: '🔧', text: '修复检测模式书签删除同步问题' },
+          { icon: '✨', text: '优化即时响应检测动画效果' },
+          { icon: '🎨', text: '实现书签编辑框现代化样式' },
+          { icon: '📱', text: '改进文件夹状态管理功能' }
         ]
       },
       {
         date: '2025-09-12',
         changes: [
-          '新增智能链接检测系统，支持批量检查链接有效性',
-          '实现检测结果分组显示，包含有效、重定向、超时、无效分类',
-          '统一三页面视觉样式，彻底解决横向滚动条问题',
-          '完善响应式设计，支持大、中、小三种屏幕尺寸',
-          '修复关键UI显示Bug，提升用户体验和界面稳定性'
+          { icon: '🔍', text: '新增智能链接检测系统，支持批量检查链接有效性' },
+          { icon: '📊', text: '实现检测结果分组显示，包含有效、重定向、超时、无效分类' },
+          { icon: '🎨', text: '统一三页面视觉样式，彻底解决横向滚动条问题' },
+          { icon: '📱', text: '完善响应式设计，支持大、中、小三种屏幕尺寸' },
+          { icon: '🔧', text: '修复关键UI显示Bug，提升用户体验和界面稳定性' }
         ]
       }
     ];
@@ -1283,61 +1309,74 @@ bindCardEvents(card, bookmark) {
   parseReleaseHistory(releaseContent) {
     const versions = [];
     const lines = releaseContent.split('\n');
-    
+
+    // 查找每日开发进展部分
+    let inDailyProgress = false;
+    let dailyVersionsCount = 0;
+    const maxDailyVersions = 5; // 只显示近5天
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      
-      // 匹配日期行，如 "## 2025-09-16"
-      const dateMatch = line.match(/^##\s+(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (dateMatch) {
-        const year = dateMatch[1];
-        const month = dateMatch[2].padStart(2, '0');
-        const day = dateMatch[3].padStart(2, '0');
-        const dateStr = `${year}-${month}-${day}`;
-        
-        // 查找该日期下的更新内容
-        const changes = [];
-        
-        for (let j = i + 1; j < lines.length; j++) {
-          const nextLine = lines[j].trim();
-          
-          // 如果遇到下一个日期或文件末尾，停止
-          if (nextLine.match(/^##\s+\d{4}-\d{1,2}-\d{1,2}/) || j === lines.length - 1) {
-            break;
-          }
-          
-          // 匹配更新点，如 "- 新增书签访问次数统计功能"
-          const changeMatch = nextLine.match(/^[-*]\s+(.+)$/);
-          if (changeMatch) {
-            const description = changeMatch[1];
-            
-            // 根据内容自动匹配图标
-            const icon = this.getChangeIcon(description);
-            
-            // 简化描述，去掉过于详细的内容
-            let simplifiedDesc = description;
-            if (simplifiedDesc.length > 25) {
-              simplifiedDesc = simplifiedDesc.substring(0, 25) + '...';
+
+      // 检查是否进入每日开发进展部分
+      if (line === '### 📅 每日开发进展') {
+        inDailyProgress = true;
+        continue;
+      }
+
+      // 如果离开每日开发进展部分或已经收集了足够的天数，停止
+      if ((inDailyProgress && line.startsWith('###') && line !== '### 📅 每日开发进展') ||
+          dailyVersionsCount >= maxDailyVersions) {
+        break;
+      }
+
+      if (inDailyProgress) {
+        // 匹配日期行，如 "**2025-09-21**"
+        const dateMatch = line.match(/^\*\*(\d{4})-(\d{1,2})-(\d{1,2})\*\*$/);
+        if (dateMatch) {
+          const year = dateMatch[1];
+          const month = dateMatch[2].padStart(2, '0');
+          const day = dateMatch[3].padStart(2, '0');
+          const dateStr = `${year}-${month}-${day}`;
+
+          // 查找该日期下的更新内容
+          const changes = [];
+
+          for (let j = i + 1; j < lines.length; j++) {
+            const nextLine = lines[j].trim();
+
+            // 如果遇到下一个日期或章节结束，停止
+            if (nextLine.match(/^\*\*\d{4}-\d{1,2}-\d{1,2}\*\*$/) ||
+                nextLine.startsWith('###') || j === lines.length - 1) {
+              break;
             }
-            
-            changes.push({
-              icon: icon,
-              text: simplifiedDesc
-            });
+
+            // 匹配图标+描述，如 "🔧 实现三个核心参数计算规则完整功能"
+            const changeMatch = nextLine.match(/^([^\s]+)\s+(.+)$/);
+            if (changeMatch) {
+              const icon = changeMatch[1];
+              const description = changeMatch[2];
+
+              // 不需要简化描述，因为已经很短
+              changes.push({
+                icon: icon,
+                text: description
+              });
+            }
           }
-        }
-        
-        if (changes.length > 0) {
-          // 按照release.md中的顺序添加版本记录
-          versions.push({
-            date: dateStr,
-            changes: changes.slice(0, 6) // 取前6个更新点，用于2x3网格布局
-          });
+
+          if (changes.length > 0) {
+            versions.push({
+              date: dateStr,
+              changes: changes
+            });
+            dailyVersionsCount++;
+          }
         }
       }
     }
-    
-    return versions.slice(0, 5); // 只返回前5个更新记录
+
+    return versions; // 已经在前面的逻辑中限制了近5天
   }
 
   getChangeIcon(description) {
