@@ -551,6 +551,8 @@ async function getCoreMetrics() {
   };
 }
 
+
+
 /**
  * 初始化核心指标计算
  */
@@ -634,6 +636,47 @@ function createDebugWindow() {
         <span class="debug-label">深度:</span>
         <span class="debug-value" id="debug-depth">0.0屏</span>
       </div>
+      <div class="debug-hit-level" id="debug-hit-level" style="display: none;">
+        <span class="debug-label">命中:</span>
+        <span class="debug-value" id="debug-level-name">--</span>
+      </div>
+    </div>
+    
+    <!-- 配置规则匹配区域 -->
+    <div class="debug-rules-section" id="debug-rules-section" style="display: none;">
+      <div class="debug-rules-header">
+        🎯 配置规则匹配
+      </div>
+      <div class="debug-rules-content">
+        <div class="debug-rule-item">
+          <span class="debug-label">级别:</span>
+          <span class="debug-value" id="debug-current-level">--</span>
+        </div>
+        <div class="debug-rule-item">
+          <span class="debug-label">状态:</span>
+          <span class="debug-value" id="debug-rule-status">--</span>
+        </div>
+        
+        <div class="debug-rule-details">
+          <div class="debug-rule-detail" id="debug-visit-rule">
+            <span class="debug-rule-label">次数要求:</span>
+            <span class="debug-rule-value">--</span>
+          </div>
+          <div class="debug-rule-detail" id="debug-time-rule">
+            <span class="debug-rule-label">时长要求:</span>
+            <span class="debug-rule-value">--</span>
+          </div>
+          <div class="debug-rule-detail" id="debug-depth-rule">
+            <span class="debug-rule-label">深度要求:</span>
+            <span class="debug-rule-value">--</span>
+          </div>
+        </div>
+        
+        <div class="debug-next-target" id="debug-next-target" style="display: none;">
+          <span class="debug-label">下一目标:</span>
+          <span class="debug-value" id="debug-next-level">--</span>
+        </div>
+      </div>
     </div>
   `;
 
@@ -645,8 +688,9 @@ function createDebugWindow() {
       position: fixed;
       bottom: 10px;
       right: 10px;
-      width: 180px;
-      height: 80px;
+      width: 220px;
+      min-height: 80px;
+      max-height: 240px;
       background: rgba(0, 0, 0, 0.7);
       border-radius: 8px;
       color: white;
@@ -688,6 +732,110 @@ function createDebugWindow() {
       font-weight: 500;
       color: #4fc3f7;
     }
+
+    .debug-hit-level {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #debug-level-name {
+      color: #4caf50;
+      font-weight: 600;
+    }
+
+    /* 配置规则匹配区域样式 */
+    .debug-rules-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+
+    .debug-rules-header {
+      padding: 4px 12px;
+      font-weight: 600;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.9);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 6px;
+    }
+
+    .debug-rules-content {
+      padding: 0 12px 8px 12px;
+    }
+
+    .debug-rule-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .debug-rule-details {
+      margin: 6px 0;
+      font-size: 10px;
+    }
+
+    .debug-rule-detail {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .debug-rule-label {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .debug-rule-value {
+      font-weight: 500;
+    }
+
+    .debug-rule-value.met {
+      color: #4caf50;
+    }
+
+    .debug-rule-value.not-met {
+      color: #f44336;
+    }
+
+    .debug-next-target {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+    }
+
+    #debug-current-level {
+      color: #2196f3;
+      font-weight: 600;
+    }
+
+    #debug-rule-status {
+      font-weight: 600;
+    }
+
+    #debug-rule-status.met {
+      color: #4caf50;
+    }
+
+    #debug-rule-status.not-met {
+      color: #ff9800;
+    }
+
+    #debug-next-level {
+      color: #9c27b0;
+      font-weight: 500;
+      font-size: 10px;
+    }
   `;
 
   try {
@@ -720,6 +868,8 @@ async function updateDebugWindow() {
     const visitCountEl = document.getElementById('debug-visit-count');
     const durationEl = document.getElementById('debug-duration');
     const depthEl = document.getElementById('debug-depth');
+    const hitLevelEl = document.getElementById('debug-hit-level');
+    const levelNameEl = document.getElementById('debug-level-name');
 
     if (visitCountEl) {
       visitCountEl.textContent = `${metrics.visitCount}次`;
@@ -733,10 +883,12 @@ async function updateDebugWindow() {
       depthEl.textContent = `${metrics.browseDepth.toFixed(1)}屏`;
     }
 
+    
   } catch (error) {
     console.warn('更新调试窗口失败:', error);
   }
 }
+
 
 /**
  * 格式化时长显示
@@ -875,6 +1027,7 @@ if (typeof window !== 'undefined') {
       console.error('测试失败:', error);
     }
   };
+
   console.log('调试窗口控制命令:');
   console.log('- window.removeDebugWindow() 移除调试窗口');
   console.log('- window.showDebugWindow() 显示调试窗口');
