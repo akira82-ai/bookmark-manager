@@ -2939,6 +2939,71 @@ body.dark-mode .setting-description {
   background: var(--info-background, #1e1e1e);
 }
 
+/* 触发条件显示样式 */
+.trigger-conditions {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--card-background, #ffffff);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.conditions-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--primary-color, #667eea);
+  margin-bottom: 0.5rem;
+}
+
+.condition-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-color, #333333);
+}
+
+.condition-item:last-child {
+  margin-bottom: 0;
+}
+
+.condition-icon {
+  font-size: 0.9rem;
+  min-width: 1rem;
+}
+
+.condition-text {
+  line-height: 1.3;
+}
+
+#condition-visit-count,
+#condition-stay-time,
+#condition-browse-depth {
+  font-weight: 500;
+  color: var(--primary-color, #667eea);
+}
+
+/* 深色模式适配 */
+body.dark-mode .trigger-conditions {
+  background: var(--card-background, #2d2d2d);
+  border-color: var(--border-color, #404040);
+}
+
+body.dark-mode .condition-item {
+  color: var(--text-color, #e0e0e0);
+}
+
+body.dark-mode .conditions-title {
+  color: var(--primary-color, #64b5f6);
+}
+
+body.dark-mode #condition-visit-count,
+body.dark-mode #condition-stay-time,
+body.dark-mode #condition-browse-depth {
+  color: var(--primary-color, #64b5f6);
+}
+
 /* 自动触发条件配置样式 */
 .setting-section {
   margin-top: 1rem;

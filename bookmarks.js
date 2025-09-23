@@ -318,64 +318,91 @@ class BookmarkManager {
             name: '深度学习',
             frequency: '每天0-1次',
             description: '只有沉浸式深度学习才值得收藏',
-            weights: { visitCount: 0.3, stayTime: 0.2, browseDepth: 0.5 },
-            threshold: 8.5
+            conditions: {
+              visitCount: 10,  // ≥ 10次
+              stayTime: 300,  // ≥ 300秒(5分钟)
+              browseDepth: 50  // ≥ 50屏
+            }
           },
           {
             name: '专注研读',
             frequency: '每天0-2次',
             description: '需要高度专注和深度思考的内容',
-            weights: { visitCount: 0.35, stayTime: 0.25, browseDepth: 0.4 },
-            threshold: 7.5
+            conditions: {
+              visitCount: 9,   // ≥ 9次
+              stayTime: 240,  // ≥ 240秒(4分钟)
+              browseDepth: 40  // ≥ 40屏
+            }
           },
           {
             name: '认真研读',
             frequency: '每天1-2次',
             description: '值得认真研读和消化的知识',
-            weights: { visitCount: 0.4, stayTime: 0.3, browseDepth: 0.3 },
-            threshold: 6.5
+            conditions: {
+              visitCount: 8,   // ≥ 8次
+              stayTime: 180,  // ≥ 180秒(3分钟)
+              browseDepth: 30  // ≥ 30屏
+            }
           },
           {
             name: '系统学习',
             frequency: '每天2-3次',
             description: '系统性学习的重要资料',
-            weights: { visitCount: 0.45, stayTime: 0.35, browseDepth: 0.2 },
-            threshold: 5.5
+            conditions: {
+              visitCount: 7,   // ≥ 7次
+              stayTime: 150,  // ≥ 150秒(2.5分钟)
+              browseDepth: 20  // ≥ 20屏
+            }
           },
           {
             name: '专题研究',
             frequency: '每天3-5次',
             description: '专题研究和知识体系构建',
-            weights: { visitCount: 0.5, stayTime: 0.35, browseDepth: 0.15 },
-            threshold: 4.5
+            conditions: {
+              visitCount: 6,   // ≥ 6次
+              stayTime: 120,  // ≥ 120秒(2分钟)
+              browseDepth: 10  // ≥ 10屏
+            }
           },
           {
             name: '走马观花',
             frequency: '每天5-8次',
             description: '快速浏览，获取关键信息即可',
-            weights: { visitCount: 0.55, stayTime: 0.3, browseDepth: 0.15 },
-            threshold: 3.5
+            conditions: {
+              visitCount: 5,   // ≥ 5次
+              stayTime: 60,   // ≥ 60秒(1分钟)
+              browseDepth: 5   // ≥ 5屏
+            }
           },
           {
             name: '简单浏览',
             frequency: '每天8-12次',
             description: '简单了解，有初步印象即可',
-            weights: { visitCount: 0.6, stayTime: 0.25, browseDepth: 0.15 },
-            threshold: 2.5
+            conditions: {
+              visitCount: 4,   // ≥ 4次
+              stayTime: 30,   // ≥ 30秒
+              browseDepth: 3   // ≥ 3屏
+            }
           },
           {
             name: '随意看看',
             frequency: '每天12-18次',
             description: '随意浏览，无需深入理解',
-            weights: { visitCount: 0.65, stayTime: 0.2, browseDepth: 0.15 },
-            threshold: 1.5
+            conditions: {
+              visitCount: 3,   // ≥ 3次
+              stayTime: 10,   // ≥ 10秒
+              browseDepth: 1   // ≥ 1屏
+            }
           },
           {
             name: '浅尝辄止',
             frequency: '每天18-25次',
             description: '点到为止，最浅层的信息接触',
-            weights: { visitCount: 0.7, stayTime: 0.15, browseDepth: 0.15 },
-            threshold: 0.5
+            conditions: {
+              visitCount: 2,   // ≥ 2次 (比随意看看更低)
+              stayTime: 5,    // ≥ 5秒 (比随意看看更低)
+              browseDepth: 1   // ≥ 1屏
+            }
           }
         ];
 
@@ -464,21 +491,36 @@ class BookmarkManager {
         document.getElementById('reminder-frequency').textContent = levelData.frequency;
         document.getElementById('mode-description').textContent = levelData.description;
 
+        // 更新触发条件显示
+        const conditions = levelData.conditions;
+        document.getElementById('condition-visit-count').textContent = `≥ ${conditions.visitCount}次`;
+        
+        // 格式化停留时间显示
+        let stayTimeText = `≥ ${conditions.stayTime}秒`;
+        if (conditions.stayTime >= 60) {
+          const minutes = Math.floor(conditions.stayTime / 60);
+          stayTimeText = `≥ ${minutes}分钟`;
+        }
+        document.getElementById('condition-stay-time').textContent = stayTimeText;
+        
+        // 格式化浏览深度显示
+        let depthText = `≥ ${conditions.browseDepth}屏`;
+        document.getElementById('condition-browse-depth').textContent = depthText;
+
         // 保存到本地存储
         localStorage.setItem('reminder-sensitivity-level', this.currentLevel);
       }
 
       
       /**
-       * 获取当前权重配置
-       * @returns {Object} 当前敏感度级别的权重和阈值
+       * 获取当前配置
+       * @returns {Object} 当前敏感度级别的配置信息
        */
       getCurrentConfig() {
         const levelData = this.levels[this.currentLevel];
         return {
           sensitivity: levelData.name,
-          weights: levelData.weights,
-          threshold: levelData.threshold,
+          conditions: levelData.conditions,
           level: this.currentLevel
         };
       }
@@ -488,22 +530,16 @@ class BookmarkManager {
        * @param {Object} behaviorData - 用户行为数据 {visitCount, stayTime, browseDepth}
        * @returns {number} 综合得分
        */
-      calculateReminderScore(behaviorData) {
+      checkConditions(behaviorData) {
         const config = this.getCurrentConfig();
-        const { weights } = config;
-
-        // 归一化处理：假设各指标的满分是10分
-        const normalizedVisitCount = Math.min(behaviorData.visitCount / 10, 1);
-        const normalizedStayTime = Math.min(behaviorData.stayTime / 600, 1); // 10分钟为满分
-        const normalizedBrowseDepth = Math.min(behaviorData.browseDepth / 5, 1); // 5层深度为满分
-
-        // 计算加权得分
-        const score =
-          (normalizedVisitCount * weights.visitCount) +
-          (normalizedStayTime * weights.stayTime) +
-          (normalizedBrowseDepth * weights.browseDepth);
-
-        return Math.round(score * 10) / 10; // 保留一位小数
+        const { conditions } = config;
+        
+        // 检查三个条件是否全部满足
+        return (
+          behaviorData.visitCount >= conditions.visitCount &&
+          behaviorData.stayTime >= conditions.stayTime &&
+          behaviorData.browseDepth >= conditions.browseDepth
+        );
       }
 
       /**
@@ -512,9 +548,7 @@ class BookmarkManager {
        * @returns {boolean} 是否应该提醒
       */
       shouldRemind(behaviorData) {
-        const score = this.calculateReminderScore(behaviorData);
-        const config = this.getCurrentConfig();
-        return score >= config.threshold;
+        return this.checkConditions(behaviorData);
       }
     }
 
@@ -524,6 +558,7 @@ class BookmarkManager {
     // 暴露到全局作用域，供智能提醒功能使用
     window.sensitivitySlider = sensitivitySlider;
 
+    
   
     // 模态框事件
     document.getElementById('modal-close').addEventListener('click', () => {
