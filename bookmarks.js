@@ -310,99 +310,45 @@ class BookmarkManager {
         this.fill = document.querySelector('.sensitivity-fill');
         this.isDragging = false;
 
-        // 从本地存储恢复设置，默认专题研究模式（第5刻度）
-        this.currentLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 4;
+        // 从本地存储恢复设置，默认适中提醒（第3刻度）
+        let savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level'));
+        this.currentLevel = (savedLevel >= 0 && savedLevel < 5) ? savedLevel : 2;
 
         this.levels = [
           {
-            name: '深度学习',
-            frequency: '每天0-1次',
-            description: '只有沉浸式深度学习才值得收藏',
-            conditions: {
-              visitCount: 10,  // ≥ 10次
-              stayTime: 300,  // ≥ 300秒(5分钟)
-              browseDepth: 50  // ≥ 50屏
-            }
+            name: '很少',
+            frequency: '每月提醒',
+            description: '重要资料，每月提醒一次',
+            color: '#4CAF50',
+            interval: 30
           },
           {
-            name: '专注研读',
-            frequency: '每天0-2次',
-            description: '需要高度专注和深度思考的内容',
-            conditions: {
-              visitCount: 9,   // ≥ 9次
-              stayTime: 240,  // ≥ 240秒(4分钟)
-              browseDepth: 40  // ≥ 40屏
-            }
+            name: '偶尔',
+            frequency: '每两周提醒',
+            description: '定期查看，每两周一次',
+            color: '#8BC34A',
+            interval: 14
           },
           {
-            name: '认真研读',
-            frequency: '每天1-2次',
-            description: '值得认真研读和消化的知识',
-            conditions: {
-              visitCount: 8,   // ≥ 8次
-              stayTime: 180,  // ≥ 180秒(3分钟)
-              browseDepth: 30  // ≥ 30屏
-            }
+            name: '适中',
+            frequency: '每周提醒',
+            description: '适度关注，每周一次',
+            color: '#CDDC39',
+            interval: 7
           },
           {
-            name: '系统学习',
-            frequency: '每天2-3次',
-            description: '系统性学习的重要资料',
-            conditions: {
-              visitCount: 7,   // ≥ 7次
-              stayTime: 150,  // ≥ 150秒(2.5分钟)
-              browseDepth: 20  // ≥ 20屏
-            }
+            name: '常常',
+            frequency: '每三天提醒',
+            description: '经常关注，每三天一次',
+            color: '#FFC107',
+            interval: 3
           },
           {
-            name: '专题研究',
-            frequency: '每天3-5次',
-            description: '专题研究和知识体系构建',
-            conditions: {
-              visitCount: 6,   // ≥ 6次
-              stayTime: 120,  // ≥ 120秒(2分钟)
-              browseDepth: 10  // ≥ 10屏
-            }
-          },
-          {
-            name: '走马观花',
-            frequency: '每天5-8次',
-            description: '快速浏览，获取关键信息即可',
-            conditions: {
-              visitCount: 5,   // ≥ 5次
-              stayTime: 60,   // ≥ 60秒(1分钟)
-              browseDepth: 5   // ≥ 5屏
-            }
-          },
-          {
-            name: '简单浏览',
-            frequency: '每天8-12次',
-            description: '简单了解，有初步印象即可',
-            conditions: {
-              visitCount: 4,   // ≥ 4次
-              stayTime: 30,   // ≥ 30秒
-              browseDepth: 3   // ≥ 3屏
-            }
-          },
-          {
-            name: '随意看看',
-            frequency: '每天12-18次',
-            description: '随意浏览，无需深入理解',
-            conditions: {
-              visitCount: 3,   // ≥ 3次
-              stayTime: 10,   // ≥ 10秒
-              browseDepth: 1   // ≥ 1屏
-            }
-          },
-          {
-            name: '浅尝辄止',
-            frequency: '每天18-25次',
-            description: '点到为止，最浅层的信息接触',
-            conditions: {
-              visitCount: 2,   // ≥ 2次 (比随意看看更低)
-              stayTime: 5,    // ≥ 5秒 (比随意看看更低)
-              browseDepth: 1   // ≥ 1屏
-            }
+            name: '频繁',
+            frequency: '每天提醒',
+            description: '持续关注，每天一次',
+            color: '#FF5722',
+            interval: 1
           }
         ];
 
@@ -469,9 +415,9 @@ class BookmarkManager {
         const x = clientX - rect.left;
         const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
 
-        // 计算最近的档位 (0-8)，基于9个刻度点
-        const level = Math.round(percentage / 12.5); // 100% / 8个间隔 = 12.5%
-        this.setLevel(Math.max(0, Math.min(8, level)));
+        // 计算最近的档位 (0-4)，基于5个刻度点
+        const level = Math.round(percentage / 25); // 100% / 4个间隔 = 25%
+        this.setLevel(Math.max(0, Math.min(4, level)));
       }
 
       setLevel(level) {
@@ -481,34 +427,30 @@ class BookmarkManager {
 
       updateUI() {
         // 更新滑块位置 - 使用transform确保滑块中心对齐刻度
-        const percentage = (this.currentLevel / 8) * 100;
+        const percentage = (this.currentLevel / 4) * 100;
         this.thumb.style.left = `${percentage}%`;
         this.fill.style.width = `${percentage}%`;
 
         // 更新模式信息
         const levelData = this.levels[this.currentLevel];
-        document.getElementById('current-mode-name').textContent = `${levelData.name}模式`;
+        if (!levelData) {
+          console.error('Invalid level:', this.currentLevel);
+          return;
+        }
+        
+        document.getElementById('current-mode-name').textContent = `${levelData.name}提醒`;
         document.getElementById('reminder-frequency').textContent = levelData.frequency;
         document.getElementById('mode-description').textContent = levelData.description;
 
-        // 更新触发条件显示
-        const conditions = levelData.conditions;
-        document.getElementById('condition-visit-count').textContent = `≥ ${conditions.visitCount}次`;
-        
-        // 格式化停留时间显示
-        let stayTimeText = `≥ ${conditions.stayTime}秒`;
-        if (conditions.stayTime >= 60) {
-          const minutes = Math.floor(conditions.stayTime / 60);
-          stayTimeText = `≥ ${minutes}分钟`;
+        // 更新颜色主题
+        if (levelData.color) {
+          this.thumb.style.backgroundColor = levelData.color;
+          this.fill.style.backgroundColor = levelData.color;
         }
-        document.getElementById('condition-stay-time').textContent = stayTimeText;
-        
-        // 格式化浏览深度显示
-        let depthText = `≥ ${conditions.browseDepth}屏`;
-        document.getElementById('condition-browse-depth').textContent = depthText;
 
         // 保存到本地存储
         localStorage.setItem('reminder-sensitivity-level', this.currentLevel);
+        localStorage.setItem('reminder-frequency-interval', levelData.interval);
       }
 
       
@@ -519,36 +461,28 @@ class BookmarkManager {
       getCurrentConfig() {
         const levelData = this.levels[this.currentLevel];
         return {
-          sensitivity: levelData.name,
-          conditions: levelData.conditions,
+          frequency: levelData.name,
+          interval: levelData.interval,
           level: this.currentLevel
         };
       }
 
       /**
-       * 计算智能提醒得分
-       * @param {Object} behaviorData - 用户行为数据 {visitCount, stayTime, browseDepth}
-       * @returns {number} 综合得分
+       * 获取提醒间隔天数
+       * @returns {number} 提醒间隔天数
        */
-      checkConditions(behaviorData) {
-        const config = this.getCurrentConfig();
-        const { conditions } = config;
-        
-        // 检查三个条件是否全部满足
-        return (
-          behaviorData.visitCount >= conditions.visitCount &&
-          behaviorData.stayTime >= conditions.stayTime &&
-          behaviorData.browseDepth >= conditions.browseDepth
-        );
+      getReminderInterval() {
+        const levelData = this.levels[this.currentLevel];
+        return levelData.interval;
       }
 
       /**
-       * 判断是否应该提醒
-       * @param {Object} behaviorData - 用户行为数据
-       * @returns {boolean} 是否应该提醒
-      */
-      shouldRemind(behaviorData) {
-        return this.checkConditions(behaviorData);
+       * 获取提醒频率名称
+       * @returns {string} 提醒频率名称
+       */
+      getFrequencyName() {
+        const levelData = this.levels[this.currentLevel];
+        return levelData.name;
       }
     }
 
