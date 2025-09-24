@@ -2001,6 +2001,19 @@ function stopDebugWindowUpdates() {
 }
 
 /**
+ * 切换调试窗口显示/隐藏状态
+ */
+function toggleDebugWindow() {
+  if (CoreMetricsState.debugWindow) {
+    removeDebugWindow();
+    console.log('[调试窗口] 通过快捷键隐藏');
+  } else {
+    window.showDebugWindow();
+    console.log('[调试窗口] 通过快捷键显示');
+  }
+}
+
+/**
  * 移除调试窗口
  */
 function removeDebugWindow() {
@@ -2098,11 +2111,25 @@ document.addEventListener('keydown', function(event) {
     removeDebugWindow();
     console.log('调试窗口已通过快捷键移除');
   }
+
+  // 调试窗口快捷键：Windows/Linux (Ctrl+Alt+Q+E) / Mac (Command+Option+Q+E)
+  if (event.key === 'e' || event.key === 'E') {
+    // 检查是否按下了所需的前置键组合
+    const isWindowsShortcut = event.ctrlKey && event.altKey && !event.metaKey && !event.shiftKey;
+    const isMacShortcut = event.metaKey && event.altKey && !event.ctrlKey && !event.shiftKey;
+
+    if (isWindowsShortcut || isMacShortcut) {
+      event.preventDefault();
+      toggleDebugWindow();
+      console.log('[调试窗口] 快捷键触发:', isWindowsShortcut ? 'Ctrl+Alt+Q+E' : 'Command+Option+Q+E');
+    }
+  }
 });
 
 // 添加控制台命令（调试用）
 if (typeof window !== 'undefined') {
   window.removeDebugWindow = removeDebugWindow;
+  window.toggleDebugWindow = toggleDebugWindow;
   window.showDebugWindow = async function() {
     createDebugWindow();
     await startDebugWindowUpdates();
@@ -2146,9 +2173,11 @@ if (typeof window !== 'undefined') {
   console.log('调试窗口控制命令:');
   console.log('- window.removeDebugWindow() 移除调试窗口');
   console.log('- window.showDebugWindow() 显示调试窗口');
+  console.log('- window.toggleDebugWindow() 切换调试窗口显示/隐藏');
   console.log('- window.testCoreMetrics() 测试核心指标函数');
   console.log('- window.testSmartReminder() 测试智能提醒触发');
   console.log('- Ctrl+Shift+D 快捷键移除调试窗口');
+  console.log('- Ctrl+Alt+Q+E (Windows/Linux) 或 Command+Option+Q+E (Mac) 快捷键切换调试窗口');
 }
 
 // 显示测试弹窗
