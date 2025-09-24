@@ -32,7 +32,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["bookmarks.html", "bookmarks.css", "bookmarks.js", "log.md", "release.md"],
+      "resources": ["bookmarks.html", "bookmarks.css", "bookmarks.js", "log.md", "release.md", "metrics-judgment-engine.js"],
       "matches": ["<all_urls>"]
     }
   ]

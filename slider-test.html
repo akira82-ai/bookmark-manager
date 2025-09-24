@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滑块与流程逻辑关联测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .slider-demo {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .sensitivity-slider {
+            position: relative;
+            width: 100%;
+            height: 40px;
+            margin: 20px 0;
+        }
+        .sensitivity-track {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+        }
+        .sensitivity-fill {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 6px;
+            background: #667eea;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .sensitivity-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            cursor: grab;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .sensitivity-thumb:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .sensitivity-marks {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+        .sensitivity-mark {
+            width: 2px;
+            height: 12px;
+            background: #ccc;
+            border-radius: 1px;
+        }
+        .sensitivity-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .mode-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .mode-info-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .mode-icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        .mode-text {
+            font-size: 0.95em;
+            color: #333;
+        }
+        #trigger-conditions {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.08);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .test-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f5e8;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        .test-info h3 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎚️ 滑块与流程逻辑关联测试</h1>
+
+        <div class="slider-demo">
+            <h3>智能提醒敏感度调节</h3>
+            <div class="sensitivity-slider">
+                <div class="sensitivity-track"></div>
+                <div class="sensitivity-fill"></div>
+                <div class="sensitivity-thumb"></div>
+                <div class="sensitivity-marks">
+                    <div class="sensitivity-mark"></div>
+                    <div class="sensitivity-mark"></div>
+                    <div class="sensitivity-mark"></div>
+                    <div class="sensitivity-mark"></div>
+                    <div class="sensitivity-mark"></div>
+                </div>
+            </div>
+            <div class="sensitivity-labels">
+                <span>很少</span>
+                <span>偶尔</span>
+                <span>适中</span>
+                <span>常常</span>
+                <span>频繁</span>
+            </div>
+
+            <div class="mode-info">
+                <div class="mode-info-row">
+                    <span class="mode-icon">📊</span>
+                    <span class="mode-text">当前模式: <strong id="current-mode-name">适中提醒</strong></span>
+                </div>
+                <div class="mode-info-row">
+                    <span class="mode-icon">⏰</span>
+                    <span class="mode-text">提醒频率: <strong id="reminder-frequency">每周提醒</strong></span>
+                </div>
+                <div class="mode-info-row">
+                    <span class="mode-icon">💡</span>
+                    <span class="mode-text">说明: <span id="mode-description">适度关注，每周一次</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-info">
+            <h3>🧪 测试说明</h3>
+            <p>请拖动上方滑块，观察触发条件和适用场景的实时变化。每个档位对应不同的3大指标判定流程：</p>
+            <ul>
+                <li><strong>频繁</strong>：只需访问次数≥3次即可触发</li>
+                <li><strong>常常</strong>：需要访问次数≥5次 + 时长≥30秒</li>
+                <li><strong>适中</strong>：需要访问次数≥8次 + 时长≥60秒 + 深度≥1.5屏</li>
+                <li><strong>偶尔</strong>：需要访问次数≥12次 + 时长≥90秒 + 深度≥5屏</li>
+                <li><strong>很少</strong>：需要访问次数≥20次 + 时长≥120秒 + 深度≥10屏</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 模拟 SensitivitySlider 类
+        class SensitivitySlider {
+            constructor() {
+                this.track = document.querySelector('.sensitivity-track');
+                this.thumb = document.querySelector('.sensitivity-thumb');
+                this.fill = document.querySelector('.sensitivity-fill');
+                this.isDragging = false;
+
+                // 默认适中提醒（第3刻度）
+                this.currentLevel = 2;
+
+                this.levels = [
+                    {
+                        name: '很少',
+                        frequency: '每月提醒',
+                        description: '重要资料，每月提醒一次',
+                        color: '#4CAF50',
+                        interval: 30,
+                        triggerConditions: {
+                            visitCount: '≥ 20次',
+                            browseDuration: '≥ 120秒',
+                            browseDepth: '≥ 10屏',
+                            process: '(5档,4档,3档)'
+                        },
+                        scenarios: ['极度重要的资料', '需要深度关注的内容', '每月回顾一次']
+                    },
+                    {
+                        name: '偶尔',
+                        frequency: '每两周提醒',
+                        description: '定期查看，每两周一次',
+                        color: '#8BC34A',
+                        interval: 14,
+                        triggerConditions: {
+                            visitCount: '≥ 12次',
+                            browseDuration: '≥ 90秒',
+                            browseDepth: '≥ 5屏',
+                            process: '(4档,3档,2档)'
+                        },
+                        scenarios: ['重要资料', '定期回顾的内容', '每两周检查一次']
+                    },
+                    {
+                        name: '适中',
+                        frequency: '每周提醒',
+                        description: '适度关注，每周一次',
+                        color: '#CDDC39',
+                        interval: 7,
+                        triggerConditions: {
+                            visitCount: '≥ 8次',
+                            browseDuration: '≥ 60秒',
+                            browseDepth: '≥ 1.5屏',
+                            process: '(3档,2档,1档)'
+                        },
+                        scenarios: ['工作学习资料', '常用参考内容', '每周回顾一次']
+                    },
+                    {
+                        name: '常常',
+                        frequency: '每三天提醒',
+                        description: '经常关注，每三天一次',
+                        color: '#FFC107',
+                        interval: 3,
+                        triggerConditions: {
+                            visitCount: '≥ 5次',
+                            browseDuration: '≥ 30秒',
+                            browseDepth: '无要求',
+                            process: '(2档,1档,?)'
+                        },
+                        scenarios: ['需要关注的内容', '项目相关资料', '每三天检查一次']
+                    },
+                    {
+                        name: '频繁',
+                        frequency: '每天提醒',
+                        description: '持续关注，每天一次',
+                        color: '#FF5722',
+                        interval: 1,
+                        triggerConditions: {
+                            visitCount: '≥ 3次',
+                            browseDuration: '无要求',
+                            browseDepth: '无要求',
+                            process: '(1档,?,?)'
+                        },
+                        scenarios: ['临时资料和待办事项', '需要每天关注的内容', '短期项目资料']
+                    }
+                ];
+
+                this.init();
+            }
+
+            init() {
+                this.updateUI();
+                this.attachEvents();
+            }
+
+            attachEvents() {
+                this.thumb.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                this.track.addEventListener('click', this.handleTrackClick.bind(this));
+                document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+            }
+
+            handleMouseDown(e) {
+                e.preventDefault();
+                this.isDragging = true;
+                this.thumb.style.cursor = 'grabbing';
+            }
+
+            handleMouseMove(e) {
+                if (!this.isDragging) return;
+                this.updatePosition(e.clientX);
+            }
+
+            handleMouseUp() {
+                this.isDragging = false;
+                this.thumb.style.cursor = 'grab';
+            }
+
+            handleTrackClick(e) {
+                if (e.target === this.thumb) return;
+                this.updatePosition(e.clientX);
+            }
+
+            updatePosition(clientX) {
+                const rect = this.track.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+                // 计算最近的档位 (0-4)，基于5个刻度点
+                const level = Math.round(percentage / 25); // 100% / 4个间隔 = 25%
+                this.setLevel(Math.max(0, Math.min(4, level)));
+            }
+
+            setLevel(level) {
+                this.currentLevel = level;
+                this.updateUI();
+            }
+
+            updateUI() {
+                // 更新滑块位置
+                const percentage = (this.currentLevel / 4) * 100;
+                this.thumb.style.left = `${percentage}%`;
+                this.fill.style.width = `${percentage}%`;
+
+                // 更新模式信息
+                const levelData = this.levels[this.currentLevel];
+                if (!levelData) {
+                    console.error('Invalid level:', this.currentLevel);
+                    return;
+                }
+
+                document.getElementById('current-mode-name').textContent = `${levelData.name}提醒`;
+                document.getElementById('reminder-frequency').textContent = levelData.frequency;
+                document.getElementById('mode-description').textContent = levelData.description;
+
+                // 更新颜色主题
+                if (levelData.color) {
+                    this.thumb.style.backgroundColor = levelData.color;
+                    this.fill.style.backgroundColor = levelData.color;
+                }
+
+                // 更新触发条件显示
+                this.updateTriggerConditions(levelData);
+            }
+
+            updateTriggerConditions(levelData) {
+                // 查找或创建触发条件显示区域
+                let conditionsDiv = document.getElementById('trigger-conditions');
+                if (!conditionsDiv) {
+                    conditionsDiv = document.createElement('div');
+                    conditionsDiv.id = 'trigger-conditions';
+
+                    // 插入到mode-description后面
+                    const descriptionEl = document.getElementById('mode-description');
+                    if (descriptionEl) {
+                        descriptionEl.parentNode.insertBefore(conditionsDiv, descriptionEl.nextSibling);
+                    }
+                }
+
+                // 更新触发条件内容
+                conditionsDiv.innerHTML = `
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #667eea;">📋 触发条件：</strong>
+                    </div>
+                    <div style="margin-left: 20px; margin-bottom: 8px;">
+                        <span style="color: #666;">• 访问次数：</span>
+                        <span style="color: #333; font-weight: 600;">${levelData.triggerConditions.visitCount}</span>
+                    </div>
+                    <div style="margin-left: 20px; margin-bottom: 8px;">
+                        <span style="color: #666;">• 访问时长：</span>
+                        <span style="color: #333; font-weight: 600;">${levelData.triggerConditions.browseDuration}</span>
+                    </div>
+                    <div style="margin-left: 20px; margin-bottom: 12px;">
+                        <span style="color: #666;">• 访问深度：</span>
+                        <span style="color: #333; font-weight: 600;">${levelData.triggerConditions.browseDepth}</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #667eea;">🎯 适用场景：</strong>
+                    </div>
+                    <div style="margin-left: 20px;">
+                        ${levelData.scenarios.map(scenario =>
+                            `<div style="margin-bottom: 4px; color: #666;">• ${scenario}</div>`
+                        ).join('')}
+                    </div>
+                    <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(102, 126, 234, 0.2);">
+                        <span style="color: #999; font-size: 0.85em;">流程顺序：${levelData.triggerConditions.process}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 初始化滑块
+        const slider = new SensitivitySlider();
+    </script>
+</body>
+</html>

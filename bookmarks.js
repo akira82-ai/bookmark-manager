@@ -310,9 +310,32 @@ class BookmarkManager {
         this.fill = document.querySelector('.sensitivity-fill');
         this.isDragging = false;
 
-        // 从本地存储恢复设置，默认适中提醒（第3刻度）
-        let savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level'));
-        this.currentLevel = (savedLevel >= 0 && savedLevel < 5) ? savedLevel : 2;
+        // 从chrome.storage.local恢复设置，默认适中提醒（第3刻度）
+        let savedLevel = 2; // 默认值
+        try {
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            chrome.storage.local.get(['reminder-sensitivity-level']).then(result => {
+              savedLevel = result['reminder-sensitivity-level'] || 2;
+              this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+              this.updateUI(); // 确保UI更新
+            }).catch(error => {
+              console.warn('读取档位配置失败，使用默认值:', error);
+              savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+              this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+              this.updateUI(); // 确保UI更新
+            });
+          } else {
+            // 降级到localStorage
+            savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+            this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+          }
+        } catch (error) {
+          console.warn('读取档位配置失败，使用默认值:', error);
+          savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+          this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+        }
+        // 设置初始值（异步加载会覆盖）
+        this.currentLevel = savedLevel;
 
         this.levels = [
           {
@@ -320,35 +343,70 @@ class BookmarkManager {
             frequency: '每月提醒',
             description: '重要资料，每月提醒一次',
             color: '#4CAF50',
-            interval: 30
+            interval: 30,
+            triggerConditions: {
+              visitCount: '≥ 20次',
+              browseDuration: '≥ 120秒',
+              browseDepth: '≥ 10屏',
+              process: '(5档,4档,3档)'
+            },
+            scenarios: ['极度重要的资料', '需要深度关注的内容', '每月回顾一次']
           },
           {
             name: '偶尔',
             frequency: '每两周提醒',
             description: '定期查看，每两周一次',
             color: '#8BC34A',
-            interval: 14
+            interval: 14,
+            triggerConditions: {
+              visitCount: '≥ 12次',
+              browseDuration: '≥ 90秒',
+              browseDepth: '≥ 5屏',
+              process: '(4档,3档,2档)'
+            },
+            scenarios: ['重要资料', '定期回顾的内容', '每两周检查一次']
           },
           {
             name: '适中',
             frequency: '每周提醒',
             description: '适度关注，每周一次',
             color: '#CDDC39',
-            interval: 7
+            interval: 7,
+            triggerConditions: {
+              visitCount: '≥ 8次',
+              browseDuration: '≥ 60秒',
+              browseDepth: '≥ 1.5屏',
+              process: '(3档,2档,1档)'
+            },
+            scenarios: ['工作学习资料', '常用参考内容', '每周回顾一次']
           },
           {
             name: '常常',
             frequency: '每三天提醒',
             description: '经常关注，每三天一次',
             color: '#FFC107',
-            interval: 3
+            interval: 3,
+            triggerConditions: {
+              visitCount: '≥ 5次',
+              browseDuration: '≥ 30秒',
+              browseDepth: '无要求',
+              process: '(2档,1档,?)'
+            },
+            scenarios: ['需要关注的内容', '项目相关资料', '每三天检查一次']
           },
           {
             name: '频繁',
             frequency: '每天提醒',
             description: '持续关注，每天一次',
             color: '#FF5722',
-            interval: 1
+            interval: 1,
+            triggerConditions: {
+              visitCount: '≥ 3次',
+              browseDuration: '无要求',
+              browseDepth: '无要求',
+              process: '(1档,?,?)'
+            },
+            scenarios: ['临时资料和待办事项', '需要每天关注的内容', '短期项目资料']
           }
         ];
 
@@ -437,7 +495,7 @@ class BookmarkManager {
           console.error('Invalid level:', this.currentLevel);
           return;
         }
-        
+
         document.getElementById('current-mode-name').textContent = `${levelData.name}提醒`;
         document.getElementById('reminder-frequency').textContent = levelData.frequency;
         document.getElementById('mode-description').textContent = levelData.description;
@@ -448,12 +506,72 @@ class BookmarkManager {
           this.fill.style.backgroundColor = levelData.color;
         }
 
-        // 保存到本地存储
-        localStorage.setItem('reminder-sensitivity-level', this.currentLevel);
-        localStorage.setItem('reminder-frequency-interval', levelData.interval);
+        // 更新触发条件显示
+        this.updateTriggerConditions(levelData);
+
+        // 使用增强的存储机制保存配置
+        this.saveConfigWithRetry(this.currentLevel, levelData.interval);
       }
 
       
+      /**
+       * 更新触发条件显示
+       * @param {Object} levelData 当前级别的数据
+       */
+      updateTriggerConditions(levelData) {
+        // 查找或创建触发条件显示区域
+        let conditionsDiv = document.getElementById('trigger-conditions');
+        if (!conditionsDiv) {
+          conditionsDiv = document.createElement('div');
+          conditionsDiv.id = 'trigger-conditions';
+          conditionsDiv.style.cssText = `
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.08);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+          `;
+
+          // 插入到mode-description后面
+          const descriptionEl = document.getElementById('mode-description');
+          if (descriptionEl) {
+            descriptionEl.parentNode.insertBefore(conditionsDiv, descriptionEl.nextSibling);
+          }
+        }
+
+        // 更新触发条件内容
+        conditionsDiv.innerHTML = `
+          <div style="margin-bottom: 10px;">
+            <strong style="color: #667eea;">📋 触发条件：</strong>
+          </div>
+          <div style="margin-left: 20px; margin-bottom: 8px;">
+            <span style="color: #666;">• 访问次数：</span>
+            <span style="color: #333; font-weight: 600;">${levelData.triggerConditions.visitCount}</span>
+          </div>
+          <div style="margin-left: 20px; margin-bottom: 8px;">
+            <span style="color: #666;">• 访问时长：</span>
+            <span style="color: #333; font-weight: 600;">${levelData.triggerConditions.browseDuration}</span>
+          </div>
+          <div style="margin-left: 20px; margin-bottom: 12px;">
+            <span style="color: #666;">• 访问深度：</span>
+            <span style="color: #333; font-weight: 600;">${levelData.triggerConditions.browseDepth}</span>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <strong style="color: #667eea;">🎯 适用场景：</strong>
+          </div>
+          <div style="margin-left: 20px;">
+            ${levelData.scenarios.map(scenario =>
+              `<div style="margin-bottom: 4px; color: #666;">• ${scenario}</div>`
+            ).join('')}
+          </div>
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(102, 126, 234, 0.2);">
+            <span style="color: #999; font-size: 0.85em;">流程顺序：${levelData.triggerConditions.process}</span>
+          </div>
+        `;
+      }
+
       /**
        * 获取当前配置
        * @returns {Object} 当前敏感度级别的配置信息
@@ -483,6 +601,61 @@ class BookmarkManager {
       getFrequencyName() {
         const levelData = this.levels[this.currentLevel];
         return levelData.name;
+      }
+
+      /**
+       * 使用增强机制保存配置（带重试和双写同步）
+       * @param {number} level - 当前档位级别
+       * @param {number} interval - 提醒间隔天数
+       */
+      async saveConfigWithRetry(level, interval) {
+        const maxRetries = 3;
+        const retryDelay = 500;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            // Chrome.storage保存
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+              await new Promise((resolve, reject) => {
+                chrome.storage.local.set({
+                  'reminder-sensitivity-level': level,
+                  'reminder-frequency-interval': interval
+                }, () => {
+                  if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                  } else {
+                    resolve();
+                  }
+                });
+              });
+            }
+
+            // localStorage保存（始终执行作为备份）
+            localStorage.setItem('reminder-sensitivity-level', level.toString());
+            localStorage.setItem('reminder-frequency-interval', interval.toString());
+
+            console.log(`[档位配置] 保存成功: 级别${level}, 间隔${interval}天 (尝试${attempt}次)`);
+            return;
+
+          } catch (error) {
+            console.warn(`[档位配置] 保存失败 (尝试${attempt}/${maxRetries}):`, error.message);
+
+            if (attempt === maxRetries) {
+              // 最后一次尝试失败，至少确保localStorage有值
+              try {
+                localStorage.setItem('reminder-sensitivity-level', level.toString());
+                localStorage.setItem('reminder-frequency-interval', interval.toString());
+                console.log(`[档位配置] localStorage保底保存成功: 级别${level}`);
+              } catch (localError) {
+                console.error(`[档位配置] localStorage保底保存也失败:`, localError);
+              }
+              break;
+            }
+
+            // 等待延迟后重试
+            await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+          }
+        }
       }
     }
 
