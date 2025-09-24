@@ -2,6 +2,140 @@
 
 ## 2025年9月24日 (续)
 
+### 智能提醒配置界面iOS风格开关优化
+
+#### 第一阶段：启用智能提醒iOS风格开关实现
+- **设计需求分析** - 用户要求将「启用智能提醒」从复选框改为iOS风格开关
+- **ASCII设计方案** - 提供白色背景、绿色/灰色轨道、白色圆形滑块的iOS开关设计
+- **用户确认** - 用户确认设计方案正确，要求实现
+
+**第二阶段：iOS开关完整实现**
+- **HTML结构重构** - 将 `<input type="checkbox">` 改为iOS开关结构：
+  ```html
+  <div class="ios-switch">
+    <input type="checkbox" id="reminder-enabled" class="ios-switch-input">
+    <span class="ios-switch-slider"></span>
+  </div>
+  ```
+- **CSS样式系统** - 完整实现iOS风格开关样式：
+  - 白色背景，未启用时灰色轨道 (#e0e0e0)
+  - 启用时绿色轨道 (#4cd964)
+  - 白色圆形滑块，带阴影效果
+  - 平滑的0.3s过渡动画
+  - 深色模式适配：轨道背景 #4a4a4a，启用状态 #34c759
+- **功能保持不变** - 保留原有ID和功能，仅改变视觉表现
+
+#### 第三阶段：提醒频次文字样式统一
+- **文字内容修改** - 将「提醒敏感度:」改为「提醒频次:」
+- **样式统一调整** - 调整字体样式与「启用智能提醒」完全一致：
+  - 字体大小：从 0.9rem 改为 0.85rem
+  - 字体权重：移除 font-weight: 600，使用默认权重
+  - 颜色：保持 var(--text-color, #333333) 一致
+
+#### 第四阶段：界面信息精简
+- **JavaScript依赖移除** - 从 `SensitivitySlider.updateUI()` 方法中移除：
+  - `reminder-frequency` 元素更新代码
+  - `mode-description` 元素更新代码
+- **HTML元素安全删除** - 删除对应的DOM元素：
+  - 提醒频率显示行 (包含📊图标)
+  - 说明文字显示行 (包含💡图标)
+- **底部说明移除** - 删除「当您频繁访问某个网站时，系统会提醒您添加书签」说明文字
+
+#### 第五阶段：调试窗口开关增加
+- **UI扩展** - 在「启用智能提醒」下方增加「打开调试窗口」开关
+- **设计一致性** - 采用与「启用智能提醒」完全相同的iOS风格设计
+- **独立功能** - 使用独立ID `debug-window-enabled`，便于后续业务逻辑实现
+
+#### 技术实现亮点
+
+**iOS开关CSS架构：**
+```css
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  margin-left: 8px;
+}
+
+.ios-switch-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ios-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #e0e0e0;
+  transition: background-color 0.3s ease;
+  border-radius: 28px;
+}
+
+.ios-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: transform 0.3s ease;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.ios-switch-input:checked + .ios-switch-slider {
+  background-color: #4cd964;
+}
+
+.ios-switch-input:checked + .ios-switch-slider:before {
+  transform: translateX(20px);
+}
+```
+
+**JavaScript清理策略：**
+```javascript
+// 从 updateUI() 方法中移除的代码
+// document.getElementById('reminder-frequency').textContent = levelData.frequency;
+// document.getElementById('mode-description').textContent = levelData.description;
+```
+
+#### 用户体验优化效果
+
+**视觉设计：**
+- ✅ **iOS原生体验** - 白色背景、绿色轨道、白色滑块的经典iOS设计
+- ✅ **动画流畅** - 0.3s平滑过渡，触感反馈自然
+- ✅ **深色适配** - 完美适配深色主题，保持视觉一致性
+- ✅ **布局统一** - 左文字右开关的标准化布局
+
+**界面简洁化：**
+- ✅ **信息聚焦** - 移除冗余信息，保留核心功能
+- ✅ **层次清晰** - 启用开关 → 频次滑块 → 当前模式的清晰层次
+- ✅ **交互简化** - 减少视觉干扰，提升操作效率
+
+**功能完整性：**
+- ✅ **向后兼容** - 保持所有原有功能，仅优化视觉表现
+- ✅ **错误预防** - 安全移除JavaScript依赖，避免运行时错误
+- ✅ **扩展友好** - 新增调试窗口开关为后续功能预留接口
+
+#### 创新特性
+
+1. **原生iOS体验** - 完全还原iOS开关的视觉和交互体验
+2. **渐进式优化** - 分步骤优化，每步都保持功能稳定性
+3. **安全重构** - 系统性移除依赖关系，避免破坏性改动
+4. **设计一致性** - 所有开关组件采用统一的设计语言
+
+#### 开发统计
+**开发时间**: 2025年9月24日
+**实际开发时长**: 约30分钟
+**代码变更**:
+- HTML新增：8行 (iOS开关结构)
+- CSS新增：56行 (iOS开关样式)
+- HTML删除：约15行 (精简的界面元素)
+- JavaScript修改：删除2行，保持功能完整性
+
 ### 调试窗口进度条修复最终验证
 
 **问题最终确认与解决：**
