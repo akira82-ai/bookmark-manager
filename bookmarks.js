@@ -497,8 +497,6 @@ class BookmarkManager {
         }
 
         document.getElementById('current-mode-name').textContent = `${levelData.name}提醒`;
-        document.getElementById('reminder-frequency').textContent = levelData.frequency;
-        document.getElementById('mode-description').textContent = levelData.description;
 
         // 更新颜色主题
         if (levelData.color) {

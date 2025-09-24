@@ -2865,10 +2865,62 @@ body.dark-mode .new-folder-input:focus {
   color: var(--text-color, #333333);
 }
 
-.setting-checkbox {
-  width: 1rem;
-  height: 1rem;
+/* iOS风格开关样式 */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  margin-left: 8px;
+}
+
+.ios-switch-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ios-switch-slider {
+  position: absolute;
   cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e0e0e0;
+  transition: background-color 0.3s ease;
+  border-radius: 28px;
+}
+
+.ios-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: transform 0.3s ease;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.ios-switch-input:checked + .ios-switch-slider {
+  background-color: #4cd964;
+}
+
+.ios-switch-input:checked + .ios-switch-slider:before {
+  transform: translateX(20px);
+}
+
+/* 深色模式iOS开关适配 */
+body.dark-mode .ios-switch-slider {
+  background-color: #4a4a4a;
+}
+
+body.dark-mode .ios-switch-input:checked + .ios-switch-slider {
+  background-color: #34c759;
 }
 
 .setting-text {
@@ -3057,8 +3109,7 @@ body.dark-mode .section-title {
 }
 
 .sensitivity-label {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.85rem;
   color: var(--text-color, #333333);
   margin-bottom: 0.5rem;
 }

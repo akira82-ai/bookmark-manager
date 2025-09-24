@@ -5,7 +5,8 @@
       "Bash(node:*)",
       "Bash(git add:*)",
       "Bash(git restore:*)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

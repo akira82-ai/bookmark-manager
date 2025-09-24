@@ -58,14 +58,17 @@
           <div class="settings-content" id="reminder-settings-content" style="display: none;">
             <div class="setting-item">
               <label class="setting-label">
-                <input type="checkbox" id="reminder-enabled" class="setting-checkbox">
                 <span class="setting-text">启用智能提醒</span>
+                <div class="ios-switch">
+                  <input type="checkbox" id="reminder-enabled" class="ios-switch-input">
+                  <span class="ios-switch-slider"></span>
+                </div>
               </label>
             </div>
 
             <div class="setting-item">
               <div class="sensitivity-container">
-                <div class="sensitivity-label">提醒敏感度:</div>
+                <div class="sensitivity-label">提醒频次:</div>
                 <div class="sensitivity-slider-container">
                   <div class="sensitivity-track">
                     <div class="sensitivity-fill"></div>
@@ -93,21 +96,10 @@
                   <span class="mode-icon">🔒</span>
                   <span class="mode-text">当前模式: <strong id="current-mode-name">专题研究模式</strong></span>
                 </div>
-                <div class="mode-info-row">
-                  <span class="mode-icon">📊</span>
-                  <span class="mode-text">提醒频率: <strong id="reminder-frequency">每天3-5次</strong></span>
-                </div>
-                <div class="mode-info-row">
-                  <span class="mode-icon">💡</span>
-                  <span class="mode-text">说明: <span id="mode-description">专题研究和知识体系构建</span></span>
-                </div>
               </div>
             </div>
 
-            <div class="setting-description">
-              💡 当您频繁访问某个网站时，系统会提醒您添加书签
             </div>
-          </div>
         </div>
         </aside>
 

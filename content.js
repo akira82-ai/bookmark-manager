@@ -1020,7 +1020,8 @@ function createDebugWindow() {
   debugWindow.id = 'core-metrics-debug-window';
   debugWindow.innerHTML = `
     <div class="debug-header">
-      🛠️ 智能书签调试窗口 v2.0
+      <span class="debug-title">🛠️ 智能书签调试窗口 v2.0</span>
+      <span class="debug-close-btn" id="debug-close-btn">×</span>
     </div>
 
     <!-- 当前档位配置 -->
@@ -1129,13 +1130,6 @@ function createDebugWindow() {
       </div>
     </div>
 
-    <!-- 调试控制 -->
-    <div class="debug-controls">
-      <button class="debug-btn" id="debug-test-btn">测试判定</button>
-      <button class="debug-btn" id="debug-trigger-btn">强制触发</button>
-      <button class="debug-btn" id="debug-clear-btn">清除数据</button>
-      <button class="debug-btn" id="debug-close-btn">关闭窗口</button>
-    </div>
   `;
 
   // 添加样式
@@ -1147,7 +1141,7 @@ function createDebugWindow() {
       bottom: 10px;
       right: 10px;
       width: 320px;
-      min-height: 420px;
+      min-height: 380px;
       max-height: 600px;
       background: rgba(0, 0, 0, 0.8);
       border-radius: 12px;
@@ -1170,9 +1164,35 @@ function createDebugWindow() {
       font-size: 12px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       margin-bottom: 8px;
-      text-align: center;
       background: rgba(102, 126, 234, 0.2);
       border-radius: 12px 12px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .debug-title {
+      flex: 1;
+    }
+
+    .debug-close-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .debug-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
     }
 
     .debug-content {
@@ -1338,34 +1358,6 @@ function createDebugWindow() {
       font-size: 10px;
       color: #a5d6a7;
       font-weight: 500;
-    }
-
-    /* 调试控制按钮 */
-    .debug-controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin: 12px 15px 8px 15px;
-    }
-
-    .debug-btn {
-      padding: 6px 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      color: white;
-      font-size: 10px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .debug-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .debug-btn:active {
-      transform: scale(0.95);
     }
 
     .debug-hit-level {
@@ -1900,49 +1892,7 @@ function bindDebugControlEvents(metrics) {
   if (window.debugEventsBound) return;
   window.debugEventsBound = true;
 
-  // 测试判定按钮
-  const testBtn = document.getElementById('debug-test-btn');
-  if (testBtn) {
-    testBtn.addEventListener('click', () => {
-      console.log('测试判定功能', metrics);
-      if (window.MetricsJudgmentEngine) {
-        const engine = new window.MetricsJudgmentEngine();
-        const result = engine.judge({
-          visitCount: metrics.visitCount,
-          browseDuration: metrics.browseDuration,
-          browseDepth: metrics.browseDepth
-        });
-        console.log('判定结果:', result);
-        alert(`判定结果: ${result.passed ? '通过' : '未通过'} - ${result.levelName}`);
-      }
-    });
-  }
-
-  // 强制触发按钮
-  const triggerBtn = document.getElementById('debug-trigger-btn');
-  if (triggerBtn) {
-    triggerBtn.addEventListener('click', () => {
-      console.log('强制触发智能提醒');
-      // 这里可以调用智能提醒触发函数
-      alert('智能提醒触发功能（待实现）');
-    });
-  }
-
-  // 清除数据按钮
-  const clearBtn = document.getElementById('debug-clear-btn');
-  if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      console.log('清除调试数据');
-      // 清除存储的数据
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.local.remove(['coreMetricsData'], () => {
-          alert('调试数据已清除，请刷新页面');
-        });
-      }
-    });
-  }
-
-  // 关闭窗口按钮
+  // 关闭窗口按钮（标题栏右侧）
   const closeBtn = document.getElementById('debug-close-btn');
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
