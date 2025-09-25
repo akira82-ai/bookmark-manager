@@ -49,7 +49,7 @@ class MetricsJudgmentEngine {
         };
 
         // 调试模式
-        this.debugMode = true;
+        this.debugMode = false;
     }
 
     /**
@@ -60,15 +60,9 @@ class MetricsJudgmentEngine {
     judge(metrics) {
         const { visitCount, browseDuration, browseDepth } = metrics;
 
-        if (this.debugMode) {
-            console.log('🔍 开始3大指标判定:', metrics);
-        }
 
         // 第一层：访问次数判定（权重最高，具有一票否决权）
         const visitCountResult = this.judgeVisitCount(visitCount);
-        if (this.debugMode) {
-            console.log(`📊 访问次数判定: ${visitCount} -> ${this.getResultText(visitCountResult)}`);
-        }
 
         if (visitCountResult.level === -1) {
             return this.createFailureResult('访问次数不足', visitCountResult);
@@ -76,9 +70,6 @@ class MetricsJudgmentEngine {
 
         // 第二层：访问时长判定（中等权重）
         const durationResult = this.judgeBrowseDuration(browseDuration);
-        if (this.debugMode) {
-            console.log(`⏱️ 访问时长判定: ${browseDuration}秒 -> ${this.getResultText(durationResult)}`);
-        }
 
         if (durationResult.level === -1) {
             return this.createFailureResult('访问时长不足', durationResult);
@@ -86,9 +77,6 @@ class MetricsJudgmentEngine {
 
         // 第三层：访问深度判定（辅助权重）
         const depthResult = this.judgeBrowseDepth(browseDepth);
-        if (this.debugMode) {
-            console.log(`📏 访问深度判定: ${browseDepth.toFixed(1)}屏 -> ${this.getResultText(depthResult)}`);
-        }
 
         if (depthResult.level === -1) {
             return this.createFailureResult('访问深度不足', depthResult);
@@ -124,13 +112,6 @@ class MetricsJudgmentEngine {
             thresholdExceeded: this.getThresholdExceededInfo(visitCountResult, durationResult, depthResult)
         };
 
-        if (this.debugMode) {
-            console.log('✅ 判定成功:', {
-                level: result.levelName,
-                weightedScore: weightedScore.toFixed(2),
-                confidence: (result.confidence * 100).toFixed(1) + '%'
-            });
-        }
 
         return result;
     }
