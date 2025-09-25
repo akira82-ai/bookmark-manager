@@ -850,7 +850,7 @@ const CoreMetricsState = {
   isInitialized: false,
 
   // 浏览数据窗口相关
-  debugWindow: null,
+  browseWindow: null,
   updateInterval: null,
 
   // 事件驱动提醒机制
@@ -1255,131 +1255,131 @@ const levelConfigs = [
 /**
  * 创建浏览数据窗口
  */
-function createDebugWindow() {
+function createBrowseWindow() {
   // 如果窗口已存在，直接返回
-  if (CoreMetricsState.debugWindow) {
+  if (CoreMetricsState.browseWindow) {
     return;
   }
 
   // 创建窗口容器
-  const debugWindow = document.createElement('div');
-  debugWindow.id = 'core-metrics-debug-window';
-  debugWindow.innerHTML = `
-    <div class="debug-header">
-      <span class="debug-title">📊 智能书签浏览数据窗口 v2.0</span>
-      <span class="debug-close-btn" id="debug-close-btn">×</span>
+  const browseWindow = document.createElement('div');
+  browseWindow.id = 'core-metrics-browse-window';
+  browseWindow.innerHTML = `
+    <div class="browse-header">
+      <span class="browse-title">📊 智能书签浏览数据窗口 v2.0</span>
+      <span class="browse-close-btn" id="browse-close-btn">×</span>
     </div>
 
     <!-- 当前档位配置 -->
-    <div class="debug-config-section">
-      <div class="debug-config-header">
+    <div class="browse-config-section">
+      <div class="browse-config-header">
         📊 当前提醒配置
       </div>
-      <div class="debug-config-content">
-        <div class="debug-config-item">
-          <span class="debug-label">档位:</span>
-          <span class="debug-value" id="debug-config-level">适中提醒</span>
+      <div class="browse-config-content">
+        <div class="browse-config-item">
+          <span class="browse-label">档位:</span>
+          <span class="browse-value" id="browse-config-level">适中提醒</span>
         </div>
-        <div class="debug-config-item">
-          <span class="debug-label">频率:</span>
-          <span class="debug-value" id="debug-config-frequency">每周提醒</span>
+        <div class="browse-config-item">
+          <span class="browse-label">频率:</span>
+          <span class="browse-value" id="browse-config-frequency">每周提醒</span>
         </div>
-        <div class="debug-config-thresholds">
-          <div class="debug-threshold-item">
-            <span class="debug-label">• 访问次数:</span>
-            <span class="debug-value" id="debug-threshold-visit">≥ 8次</span>
+        <div class="browse-config-thresholds">
+          <div class="browse-threshold-item">
+            <span class="browse-label">• 访问次数:</span>
+            <span class="browse-value" id="browse-threshold-visit">≥ 8次</span>
           </div>
-          <div class="debug-threshold-item">
-            <span class="debug-label">• 访问时长:</span>
-            <span class="debug-value" id="debug-threshold-duration">≥ 60秒</span>
+          <div class="browse-threshold-item">
+            <span class="browse-label">• 访问时长:</span>
+            <span class="browse-value" id="browse-threshold-duration">≥ 60秒</span>
           </div>
-          <div class="debug-threshold-item">
-            <span class="debug-label">• 访问深度:</span>
-            <span class="debug-value" id="debug-threshold-depth">≥ 1.5屏</span>
+          <div class="browse-threshold-item">
+            <span class="browse-label">• 访问深度:</span>
+            <span class="browse-value" id="browse-threshold-depth">≥ 1.5屏</span>
           </div>
         </div>
-        <div class="debug-config-process">
-          <span class="debug-label">流程:</span>
-          <span class="debug-value" id="debug-config-process">(3档,2档,1档)</span>
+        <div class="browse-config-process">
+          <span class="browse-label">流程:</span>
+          <span class="browse-value" id="browse-config-process">(3档,2档,1档)</span>
         </div>
       </div>
     </div>
 
     <!-- 实时指标数据 -->
-    <div class="debug-content">
-      <div class="debug-item">
-        <span class="debug-label">次数:</span>
-        <span class="debug-value" id="debug-visit-count">0次</span>
+    <div class="browse-content">
+      <div class="browse-item">
+        <span class="browse-label">次数:</span>
+        <span class="browse-value" id="browse-visit-count">0次</span>
       </div>
-      <div class="debug-item">
-        <span class="debug-label">时长:</span>
-        <span class="debug-value" id="debug-duration">0:00</span>
+      <div class="browse-item">
+        <span class="browse-label">时长:</span>
+        <span class="browse-value" id="browse-duration">0:00</span>
       </div>
-      <div class="debug-item">
-        <span class="debug-label">深度:</span>
-        <span class="debug-value" id="debug-depth">0.0屏</span>
+      <div class="browse-item">
+        <span class="browse-label">深度:</span>
+        <span class="browse-value" id="browse-depth">0.0屏</span>
       </div>
 
       <!-- 进度条显示 -->
-      <div class="debug-progress-section">
-        <div class="debug-progress-item">
-          <span class="debug-progress-label">次数进度:</span>
-          <div class="debug-progress-bar">
-            <div class="debug-progress-fill" id="debug-visit-progress"></div>
+      <div class="browse-progress-section">
+        <div class="browse-progress-item">
+          <span class="browse-progress-label">次数进度:</span>
+          <div class="browse-progress-bar">
+            <div class="browse-progress-fill" id="browse-visit-progress"></div>
           </div>
-          <span class="debug-progress-text" id="debug-visit-percent">0%</span>
+          <span class="browse-progress-text" id="browse-visit-percent">0%</span>
         </div>
-        <div class="debug-progress-item">
-          <span class="debug-progress-label">时长进度:</span>
-          <div class="debug-progress-bar">
-            <div class="debug-progress-fill" id="debug-duration-progress"></div>
+        <div class="browse-progress-item">
+          <span class="browse-progress-label">时长进度:</span>
+          <div class="browse-progress-bar">
+            <div class="browse-progress-fill" id="browse-duration-progress"></div>
           </div>
-          <span class="debug-progress-text" id="debug-duration-percent">0%</span>
+          <span class="browse-progress-text" id="browse-duration-percent">0%</span>
         </div>
-        <div class="debug-progress-item">
-          <span class="debug-progress-label">深度进度:</span>
-          <div class="debug-progress-bar">
-            <div class="debug-progress-fill" id="debug-depth-progress"></div>
+        <div class="browse-progress-item">
+          <span class="browse-progress-label">深度进度:</span>
+          <div class="browse-progress-bar">
+            <div class="browse-progress-fill" id="browse-depth-progress"></div>
           </div>
-          <span class="debug-progress-text" id="debug-depth-percent">0%</span>
+          <span class="browse-progress-text" id="browse-depth-percent">0%</span>
         </div>
       </div>
     </div>
 
     <!-- 条件命中检测 -->
-    <div class="debug-hit-section" id="debug-hit-section">
-      <div class="debug-hit-header">
+    <div class="browse-hit-section" id="browse-hit-section">
+      <div class="browse-hit-header">
         🎯 提醒条件检测
       </div>
-      <div class="debug-hit-content" id="debug-hit-content">
-        <div class="debug-hit-status" id="debug-hit-status">
-          <span class="debug-label">状态:</span>
-          <span class="debug-value" id="debug-hit-text">检测中...</span>
+      <div class="browse-hit-content" id="browse-hit-content">
+        <div class="browse-hit-status" id="browse-hit-status">
+          <span class="browse-label">状态:</span>
+          <span class="browse-value" id="browse-hit-text">检测中...</span>
         </div>
-        <div class="debug-hit-analysis" id="debug-hit-analysis" style="display: none;">
-          <div class="debug-analysis-item">
-            <span class="debug-label">• 访问次数:</span>
-            <span class="debug-value" id="debug-analysis-visit">--</span>
+        <div class="browse-hit-analysis" id="browse-hit-analysis" style="display: none;">
+          <div class="browse-analysis-item">
+            <span class="browse-label">• 访问次数:</span>
+            <span class="browse-value" id="browse-analysis-visit">--</span>
           </div>
-          <div class="debug-analysis-item">
-            <span class="debug-label">• 访问时长:</span>
-            <span class="debug-value" id="debug-analysis-duration">--</span>
+          <div class="browse-analysis-item">
+            <span class="browse-label">• 访问时长:</span>
+            <span class="browse-value" id="browse-analysis-duration">--</span>
           </div>
-          <div class="debug-analysis-item">
-            <span class="debug-label">• 访问深度:</span>
-            <span class="debug-value" id="debug-analysis-depth">--</span>
+          <div class="browse-analysis-item">
+            <span class="browse-label">• 访问深度:</span>
+            <span class="browse-value" id="browse-analysis-depth">--</span>
           </div>
         </div>
-        <div class="debug-hit-suggestion" id="debug-hit-suggestion" style="display: none;">
-          <span class="debug-suggestion-text" id="debug-suggestion-text">--</span>
+        <div class="browse-hit-suggestion" id="browse-hit-suggestion" style="display: none;">
+          <span class="browse-suggestion-text" id="browse-suggestion-text">--</span>
         </div>
       </div>
     </div>
 
     <!-- 窗口说明 -->
-    <div class="debug-info-section">
-      <div class="debug-info-content">
-        <div class="debug-info-text">
+    <div class="browse-info-section">
+      <div class="browse-info-content">
+        <div class="browse-info-text">
           💡 此窗口显示您的浏览行为数据，当达到设定条件时会自动触发收藏提醒
         </div>
       </div>
@@ -1391,9 +1391,9 @@ function createDebugWindow() {
 
   // 添加样式
   const style = document.createElement('style');
-  style.setAttribute('data-debug-window', 'true');
+  style.setAttribute('data-browse-window', 'true');
   style.textContent = `
-    #core-metrics-debug-window {
+    #core-metrics-browse-window {
       position: fixed;
       bottom: 10px;
       right: 10px;
@@ -1415,7 +1415,7 @@ function createDebugWindow() {
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
-    .debug-header {
+    .browse-header {
       padding: 10px 15px 6px 15px;
       font-weight: 600;
       font-size: 12px;
@@ -1428,11 +1428,11 @@ function createDebugWindow() {
       align-items: center;
     }
 
-    .debug-title {
+    .browse-title {
       flex: 1;
     }
 
-    .debug-close-btn {
+    .browse-close-btn {
       width: 20px;
       height: 20px;
       border-radius: 50%;
@@ -1447,16 +1447,16 @@ function createDebugWindow() {
       transition: all 0.2s ease;
     }
 
-    .debug-close-btn:hover {
+    .browse-close-btn:hover {
       background: rgba(255, 255, 255, 0.3);
       transform: scale(1.1);
     }
 
-    .debug-content {
+    .browse-content {
       padding: 0 15px 12px 15px;
     }
 
-    .debug-item {
+    .browse-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -1464,24 +1464,24 @@ function createDebugWindow() {
       line-height: 1.3;
     }
 
-    .debug-label {
+    .browse-label {
       color: rgba(255, 255, 255, 0.8);
     }
 
-    .debug-value {
+    .browse-value {
       font-weight: 500;
       color: #4fc3f7;
     }
 
     /* 档位配置区域 */
-    .debug-config-section {
+    .browse-config-section {
       border: 1px solid rgba(102, 126, 234, 0.3);
       border-radius: 8px;
       margin: 8px 15px;
       background: rgba(102, 126, 234, 0.1);
     }
 
-    .debug-config-header {
+    .browse-config-header {
       padding: 6px 12px 4px 12px;
       font-weight: 600;
       font-size: 11px;
@@ -1490,11 +1490,11 @@ function createDebugWindow() {
       margin-bottom: 6px;
     }
 
-    .debug-config-content {
+    .browse-config-content {
       padding: 0 12px 8px 12px;
     }
 
-    .debug-config-item {
+    .browse-config-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -1502,12 +1502,12 @@ function createDebugWindow() {
       font-size: 11px;
     }
 
-    .debug-config-thresholds {
+    .browse-config-thresholds {
       margin: 6px 0;
       font-size: 10px;
     }
 
-    .debug-threshold-item {
+    .browse-threshold-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -1515,7 +1515,7 @@ function createDebugWindow() {
       color: rgba(255, 255, 255, 0.7);
     }
 
-    .debug-config-process {
+    .browse-config-process {
       margin-top: 4px;
       font-size: 10px;
       color: rgba(255, 255, 255, 0.6);
@@ -1523,24 +1523,24 @@ function createDebugWindow() {
     }
 
     /* 进度条区域 */
-    .debug-progress-section {
+    .browse-progress-section {
       margin-top: 8px;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       padding-top: 8px;
     }
 
-    .debug-progress-item {
+    .browse-progress-item {
       margin-bottom: 6px;
     }
 
-    .debug-progress-label {
+    .browse-progress-label {
       display: block;
       margin-bottom: 2px;
       font-size: 10px;
       color: rgba(255, 255, 255, 0.7);
     }
 
-    .debug-progress-bar {
+    .browse-progress-bar {
       width: 100%;
       height: 4px;
       background: rgba(255, 255, 255, 0.2);
@@ -1549,28 +1549,28 @@ function createDebugWindow() {
       margin-bottom: 2px;
     }
 
-    .debug-progress-fill {
+    .browse-progress-fill {
       height: 100%;
       background: linear-gradient(90deg, #4fc3f7, #29b6f6);
       border-radius: 2px;
       transition: width 0.3s ease;
     }
 
-    .debug-progress-text {
+    .browse-progress-text {
       font-size: 9px;
       color: rgba(255, 255, 255, 0.6);
       text-align: right;
     }
 
     /* 条件命中检测区域 */
-    .debug-hit-section {
+    .browse-hit-section {
       border: 1px solid rgba(76, 175, 80, 0.3);
       border-radius: 8px;
       margin: 8px 15px;
       background: rgba(76, 175, 80, 0.1);
     }
 
-    .debug-hit-header {
+    .browse-hit-header {
       padding: 6px 12px 4px 12px;
       font-weight: 600;
       font-size: 11px;
@@ -1579,11 +1579,11 @@ function createDebugWindow() {
       margin-bottom: 6px;
     }
 
-    .debug-hit-content {
+    .browse-hit-content {
       padding: 0 12px 8px 12px;
     }
 
-    .debug-hit-status {
+    .browse-hit-status {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -1591,19 +1591,19 @@ function createDebugWindow() {
       font-size: 11px;
     }
 
-    .debug-hit-analysis {
+    .browse-hit-analysis {
       margin: 6px 0;
       font-size: 10px;
     }
 
-    .debug-analysis-item {
+    .browse-analysis-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 2px;
     }
 
-    .debug-hit-suggestion {
+    .browse-hit-suggestion {
       margin-top: 6px;
       padding: 4px 8px;
       background: rgba(76, 175, 80, 0.2);
@@ -1611,14 +1611,14 @@ function createDebugWindow() {
       border-left: 3px solid #4caf50;
     }
 
-    .debug-suggestion-text {
+    .browse-suggestion-text {
       font-size: 10px;
       color: #a5d6a7;
       font-weight: 500;
     }
 
     /* 窗口说明区域 */
-    .debug-info-section {
+    .browse-info-section {
       margin: 8px 15px;
       padding: 8px 12px;
       background: rgba(255, 255, 255, 0.05);
@@ -1626,11 +1626,11 @@ function createDebugWindow() {
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .debug-info-content {
+    .browse-info-content {
       text-align: center;
     }
 
-    .debug-info-text {
+    .browse-info-text {
       font-size: 10px;
       color: rgba(255, 255, 255, 0.6);
       line-height: 1.4;
@@ -1639,20 +1639,20 @@ function createDebugWindow() {
 
   try {
     document.head.appendChild(style);
-    document.body.appendChild(debugWindow);
+    document.body.appendChild(browseWindow);
   } catch (error) {
     console.error('添加浏览数据窗口失败:', error);
   }
 
   // 保存引用
-  CoreMetricsState.debugWindow = debugWindow;
+  CoreMetricsState.browseWindow = browseWindow;
 }
 
 /**
  * 更新浏览数据窗口显示的数据
  */
-async function updateDebugWindow() {
-  if (!CoreMetricsState.debugWindow) {
+async function updateBrowseWindow() {
+  if (!CoreMetricsState.browseWindow) {
     return;
   }
 
@@ -1673,7 +1673,7 @@ async function updateDebugWindow() {
     await updateHitDetection(metrics);
 
     // 绑定控制按钮事件
-    bindDebugControlEvents(metrics);
+    bindBrowseControlEvents(metrics);
 
   } catch (error) {
     console.warn('更新浏览数据窗口失败:', error);
@@ -1684,9 +1684,9 @@ async function updateDebugWindow() {
  * 更新基本指标数据显示
  */
 function updateBasicMetrics(metrics) {
-  const visitCountEl = document.getElementById('debug-visit-count');
-  const durationEl = document.getElementById('debug-duration');
-  const depthEl = document.getElementById('debug-depth');
+  const visitCountEl = document.getElementById('browse-visit-count');
+  const durationEl = document.getElementById('browse-duration');
+  const depthEl = document.getElementById('browse-depth');
 
   if (visitCountEl) {
     visitCountEl.textContent = `${metrics.visitCount}次`;
@@ -1751,12 +1751,12 @@ async function updateCurrentLevelConfig() {
     if (!config) return;
 
     // 更新档位配置显示
-    const configLevelEl = document.getElementById('debug-config-level');
-    const configFreqEl = document.getElementById('debug-config-frequency');
-    const thresholdVisitEl = document.getElementById('debug-threshold-visit');
-    const thresholdDurationEl = document.getElementById('debug-threshold-duration');
-    const thresholdDepthEl = document.getElementById('debug-threshold-depth');
-    const processEl = document.getElementById('debug-config-process');
+    const configLevelEl = document.getElementById('browse-config-level');
+    const configFreqEl = document.getElementById('browse-config-frequency');
+    const thresholdVisitEl = document.getElementById('browse-threshold-visit');
+    const thresholdDurationEl = document.getElementById('browse-threshold-duration');
+    const thresholdDepthEl = document.getElementById('browse-threshold-depth');
+    const processEl = document.getElementById('browse-config-process');
 
     if (configLevelEl) configLevelEl.textContent = config.name;
     if (configFreqEl) configFreqEl.textContent = config.frequency;
@@ -1766,7 +1766,7 @@ async function updateCurrentLevelConfig() {
     if (processEl) processEl.textContent = config.process;
 
     // 缓存当前档位，供其他函数使用
-    window.currentDebugLevel = currentLevel;
+    window.currentBrowseLevel = currentLevel;
 
   } catch (error) {
     console.warn('更新档位配置失败:', error);
@@ -1778,12 +1778,12 @@ async function updateCurrentLevelConfig() {
       const fallbackConfig = levelConfigs[fallbackLevel];
 
       if (fallbackConfig) {
-        const configLevelEl = document.getElementById('debug-config-level');
-        const configFreqEl = document.getElementById('debug-config-frequency');
-        const thresholdVisitEl = document.getElementById('debug-threshold-visit');
-        const thresholdDurationEl = document.getElementById('debug-threshold-duration');
-        const thresholdDepthEl = document.getElementById('debug-threshold-depth');
-        const processEl = document.getElementById('debug-config-process');
+        const configLevelEl = document.getElementById('browse-config-level');
+        const configFreqEl = document.getElementById('browse-config-frequency');
+        const thresholdVisitEl = document.getElementById('browse-threshold-visit');
+        const thresholdDurationEl = document.getElementById('browse-threshold-duration');
+        const thresholdDepthEl = document.getElementById('browse-threshold-depth');
+        const processEl = document.getElementById('browse-config-process');
 
         if (configLevelEl) configLevelEl.textContent = fallbackConfig.name;
         if (configFreqEl) configFreqEl.textContent = fallbackConfig.frequency;
@@ -1792,19 +1792,19 @@ async function updateCurrentLevelConfig() {
         if (thresholdDepthEl) thresholdDepthEl.textContent = fallbackConfig.thresholds.depth;
         if (processEl) processEl.textContent = fallbackConfig.process;
 
-        window.currentDebugLevel = fallbackLevel;
+        window.currentBrowseLevel = fallbackLevel;
       }
     } catch (fallbackError) {
       console.warn('档位配置降级也失败:', fallbackError);
       // 最后保底：使用硬编码默认值
-      const configLevelEl = document.getElementById('debug-config-level');
-      const configFreqEl = document.getElementById('debug-config-frequency');
+      const configLevelEl = document.getElementById('browse-config-level');
+      const configFreqEl = document.getElementById('browse-config-frequency');
 
       if (configLevelEl) configLevelEl.textContent = '适中提醒';
       if (configFreqEl) configFreqEl.textContent = '每周提醒';
 
       // 确保设置默认档位级别
-      window.currentDebugLevel = 2;
+      window.currentBrowseLevel = 2;
     }
   }
 }
@@ -1827,7 +1827,7 @@ async function updateProgressBars(metrics) {
   currentLevel = Math.max(0, Math.min(4, currentLevel));
 
   // 同步更新缓存变量
-  window.currentDebugLevel = currentLevel;
+  window.currentBrowseLevel = currentLevel;
 
   // 档位阈值配置
   const thresholdConfigs = [
@@ -1850,9 +1850,9 @@ async function updateProgressBars(metrics) {
   const depthProgress = thresholds.depth > 0 ? Math.min(100, (metrics.browseDepth / thresholds.depth) * 100) : 100;
 
   // 更新进度条
-  updateProgressBar('debug-visit-progress', 'debug-visit-percent', visitProgress);
-  updateProgressBar('debug-duration-progress', 'debug-duration-percent', durationProgress);
-  updateProgressBar('debug-depth-progress', 'debug-depth-percent', depthProgress);
+  updateProgressBar('browse-visit-progress', 'browse-visit-percent', visitProgress);
+  updateProgressBar('browse-duration-progress', 'browse-duration-percent', durationProgress);
+  updateProgressBar('browse-depth-progress', 'browse-depth-percent', depthProgress);
 }
 
 /**
@@ -1927,10 +1927,10 @@ async function updateHitDetection(metrics) {
  * 更新命中状态显示
  */
 function updateHitStatus(isHit, metrics, thresholds) {
-  const hitTextEl = document.getElementById('debug-hit-text');
-  const analysisEl = document.getElementById('debug-hit-analysis');
-  const suggestionEl = document.getElementById('debug-hit-suggestion');
-  const suggestionTextEl = document.getElementById('debug-suggestion-text');
+  const hitTextEl = document.getElementById('browse-hit-text');
+  const analysisEl = document.getElementById('browse-hit-analysis');
+  const suggestionEl = document.getElementById('browse-hit-suggestion');
+  const suggestionTextEl = document.getElementById('browse-suggestion-text');
 
   if (hitTextEl) {
     if (isHit) {
@@ -1944,9 +1944,9 @@ function updateHitStatus(isHit, metrics, thresholds) {
 
   // 显示详细分析
   if (analysisEl) {
-    const visitAnalysis = document.getElementById('debug-analysis-visit');
-    const durationAnalysis = document.getElementById('debug-analysis-duration');
-    const depthAnalysis = document.getElementById('debug-analysis-depth');
+    const visitAnalysis = document.getElementById('browse-analysis-visit');
+    const durationAnalysis = document.getElementById('browse-analysis-duration');
+    const depthAnalysis = document.getElementById('browse-analysis-depth');
 
     if (visitAnalysis) {
       visitAnalysis.textContent = `${metrics.visitCount}次 ${metrics.visitCount >= thresholds.visit ? '✅' : '❌'} (需要 ≥ ${thresholds.visit}次)`;
@@ -1990,16 +1990,16 @@ function updateHitStatus(isHit, metrics, thresholds) {
 /**
  * 绑定控制按钮事件
  */
-function bindDebugControlEvents(metrics) {
+function bindBrowseControlEvents(metrics) {
   // 只绑定一次事件
-  if (window.debugEventsBound) return;
-  window.debugEventsBound = true;
+  if (window.browseEventsBound) return;
+  window.browseEventsBound = true;
 
   // 关闭窗口按钮（标题栏右侧）
-  const closeBtn = document.getElementById('debug-close-btn');
+  const closeBtn = document.getElementById('browse-close-btn');
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-      removeDebugWindow();
+      removeBrowseWindow();
     });
   }
 }
@@ -2027,13 +2027,13 @@ function formatDuration(seconds) {
 /**
  * 启动浏览数据窗口数据更新
  */
-async function startDebugWindowUpdates() {
+async function startBrowseWindowUpdates() {
   // 立即更新一次
-  await updateDebugWindow();
+  await updateBrowseWindow();
 
   // 设置定时更新 - 每秒更新访问时长
   CoreMetricsState.updateInterval = setInterval(async () => {
-    await updateDebugWindow();
+    await updateBrowseWindow();
   }, 1000); // 每1秒更新一次
 
   // 使用统一存储系统的事件监听
@@ -2045,7 +2045,7 @@ async function startDebugWindowUpdates() {
       if (key === 'reminder-sensitivity-level') {
         console.log('浏览数据窗口：检测到档位配置变化，重新加载配置');
         await updateCurrentLevelConfig();
-        await updateDebugWindow();
+        await updateBrowseWindow();
       }
     };
 
@@ -2061,7 +2061,7 @@ async function startDebugWindowUpdates() {
         if (changes['reminder-sensitivity-level']) {
           console.log('浏览数据窗口：检测到档位配置变化(传统监听)，重新加载配置');
           await updateCurrentLevelConfig();
-          await updateDebugWindow();
+          await updateBrowseWindow();
         }
       }
     };
@@ -2076,7 +2076,7 @@ async function startDebugWindowUpdates() {
 /**
  * 停止浏览数据窗口更新
  */
-function stopDebugWindowUpdates() {
+function stopBrowseWindowUpdates() {
   if (CoreMetricsState.updateInterval) {
     clearInterval(CoreMetricsState.updateInterval);
     CoreMetricsState.updateInterval = null;
@@ -2105,12 +2105,12 @@ function stopDebugWindowUpdates() {
 /**
  * 切换浏览数据窗口显示/隐藏状态
  */
-function toggleDebugWindow() {
-  if (CoreMetricsState.debugWindow) {
-    removeDebugWindow();
+function toggleBrowseWindow() {
+  if (CoreMetricsState.browseWindow) {
+    removeBrowseWindow();
     console.log('[浏览数据窗口] 通过快捷键隐藏');
   } else {
-    window.showDebugWindow();
+    window.showBrowseWindow();
     console.log('[浏览数据窗口] 通过快捷键显示');
   }
 }
@@ -2118,16 +2118,16 @@ function toggleDebugWindow() {
 /**
  * 移除浏览数据窗口
  */
-function removeDebugWindow() {
-  stopDebugWindowUpdates();
+function removeBrowseWindow() {
+  stopBrowseWindowUpdates();
 
-  if (CoreMetricsState.debugWindow) {
-    CoreMetricsState.debugWindow.remove();
-    CoreMetricsState.debugWindow = null;
+  if (CoreMetricsState.browseWindow) {
+    CoreMetricsState.browseWindow.remove();
+    CoreMetricsState.browseWindow = null;
   }
 
   // 移除样式
-  const style = document.querySelector('style[data-debug-window="true"]');
+  const style = document.querySelector('style[data-browse-window="true"]');
   if (style) {
     style.remove();
   }
@@ -2289,7 +2289,7 @@ function cleanupCoreMetrics() {
   if (!CoreMetricsState.isInitialized) return;
 
   // 移除浏览数据窗口
-  removeDebugWindow();
+  removeBrowseWindow();
 
   // 移除事件监听器
   document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -2421,7 +2421,7 @@ document.addEventListener('keydown', function(event) {
   // Ctrl+Shift+C 触发浏览数据窗口（Mac和Windows通用）
   if (event.ctrlKey && event.shiftKey && event.key === 'C') {
     event.preventDefault();
-    toggleDebugWindow();
+    toggleBrowseWindow();
     console.log('[浏览数据窗口] 快捷键触发: Ctrl+Shift+C');
   }
 
@@ -2445,11 +2445,11 @@ function showTestReminder() {
 
 // 添加控制台命令（开发用）
 if (typeof window !== 'undefined') {
-  window.removeDebugWindow = removeDebugWindow;
-  window.toggleDebugWindow = toggleDebugWindow;
-  window.showDebugWindow = async function() {
-    createDebugWindow();
-    await startDebugWindowUpdates();
+  window.removeBrowseWindow = removeBrowseWindow;
+  window.toggleBrowseWindow = toggleBrowseWindow;
+  window.showBrowseWindow = async function() {
+    createBrowseWindow();
+    await startBrowseWindowUpdates();
   };
   window.testCoreMetrics = async function() {
     console.log('测试核心指标函数...');
@@ -2469,9 +2469,9 @@ if (typeof window !== 'undefined') {
   };
 
   console.log('浏览数据窗口控制命令:');
-  console.log('- window.removeDebugWindow() 移除浏览数据窗口');
-  console.log('- window.showDebugWindow() 显示浏览数据窗口');
-  console.log('- window.toggleDebugWindow() 切换浏览数据窗口显示/隐藏');
+  console.log('- window.removeBrowseWindow() 移除浏览数据窗口');
+  console.log('- window.showBrowseWindow() 显示浏览数据窗口');
+  console.log('- window.toggleBrowseWindow() 切换浏览数据窗口显示/隐藏');
   console.log('- window.testCoreMetrics() 测试核心指标函数');
   console.log('- Ctrl+Shift+C 快捷键切换浏览数据窗口');
   console.log('- Ctrl+Shift+X 快捷键触发测试提醒');
