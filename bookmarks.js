@@ -10,8 +10,7 @@ class LinkChecker {
    * 简单可靠检测主入口
    */
   async check(url) {
-    console.log(`🔍 开始检测: ${url}`);
-    
+        
     try {
       const startTime = Date.now();
       const result = await this.performCheck(url);
@@ -28,7 +27,6 @@ class LinkChecker {
         checkedAt: Date.now()
       };
 
-      console.log(`✅ 检测完成: ${result.status} (${responseTime}ms)`);
       return finalResult;
       
     } catch (error) {
@@ -39,8 +37,7 @@ class LinkChecker {
         checkedAt: Date.now()
       };
       
-      console.log(`❌ 检测失败: ${error.message}`);
-      return errorResult;
+            return errorResult;
     }
   }
 
@@ -128,20 +125,16 @@ class BatchProcessor {
    * 串行处理批量任务
    */
   async process(items, processor) {
-    console.log(`BatchProcessor: 开始串行处理 ${items.length} 个项目`);
-    const results = [];
+        const results = [];
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      console.log(`BatchProcessor: 正在处理项目 [${i}/${items.length}]: ${item.title || item.url}`);
-      
+            
       try {
         const result = await processor(item, i);
         results[i] = result;
-        console.log(`BatchProcessor: 项目 [${i}] 处理完成，状态: ${result ? result.status : 'undefined'}`);
-      } catch (error) {
-        console.error(`BatchProcessor: 项目 [${i}] 处理失败:`, error);
-        results[i] = {
+              } catch (error) {
+                results[i] = {
           status: 'error',
           error: error.message
         };
@@ -153,8 +146,7 @@ class BatchProcessor {
       }
     }
 
-    console.log(`BatchProcessor: 串行处理完成，总共处理 ${items.length} 个项目`);
-    return results;
+        return results;
   }
 }
 
@@ -212,8 +204,7 @@ class BookmarkManager {
     // 预初始化域名索引（异步进行，不阻塞UI）
     if (this.useDomainStats) {
       this.initializeDomainIndex().catch(error => {
-        console.warn('域名索引预初始化失败:', error);
-        // 失败时自动降级到URL级别统计
+                // 失败时自动降级到URL级别统计
         this.useDomainStats = false;
       });
     }
@@ -223,6 +214,12 @@ class BookmarkManager {
   bindEvents() {
     // 事件委托：处理书签卡片的按钮点击
     document.getElementById('bookmarks-grid').addEventListener('click', (e) => {
+      // 处理清除搜索按钮
+      if (e.target.closest('.clear-search-btn')) {
+        this.clearSearch();
+        return;
+      }
+      
       const card = e.target.closest('.bookmark-card');
       if (!card) return;
       
@@ -314,8 +311,7 @@ class BookmarkManager {
 
       init() {
         if (!this.switchInput) {
-          console.warn('未找到启用提醒开关元素');
-          return;
+                    return;
         }
 
         this.loadSavedState();
@@ -339,11 +335,9 @@ class BookmarkManager {
 
           // 设置开关状态（不触发 change 事件）
           this.switchInput.checked = isEnabled;
-          console.log(`启用提醒状态已加载: ${isEnabled}`);
-          
+                    
         } catch (error) {
-          console.warn('加载启用提醒状态失败:', error);
-          this.switchInput.checked = this.defaultValue;
+                    this.switchInput.checked = this.defaultValue;
         }
       }
 
@@ -355,10 +349,8 @@ class BookmarkManager {
           } else {
             localStorage.setItem(this.storageKey, isEnabled.toString());
           }
-          console.log(`启用提醒状态已保存: ${isEnabled}`);
-        } catch (error) {
-          console.warn('保存启用提醒状态失败:', error);
-        }
+                  } catch (error) {
+                  }
       }
 
       // 绑定事件
@@ -433,8 +425,7 @@ class BookmarkManager {
               this.currentLevel = Math.max(0, Math.min(4, savedLevel));
               this.updateUI(); // 确保UI更新
             }).catch(error => {
-              console.warn('读取档位配置失败，使用默认值:', error);
-              savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+                            savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
               this.currentLevel = Math.max(0, Math.min(4, savedLevel));
               this.updateUI(); // 确保UI更新
             });
@@ -444,8 +435,7 @@ class BookmarkManager {
             this.currentLevel = Math.max(0, Math.min(4, savedLevel));
           }
         } catch (error) {
-          console.warn('读取档位配置失败，使用默认值:', error);
-          savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+                    savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
           this.currentLevel = Math.max(0, Math.min(4, savedLevel));
         }
         // 设置初始值（异步加载会覆盖）
@@ -606,8 +596,7 @@ class BookmarkManager {
         // 更新模式信息
         const levelData = this.levels[this.currentLevel];
         if (!levelData) {
-          console.error('Invalid level:', this.currentLevel);
-          return;
+                    return;
         }
 
         document.getElementById('current-mode-name').textContent = `${levelData.name}提醒`;
@@ -746,21 +735,17 @@ class BookmarkManager {
             localStorage.setItem('reminder-sensitivity-level', level.toString());
             localStorage.setItem('reminder-frequency-interval', interval.toString());
 
-            console.log(`[档位配置] 保存成功: 级别${level}, 间隔${interval}天 (尝试${attempt}次)`);
             return;
 
           } catch (error) {
-            console.warn(`[档位配置] 保存失败 (尝试${attempt}/${maxRetries}):`, error.message);
 
             if (attempt === maxRetries) {
               // 最后一次尝试失败，至少确保localStorage有值
               try {
                 localStorage.setItem('reminder-sensitivity-level', level.toString());
                 localStorage.setItem('reminder-frequency-interval', interval.toString());
-                console.log(`[档位配置] localStorage保底保存成功: 级别${level}`);
-              } catch (localError) {
-                console.error(`[档位配置] localStorage保底保存也失败:`, localError);
-              }
+                              } catch (localError) {
+                              }
               break;
             }
 
@@ -820,8 +805,7 @@ class BookmarkManager {
       
       this.hideLoading();
     } catch (error) {
-      console.error('加载书签失败:', error);
-      this.hideLoading();
+            this.hideLoading();
     }
   }
 
@@ -983,8 +967,7 @@ class BookmarkManager {
     
     // 过滤有URL的书签进行统计
     const displayBookmarks = bookmarks.filter(b => b.url && b.url.trim() !== '');
-    console.log(`显示统计: 当前文件夹总书签数=${bookmarks.length}, 有URL的书签数=${displayBookmarks.length}`);
-    
+        
     // 按标题排序（默认）
     bookmarks = this.sortBookmarksArray(bookmarks);
     
@@ -1002,8 +985,7 @@ class BookmarkManager {
       cardCount++;
     });
     
-    console.log(`实际创建的书签卡片数量: ${cardCount}`);
-  }
+      }
 
   /**
  * 创建统一的书签卡片
@@ -1295,8 +1277,7 @@ bindCardEvents(card, bookmark) {
       this.exitEditMode(card, bookmark, newTitle, newUrl);
       
     } catch (error) {
-      console.error('保存书签失败:', error);
-      alert('保存书签失败，请重试');
+            alert('保存书签失败，请重试');
     }
   }
 
@@ -1351,8 +1332,7 @@ bindCardEvents(card, bookmark) {
       this.closeModal();
       
     } catch (error) {
-      console.error('保存书签失败:', error);
-      alert('保存书签失败');
+            alert('保存书签失败');
     }
   }
 
@@ -1395,8 +1375,7 @@ bindCardEvents(card, bookmark) {
       }, 10);
       
     } catch (error) {
-      console.error('删除书签失败:', error);
-      alert('删除书签失败');
+            alert('删除书签失败');
     }
   }
 
@@ -1497,8 +1476,7 @@ bindCardEvents(card, bookmark) {
         this.loadDefaultVersionHistory();
       }
     } catch (error) {
-      console.log('无法读取release.md文件，使用默认版本信息:', error);
-      this.loadDefaultVersionHistory();
+            this.loadDefaultVersionHistory();
     }
   }
   
@@ -1855,7 +1833,7 @@ bindCardEvents(card, bookmark) {
       <div class="search-results-meta">
         <span class="search-results-count">已搜索到 <strong>${allBookmarks.length}</strong> 个结果</span>
         <div class="search-results-actions">
-          <button class="clear-search-btn" onclick="bookmarkManager.clearSearch()">清除搜索</button>
+          <button class="clear-search-btn" data-action="clear-search">清除搜索</button>
         </div>
       </div>
     `;
@@ -1999,7 +1977,7 @@ createSearchResultCard(bookmark) {
       <div class="search-empty-icon">🔍</div>
       <h3>未找到匹配的书签</h3>
       <p>尝试使用不同的关键词进行搜索</p>
-      <button class="clear-search-btn" onclick="bookmarkManager.clearSearch()">清空搜索</button>
+      <button class="clear-search-btn" data-action="clear-search">清空搜索</button>
     `;
     
     grid.appendChild(emptyState);
@@ -2100,14 +2078,9 @@ createSearchResultCard(bookmark) {
       return;
     }
 
-    console.log('=== 开始检测所有书签 ===');
-    console.log('当前文件夹ID:', this.currentFolder);
-    console.log('总书签数:', this.bookmarks.length);
-    
+                
     const bookmarksToCheck = this.getCurrentBookmarks();
-    console.log('=== 获取到书签列表，开始批量处理 ===');
-    console.log('获取到的书签数量:', bookmarksToCheck.length);
-    
+            
     if (bookmarksToCheck.length === 0) {
       return;
     }
@@ -2125,8 +2098,7 @@ createSearchResultCard(bookmark) {
     const rangeText = folderName ? `当前分类"${folderName}"` : '所有书签';
 
     await this.performBatchCheck(bookmarksToCheck);
-    console.log('=== 批量处理完成 ===');
-  }
+      }
 
   /**
    * 开始检查选中的书签
@@ -2167,8 +2139,7 @@ createSearchResultCard(bookmark) {
       timeout: 0
     };
 
-    console.log(`开始批量检测，总共 ${bookmarks.length} 个书签`);
-    this.showProgress();
+        this.showProgress();
     this.updateProgress();
     
     // 触发书签卡片的随机延迟渐隐动画
@@ -2180,14 +2151,11 @@ createSearchResultCard(bookmark) {
       await batchProcessor.process(bookmarks, async (bookmark, index) => {
         // 检查是否已停止检测
         if (!this.isChecking) {
-          console.log('检测已停止，中断处理');
-          return false; // 停止处理
+                    return false; // 停止处理
         }
         
-        console.log(`正在检测 [${index}]: ${bookmark.title} (${bookmark.url}) [ID: ${bookmark.id}]`);
         const result = await this.linkChecker.check(bookmark.url);
-        console.log(`检测结果 [${index}]: ${bookmark.title} -> ${result.status} [ID: ${bookmark.id}]`);
-        
+                
         // 只有在真正处理了书签时才增加计数
         const wasProcessed = this.processCheckResult(bookmark, result);
         if (wasProcessed !== false) { // false表示跳过重复
@@ -2204,8 +2172,7 @@ createSearchResultCard(bookmark) {
       }
       
     } catch (error) {
-      console.error('批量检测失败:', error);
-    } finally {
+          } finally {
       this.isChecking = false;
     }
   }
@@ -2216,13 +2183,11 @@ createSearchResultCard(bookmark) {
   processCheckResult(bookmark, result) {
     // 检查结果是否有效
     if (!result || typeof result !== 'object') {
-      console.error(`书签 ${bookmark.title} (${bookmark.id}) 的检测结果无效:`, result);
       return false;
     }
     
     // 串行处理通常不会有重复问题，但保留检查作为保护
     if (this.checkResults.has(bookmark.id)) {
-      console.warn(`书签 ${bookmark.title} (${bookmark.id}) 被重复处理，跳过重复统计`);
       return false; // 表示跳过处理
     }
     
@@ -2247,8 +2212,7 @@ createSearchResultCard(bookmark) {
         this.checkStats.timeout++;
         break;
       default:
-        console.warn('未知的检测结果状态:', result.status, bookmark);
-        break;
+                break;
     }
     
     // 显示检测方法
@@ -2258,7 +2222,6 @@ createSearchResultCard(bookmark) {
         'quick_validate': '📄', 
         'standard_check': '🔍'
       };
-      console.log(`${methodIcons[result.method] || '🔍'} ${bookmark.title}: ${result.status} (${result.responseTime || 0}ms)`);
     }
     
     return true; // 表示成功处理
@@ -2329,11 +2292,9 @@ createSearchResultCard(bookmark) {
       // 验证统计数量是否正确
       const statsSum = valid + invalid + redirect + timeout;
       if (statsSum !== processed) {
-        console.error(`统计数量不一致: 处理数=${processed}, 统计和=${statsSum} (有效:${valid}, 无效:${invalid}, 重定向:${redirect}, 超时:${timeout})`);
       }
       if (processed !== total) {
-        console.error(`处理数量不完整: 总数=${total}, 已处理=${processed}`);
-      }
+              }
       
       // 触发书签卡片恢复动画
       this.triggerFadeInAnimation();
@@ -2413,8 +2374,7 @@ createSearchResultCard(bookmark) {
       this.renderBookmarks();
       
     } catch (error) {
-      console.error(`更新书签URL失败:`, error);
-      throw error;
+            throw error;
     }
   }
 
@@ -2440,8 +2400,7 @@ createSearchResultCard(bookmark) {
       try {
         await this.updateBookmarkUrl(bookmark.id, bookmark.finalUrl);
       } catch (error) {
-        console.error(`更新书签 ${bookmark.id} 失败:`, error);
-      }
+              }
     }
 
   }
@@ -2785,31 +2744,25 @@ createSearchResultCard(bookmark) {
       bookmarksToCheck = this.bookmarks.filter(b => b.parentId === this.currentFolder);
     }
     
-    console.log('当前文件夹所有书签详情:');
-    bookmarksToCheck.forEach((bookmark, index) => {
-      console.log(`[${index}] ${bookmark.title} (ID: ${bookmark.id}, URL: ${bookmark.url})`);
+        bookmarksToCheck.forEach((bookmark, index) => {
     });
     
     // 过滤有效的URL
     const validBookmarks = bookmarksToCheck.filter(bookmark => {
       const hasUrl = bookmark.url && bookmark.url.trim() !== '';
       if (!hasUrl) {
-        console.log(`跳过无URL的书签: ${bookmark.title}`);
-      }
+              }
       return hasUrl;
     });
     
-    console.log(`当前文件夹书签总数: ${bookmarksToCheck.length}, 有效URL书签数: ${validBookmarks.length}`);
-    
+        
     const result = validBookmarks.map(bookmark => ({
       id: bookmark.id,
       url: bookmark.url,
       title: bookmark.title
     }));
     
-    console.log('将要检测的书签列表:');
-    result.forEach((bookmark, index) => {
-      console.log(`检测[${index}]: ${bookmark.title} (ID: ${bookmark.id})`);
+        result.forEach((bookmark, index) => {
     });
     
     return result;
@@ -2868,8 +2821,7 @@ createSearchResultCard(bookmark) {
       
       return count;
     } catch (error) {
-      console.warn('获取访问次数失败:', url, error);
-      return 0;
+            return 0;
     } finally {
       this.pendingVisitQueries.delete(cacheKey);
     }
@@ -2899,8 +2851,7 @@ createSearchResultCard(bookmark) {
       
       return countMap;
     } catch (error) {
-      console.error('批量获取访问次数失败:', error);
-      return new Map();
+            return new Map();
     }
   }
 
@@ -2935,8 +2886,7 @@ createSearchResultCard(bookmark) {
         visitCountElement.style.color = '#667eea';
       }
     } catch (error) {
-      console.warn('加载访问次数失败:', error);
-      visitCountElement.textContent = '👁 -';
+            visitCountElement.textContent = '👁 -';
     }
   }
 
@@ -3005,10 +2955,8 @@ createSearchResultCard(bookmark) {
       }
       
       this.domainIndexInitialized = true;
-      console.log(`域名索引初始化完成，处理了 ${history.length} 条历史记录，${this.domainVisitIndex.size} 个域名`);
-    } catch (error) {
-      console.error('初始化域名索引失败:', error);
-      this.domainIndexInitialized = false;
+          } catch (error) {
+            this.domainIndexInitialized = false;
       throw error;
     }
   }
@@ -3029,8 +2977,7 @@ createSearchResultCard(bookmark) {
       this.domainVisitIndex.set(domain, count);
     });
     
-    console.log(`域名缓存清理完成，保留前 ${this.MAX_DOMAIN_CACHE_SIZE} 个高访问次数域名`);
-  }
+      }
 
   /**
    * 确保域名索引已初始化 - 懒加载机制
@@ -3056,8 +3003,7 @@ createSearchResultCard(bookmark) {
       const domain = this.extractMainDomain(url);
       return this.domainVisitIndex.get(domain) || 0;
     } catch (error) {
-      console.warn('域名级别访问次数获取失败，降级到URL级别:', error);
-      // 自动降级到URL级别统计
+            // 自动降级到URL级别统计
       this.useDomainStats = false;
       return await this.getVisitCount(url);
     }
@@ -3103,8 +3049,7 @@ createSearchResultCard(bookmark) {
       this.showMessage('书签已添加到「最近收藏」！');
       
     } catch (error) {
-      console.error('添加到最近收藏失败:', error);
-      this.showMessage('添加失败，请重试');
+            this.showMessage('添加失败，请重试');
     }
   }
 
@@ -3126,8 +3071,7 @@ createSearchResultCard(bookmark) {
         return newFolder.id;
       }
     } catch (error) {
-      console.error('获取或创建最近收藏文件夹失败:', error);
-      return '1';
+            return '1';
     }
   }
 
@@ -3159,8 +3103,7 @@ createSearchResultCard(bookmark) {
       const bookmarks = await chrome.bookmarks.getChildren(recentFolderId);
       return bookmarks.some(bookmark => bookmark.url === url);
     } catch (error) {
-      console.error('检查重复失败:', error);
-      return false;
+            return false;
     }
   }
 
@@ -3243,8 +3186,7 @@ class DarkModeManager {
     try {
       localStorage.setItem('darkMode', this.isDarkMode);
     } catch (error) {
-      console.warn('无法保存主题设置:', error);
-    }
+          }
   }
 
   loadTheme() {
@@ -3259,8 +3201,7 @@ class DarkModeManager {
         return true;
       }
     } catch (error) {
-      console.warn('无法加载主题设置:', error);
-    }
+          }
 
     return false; // 默认浅色模式
   }

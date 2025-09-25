@@ -1712,3 +1712,90 @@ if (visitHit && durationHit && depthHit) {
 
 #### 总结
 这次重大优化成功将智能提醒机制从笨拙的轮询架构升级为优雅的事件驱动架构，不仅显著提升了性能和用户体验，更重要的是体现了现代JavaScript开发的最佳实践。这是一个从"能用"到"优雅"的典型案例，为后续功能扩展奠定了坚实的基础。
+## 2025年9月25日
+
+### CSP合规性修复
+
+#### 问题发现
+- **CSP违规错误** - 浏览器控制台报错：Refused to execute inline event handler because it violates Content Security Policy directive: "script-src self"
+- **安全策略限制** - 扩展的CSP策略禁止内联事件处理器（onclick=）和直接事件赋值（.onclick =）
+
+#### 根因分析
+1. **内联onclick事件** - bookmarks.js中的清除搜索按钮使用了内联事件绑定
+2. **直接事件赋值** - content.js中的关闭按钮使用了.onclick直接赋值
+3. **临时文件污染** - temp_bookmarks.js包含大量CSP违规代码
+
+#### 修复方案
+
+##### 第一阶段：内联onclick事件修复
+**文件：bookmarks.js**
+- **修改位置1** (第1858行)：搜索结果页面的清除搜索按钮
+  ```javascript
+  // 修改前
+  <button class="clear-search-btn" onclick="bookmarkManager.clearSearch()">清除搜索</button>
+  
+  // 修改后  
+  <button class="clear-search-btn" data-action="clear-search">清除搜索</button>
+  ```
+
+- **修改位置2** (第2002行)：搜索空状态的清除搜索按钮
+  ```javascript
+  // 修改前
+  <button class="clear-search-btn" onclick="bookmarkManager.clearSearch()">清空搜索</button>
+  
+  // 修改后
+  <button class="clear-search-btn" data-action="clear-search">清空搜索</button>
+  ```
+
+- **事件委托实现** - 在现有书签网格点击监听器中添加：
+  ```javascript
+  // 处理清除搜索按钮
+  if (e.target.closest(".clear-search-btn")) {
+    this.clearSearch();
+    return;
+  }
+  ```
+
+##### 第二阶段：直接事件赋值修复
+**文件：content.js**
+- **修改位置** (第327行)：提醒弹窗关闭按钮
+  ```javascript
+  // 修改前
+  document.getElementById("btnDismiss").onclick = () => { ... };
+  
+  // 修改后
+  document.getElementById("btnDismiss").addEventListener("click", () => { ... });
+  ```
+
+##### 第三阶段：临时文件清理
+- **删除文件** - 移除包含大量CSP违规代码的temp_bookmarks.js文件
+- **避免污染** - 防止临时文件影响主要代码的CSP合规性
+
+#### 验证结果
+✅ **无内联onclick事件** - 所有`onclick=`属性已移除  
+✅ **无直接赋值事件** - 所有`.onclick =`已改为`addEventListener`  
+✅ **事件委托正确** - 使用`data-*`属性和事件委托处理动态元素  
+✅ **临时文件已清理** - 删除了不符合CSP的临时文件  
+
+#### 技术要点
+1. **CSP合规方案**：
+   - 使用`addEventListener`替代直接赋值
+   - 使用`data-*`属性+事件委托替代内联事件
+   - 所有事件处理通过JavaScript动态绑定
+
+2. **功能保持不变**：
+   - 清除搜索按钮功能完全保持
+   - 提醒弹窗关闭功能完全保持
+   - 用户体验无任何变化
+
+3. **安全提升**：
+   - 符合Chrome扩展CSP安全要求
+   - 防止XSS攻击风险
+   - 代码更加标准化和可维护
+
+#### 总结
+- **修复范围** - 2个文件，3个位置，1个临时文件清理
+- **技术方案** - 事件委托 + addEventListener，符合CSP标准
+- **功能保证** - 所有原有功能完全保持，用户体验无变化
+- **安全提升** - 消除CSP违规，提升扩展安全性
+

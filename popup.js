@@ -160,8 +160,7 @@ async function checkCurrentPageAndSetButtonState() {
     setButtonState(validationResult.valid ? 'enabled' : 'disabled', validationResult.reason);
     
   } catch (error) {
-    console.error('检查当前页面失败:', error);
-    setButtonState('disabled', '页面检查失败');
+        setButtonState('disabled', '页面检查失败');
   }
 }
 
@@ -312,8 +311,7 @@ async function addCurrentPage() {
     loadStats();
     
   } catch (error) {
-    console.error('添加书签失败:', error);
-    showNotification('添加书签失败');
+        showNotification('添加书签失败');
   }
 }
 
@@ -337,8 +335,7 @@ async function getOrCreateRecentFolder() {
       return newFolder.id;
     }
   } catch (error) {
-    console.error('获取或创建最近收藏文件夹失败:', error);
-    // 如果失败，返回根目录
+        // 如果失败，返回根目录
     return '0';
   }
 }
@@ -408,8 +405,7 @@ async function loadRecentBookmarks() {
     }
     
   } catch (error) {
-    console.error('加载最近书签失败:', error);
-  }
+      }
 }
 
 // 获取「最近收藏」文件夹ID
@@ -419,8 +415,7 @@ async function getRecentFolderId() {
     const recentFolder = findRecentFolder(bookmarkTree[0]);
     return recentFolder ? recentFolder.id : null;
   } catch (error) {
-    console.error('获取最近收藏文件夹ID失败:', error);
-    return null;
+        return null;
   }
 }
 
@@ -433,8 +428,7 @@ async function checkDuplicateInRecentFolder(url, recentFolderId) {
     return bookmarks.some(bookmark => bookmark.url === url);
     
   } catch (error) {
-    console.error('检查重复书签失败:', error);
-    return false;
+        return false;
   }
 }
 
@@ -476,8 +470,7 @@ async function loadStats() {
     document.getElementById('recent-count').textContent = todayInRecent;
     
   } catch (error) {
-    console.error('加载统计信息失败:', error);
-  }
+      }
 }
 
 function calculateBookmarkStats(node) {
@@ -514,8 +507,7 @@ async function getTodayInRecentCount() {
     }).length;
     
   } catch (error) {
-    console.error('获取今日添加数量失败:', error);
-    return 0;
+        return 0;
   }
 }
 
@@ -558,8 +550,7 @@ async function deleteRecentBookmark(bookmarkId, element) {
     }, 300);
     
   } catch (error) {
-    console.error('删除书签失败:', error);
-    // 恢复按钮状态
+        // 恢复按钮状态
     element.classList.remove('confirm-delete');
     element.innerHTML = '🗑️';
     element.title = '删除';

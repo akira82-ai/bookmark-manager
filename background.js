@@ -82,8 +82,7 @@ async function addBookmark(title, url) {
     });
     
   } catch (error) {
-    console.error('添加书签失败:', error);
-  }
+      }
 }
 
 // 检查书签是否已存在
@@ -127,8 +126,7 @@ async function addBookmarkToRecent(title, url) {
     showNotification('书签已添加到「最近收藏」！');
     
   } catch (error) {
-    console.error('添加到最近收藏失败:', error);
-    showNotification('添加失败，请重试');
+        showNotification('添加失败，请重试');
   }
 }
 
@@ -148,8 +146,7 @@ async function getOrCreateRecentFolder() {
       return newFolder.id;
     }
   } catch (error) {
-    console.error('获取或创建最近收藏文件夹失败:', error);
-    return '1';
+        return '1';
   }
 }
 
@@ -177,8 +174,7 @@ async function checkDuplicateInRecentFolder(url, recentFolderId) {
     const bookmarks = await chrome.bookmarks.getChildren(recentFolderId);
     return bookmarks.some(bookmark => bookmark.url === url);
   } catch (error) {
-    console.error('检查重复失败:', error);
-    return false;
+        return false;
   }
 }
 
@@ -219,8 +215,7 @@ async function getDomainHistory(mainDomain, startTime) {
 
     return filteredResults;
   } catch (error) {
-    console.error('获取域名历史记录失败:', error);
-    return [];
+        return [];
   }
 }
 

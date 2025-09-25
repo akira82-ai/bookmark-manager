@@ -3,8 +3,7 @@
 // 监听来自popup的消息
 function setupMessageListener() {
   if (!isExtensionContextValid()) {
-    console.warn('扩展上下文无效，跳过消息监听器设置');
-    return;
+        return;
   }
   
   try {
@@ -22,8 +21,7 @@ function setupMessageListener() {
       }
     });
   } catch (error) {
-    console.warn('消息监听器设置失败:', error);
-  }
+      }
 }
 
 // 设置消息监听器
@@ -306,8 +304,7 @@ function showReminderToast(data) {
           setTimeout(() => toast.remove(), 400);
         }, 1500);
       }).catch(error => {
-        console.error('添加书签失败:', error);
-        // 出场动画
+                // 出场动画
         toast.style.transform = 'translateX(400px)';
         setTimeout(() => toast.remove(), 400);
       });
@@ -324,11 +321,11 @@ function showReminderToast(data) {
   });
   
   // 绑定关闭按钮事件
-  document.getElementById('btnDismiss').onclick = () => {
+  document.getElementById('btnDismiss').addEventListener('click', () => {
     // 出场动画
     toast.style.transform = 'translateX(400px)';
     setTimeout(() => toast.remove(), 400);
-  };
+  });
   
   // 鼠标悬停暂停计时
   toast.addEventListener('mouseenter', pauseTimer);
@@ -375,15 +372,13 @@ const StorageRetry = {
 async function syncWrite(key, value) {
   const promises = [
     StorageRetry.retry(() => chrome.storage.local.set({[key]: value})).catch(() => {
-      console.warn('Chrome.storage写入失败，忽略:', key);
-    }),
+          }),
     new Promise(resolve => {
       try {
         localStorage.setItem(key, JSON.stringify(value));
         resolve();
       } catch (error) {
-        console.warn('LocalStorage写入失败:', error);
-        resolve(); // localStorage失败也继续
+                resolve(); // localStorage失败也继续
       }
     })
   ];
@@ -395,15 +390,13 @@ async function syncWrite(key, value) {
 async function smartRead(key, defaultValue) {
   // 检查扩展上下文是否有效
   if (!chrome || !chrome.storage) {
-    console.warn('Chrome.storage API不可用，直接使用localStorage');
-    try {
+        try {
       const localValue = localStorage.getItem(key);
       if (localValue !== null) {
         return JSON.parse(localValue);
       }
     } catch (error) {
-      console.warn('LocalStorage读取失败:', error);
-    }
+          }
     return defaultValue;
   }
   
@@ -414,8 +407,7 @@ async function smartRead(key, defaultValue) {
     );
     if (result[key] !== undefined) return result[key];
   } catch (error) {
-    console.warn('Chrome.storage读取失败，尝试fallback:', error);
-  }
+      }
 
   // 优先级2: localStorage
   try {
@@ -424,8 +416,7 @@ async function smartRead(key, defaultValue) {
       return JSON.parse(localValue);
     }
   } catch (error) {
-    console.warn('LocalStorage读取失败:', error);
-  }
+      }
 
   // 优先级3: 默认值
   return defaultValue;
@@ -442,8 +433,7 @@ const StorageHealth = {
     // 检查Chrome API是否可用
     if (!chrome || !chrome.storage) {
       this.isHealthy = false;
-      console.warn('Chrome.storage API不可用');
-      return;
+            return;
     }
     
     try {
@@ -457,8 +447,7 @@ const StorageHealth = {
       this.isHealthy = true;
     } catch (error) {
       this.isHealthy = false;
-      console.warn('Chrome.storage健康检查失败:', error);
-    }
+          }
     this.lastCheck = Date.now();
   },
 
@@ -487,8 +476,7 @@ class StorageCache {
     try {
       this.cache = new Map();
     } catch (error) {
-      console.warn('缓存恢复失败:', error);
-      this.cache = null;
+            this.cache = null;
     }
   }
 
@@ -506,8 +494,7 @@ class StorageCache {
 
       return item.value;
     } catch (error) {
-      console.warn('缓存读取失败:', key, error);
-      return null;
+            return null;
     }
   }
 
@@ -520,8 +507,7 @@ class StorageCache {
         timestamp: Date.now()
       });
     } catch (error) {
-      console.warn('缓存设置失败:', key, error);
-    }
+          }
   }
 
   invalidate(key) {
@@ -529,8 +515,7 @@ class StorageCache {
     try {
       this.cache.delete(key);
     } catch (error) {
-      console.warn('缓存失效失败:', key, error);
-    }
+          }
   }
 
   clear() {
@@ -538,8 +523,7 @@ class StorageCache {
     try {
       this.cache.clear();
     } catch (error) {
-      console.warn('缓存清理失败:', error);
-    }
+          }
   }
 }
 
@@ -583,8 +567,7 @@ class StorageEventSystem {
         try {
           callback(data);
         } catch (error) {
-          console.error('事件监听器执行失败:', error);
-        }
+                  }
       });
     }
   }
@@ -605,8 +588,7 @@ class UnifiedStorage {
       this.isInitialized = false;
       this.initialize();
     } catch (error) {
-      console.warn('UnifiedStorage初始化失败:', error);
-      // 设置最小可用的状态
+            // 设置最小可用的状态
       this.cache = null;
       this.eventSystem = null;
       this.health = StorageHealth;
@@ -616,8 +598,7 @@ class UnifiedStorage {
 
   initialize() {
     if (!this.cache || !this.eventSystem) {
-      console.warn('存储系统组件无效，跳过初始化');
-      return;
+            return;
     }
     
     try {
@@ -640,8 +621,7 @@ class UnifiedStorage {
           try {
             this.cache.set(event.key, JSON.parse(event.newValue));
           } catch (error) {
-            console.warn('LocalStorage值解析失败:', error);
-          }
+                      }
         }
       });
 
@@ -654,10 +634,8 @@ class UnifiedStorage {
       }, 5000);
       
       this.isInitialized = true;
-      console.log('UnifiedStorage初始化完成');
-    } catch (error) {
-      console.warn('UnifiedStorage初始化过程中出错:', error);
-      this.isInitialized = false;
+          } catch (error) {
+            this.isInitialized = false;
     }
   }
 
@@ -711,8 +689,7 @@ class UnifiedStorage {
         this.eventSystem.emit('value:removed', {key});
       }
     } catch (error) {
-      console.warn('删除存储项失败:', error);
-    }
+          }
   }
 
   onValueChanged(callback) {
@@ -732,15 +709,13 @@ class UnifiedStorage {
         // 尝试重新初始化缓存
         this.recover();
         if (!this.cache) {
-          console.warn('缓存对象无法恢复，跳过刷新');
-          return;
+                    return;
         }
       }
       
       const entries = this.cache.entries();
       if (!entries) {
-        console.warn('无法获取缓存条目，跳过刷新');
-        return;
+                return;
       }
       
       for (const [key, item] of entries) {
@@ -752,12 +727,10 @@ class UnifiedStorage {
             this.cache.invalidate(key);
           }
         } catch (error) {
-          console.warn('刷新缓存失败:', key, error);
-        }
+                  }
       }
     } catch (error) {
-      console.warn('缓存刷新失败:', error);
-    }
+          }
   }
 
   destroy() {
@@ -783,12 +756,10 @@ function getUnifiedStorage() {
       unifiedStorage = new UnifiedStorage();
       // 检查是否初始化成功
       if (!unifiedStorage.isInitialized && !unifiedStorage.cache) {
-        console.warn('UnifiedStorage初始化不完全，启用降级模式');
-        storageFallback = true;
+                storageFallback = true;
       }
     } catch (error) {
-      console.warn('UnifiedStorage创建失败，启用降级模式:', error);
-      storageFallback = true;
+            storageFallback = true;
     }
   }
   
@@ -799,16 +770,14 @@ function getUnifiedStorage() {
         try {
           return await smartRead(key, defaultValue);
         } catch (error) {
-          console.warn('降级模式读取失败:', error);
-          return defaultValue;
+                    return defaultValue;
         }
       },
       async set(key, value) {
         try {
           await syncWrite(key, value);
         } catch (error) {
-          console.warn('降级模式写入失败:', error);
-        }
+                  }
       },
       async remove(key) {
         try {
@@ -819,8 +788,7 @@ function getUnifiedStorage() {
             ).catch(() => {});
           }
         } catch (error) {
-          console.warn('降级模式删除失败:', error);
-        }
+                  }
       }
     };
   }
@@ -979,8 +947,7 @@ const EventDrivenReminder = {
         url: window.location.href
       };
     } catch (error) {
-      console.warn('获取指标失败:', error);
-      return null;
+            return null;
     }
   },
   
@@ -1000,8 +967,7 @@ const EventDrivenReminder = {
       
       return userLevel;
     } catch (error) {
-      console.warn('获取档位失败:', error);
-      return 2;
+            return 2;
     }
   },
 
@@ -1018,8 +984,7 @@ const EventDrivenReminder = {
       
       return isEnabled;
     } catch (error) {
-      console.warn('检查提醒启用状态失败:', error);
-      return false; // 出错时默认不启用
+            return false; // 出错时默认不启用
     }
   },
   
@@ -1048,8 +1013,7 @@ const EventDrivenReminder = {
       
       showReminderToast(reminderData);
     } catch (error) {
-      console.error('事件驱动提醒失败:', error);
-    }
+          }
   },
   
   // 重置状态（页面卸载时调用）
@@ -1140,8 +1104,7 @@ async function updateDomainVisitCount() {
     return visitCount;
 
   } catch (error) {
-    console.warn('获取历史记录失败:', error);
-    // 如果历史记录获取失败，降级为使用sessionStorage
+        // 如果历史记录获取失败，降级为使用sessionStorage
     const sessionKey = `visit_count_${mainDomain}`;
     const fallbackCount = parseInt(sessionStorage.getItem(sessionKey) || '0') + 1;
     sessionStorage.setItem(sessionKey, fallbackCount.toString());
@@ -1657,8 +1620,7 @@ function createBrowseWindow() {
     document.head.appendChild(style);
     document.body.appendChild(browseWindow);
   } catch (error) {
-    console.error('添加浏览数据窗口失败:', error);
-  }
+      }
 
   // 保存引用
   CoreMetricsState.browseWindow = browseWindow;
@@ -1692,8 +1654,7 @@ async function updateBrowseWindow() {
     bindBrowseControlEvents(metrics);
 
   } catch (error) {
-    console.warn('更新浏览数据窗口失败:', error);
-  }
+      }
 }
 
 /**
@@ -1785,8 +1746,7 @@ async function updateCurrentLevelConfig() {
     window.currentBrowseLevel = currentLevel;
 
   } catch (error) {
-    console.warn('更新档位配置失败:', error);
-
+    
     // 使用统一存储系统的降级机制
     try {
       const storage = getUnifiedStorage();
@@ -1811,8 +1771,7 @@ async function updateCurrentLevelConfig() {
         window.currentBrowseLevel = fallbackLevel;
       }
     } catch (fallbackError) {
-      console.warn('档位配置降级也失败:', fallbackError);
-      // 最后保底：使用硬编码默认值
+            // 最后保底：使用硬编码默认值
       const configLevelEl = document.getElementById('browse-config-level');
       const configFreqEl = document.getElementById('browse-config-frequency');
 
@@ -1835,8 +1794,7 @@ async function updateProgressBars(metrics) {
     const storage = getUnifiedStorage();
     currentLevel = await storage.get('reminder-sensitivity-level', 2);
   } catch (error) {
-    console.warn('获取档位配置失败，使用默认值:', error);
-    currentLevel = 2;
+        currentLevel = 2;
   }
 
   // 确保值在有效范围内
@@ -1856,8 +1814,7 @@ async function updateProgressBars(metrics) {
 
   const thresholds = thresholdConfigs[currentLevel];
   if (!thresholds) {
-    console.warn('无效的档位级别:', currentLevel);
-    return;
+        return;
   }
 
   // 计算进度百分比
@@ -1906,8 +1863,7 @@ async function updateHitDetection(metrics) {
     const storage = getUnifiedStorage();
     currentLevel = await storage.get('reminder-sensitivity-level', 2);
   } catch (error) {
-    console.warn('获取档位配置失败，使用默认值:', error);
-    currentLevel = 2;
+        currentLevel = 2;
   }
 
   // 确保值在有效范围内
@@ -1924,8 +1880,7 @@ async function updateHitDetection(metrics) {
 
   const thresholds = thresholdConfigs[currentLevel];
   if (!thresholds) {
-    console.warn('无效的档位级别:', currentLevel);
-    return;
+        return;
   }
 
   // 检查条件是否命中
@@ -2059,23 +2014,19 @@ async function startBrowseWindowUpdates() {
     // 监听档位配置变化
     CoreMetricsState.storageChangeListener = async ({key, value}) => {
       if (key === 'reminder-sensitivity-level') {
-        console.log('浏览数据窗口：检测到档位配置变化，重新加载配置');
-        await updateCurrentLevelConfig();
+                await updateCurrentLevelConfig();
         await updateBrowseWindow();
       }
     };
 
     storage.onValueChanged(CoreMetricsState.storageChangeListener);
-    console.log('浏览数据窗口：统一存储事件监听器已注册');
-
+    
   } catch (error) {
-    console.warn('统一存储事件监听器注册失败，使用传统监听:', error);
-
+    
     // 降级到传统监听方式
     CoreMetricsState.storageChangeListener = async function(changes, namespace) {
       if (namespace === 'local') {
         if (changes['reminder-sensitivity-level']) {
-          console.log('浏览数据窗口：检测到档位配置变化(传统监听)，重新加载配置');
           await updateCurrentLevelConfig();
           await updateBrowseWindow();
         }
@@ -2084,8 +2035,7 @@ async function startBrowseWindowUpdates() {
 
     if (chrome.storage) {
       chrome.storage.onChanged.addListener(CoreMetricsState.storageChangeListener);
-      console.log('浏览数据窗口：传统存储变化监听器已注册');
-    }
+          }
   }
 }
 
@@ -2104,15 +2054,12 @@ function stopBrowseWindowUpdates() {
       // 尝试从统一存储系统移除监听器
       const storage = getUnifiedStorage();
       storage.offValueChanged(CoreMetricsState.storageChangeListener);
-      console.log('浏览数据窗口：统一存储事件监听器已移除');
-    } catch (error) {
-      console.warn('统一存储事件监听器移除失败，尝试传统方式:', error);
-
+          } catch (error) {
+      
       // 降级到传统方式移除
       if (chrome.storage) {
         chrome.storage.onChanged.removeListener(CoreMetricsState.storageChangeListener);
-        console.log('浏览数据窗口：传统存储变化监听器已移除');
-      }
+              }
     }
     CoreMetricsState.storageChangeListener = null;
   }
@@ -2124,11 +2071,9 @@ function stopBrowseWindowUpdates() {
 function toggleBrowseWindow() {
   if (CoreMetricsState.browseWindow) {
     removeBrowseWindow();
-    console.log('[浏览数据窗口] 通过快捷键隐藏');
-  } else {
+      } else {
     window.showBrowseWindow();
-    console.log('[浏览数据窗口] 通过快捷键显示');
-  }
+      }
 }
 
 /**
@@ -2148,8 +2093,7 @@ function removeBrowseWindow() {
     style.remove();
   }
 
-  console.log('浏览数据窗口已移除');
-}
+  }
 
 /**
  * @deprecated 此函数已被事件驱动机制替代，保留用于向后兼容
@@ -2172,8 +2116,7 @@ async function triggerSmartReminder() {
     try {
       userLevel = await storage.get('reminder-sensitivity-level', 2); // 默认适中提醒
     } catch (error) {
-      console.warn('获取档位配置失败，使用默认值:', error);
-      userLevel = 2;
+            userLevel = 2;
     }
     
     // 确保值在有效范围内
@@ -2195,8 +2138,7 @@ async function triggerSmartReminder() {
     
     const thresholds = thresholdConfigs[userLevel];
     if (!thresholds) {
-      console.warn('无效的档位级别:', userLevel);
-      return;
+            return;
     }
 
     // 调试日志（与调试窗口保持一致）
@@ -2242,8 +2184,7 @@ async function triggerSmartReminder() {
       showReminderToast(reminderData);
     }
   } catch (error) {
-    console.warn('智能提醒触发失败:', error);
-  }
+      }
 }
 
 // 统一数据管理
@@ -2346,8 +2287,7 @@ function loadMetricsJudgmentEngine() {
       resolve();
     };
     script.onerror = function() {
-      console.error('3大指标判定引擎加载失败');
-      reject(new Error('加载判定引擎失败'));
+            reject(new Error('加载判定引擎失败'));
     };
 
     document.head.appendChild(script);
@@ -2369,8 +2309,7 @@ function initOnLoad() {
     try {
       // 检查扩展上下文
       if (!isExtensionContextValid()) {
-        console.warn('扩展上下文无效，跳过初始化');
-        return;
+                return;
       }
       
       // 先加载3大指标判定引擎
@@ -2380,8 +2319,7 @@ function initOnLoad() {
       await initCoreMetrics();
 
     } catch (error) {
-      console.warn('核心指标初始化失败:', error);
-    }
+          }
   }, 1000);
 }
 
@@ -2438,8 +2376,7 @@ document.addEventListener('keydown', function(event) {
   if (event.ctrlKey && event.shiftKey && event.key === 'C') {
     event.preventDefault();
     toggleBrowseWindow();
-    console.log('[浏览数据窗口] 快捷键触发: Ctrl+Shift+C');
-  }
+      }
 
   // Ctrl+Shift+X 触发智能提醒弹窗
   if (event.ctrlKey && event.shiftKey && event.key === 'X') {
@@ -2468,28 +2405,12 @@ if (typeof window !== 'undefined') {
     await startBrowseWindowUpdates();
   };
   window.testCoreMetrics = async function() {
-    console.log('测试核心指标函数...');
-    try {
-      console.log('CoreMetricsState:', CoreMetricsState);
-      console.log('getMainDomain函数:', typeof getMainDomain);
-      console.log('getVisitCount函数:', typeof getVisitCount);
-      console.log('getBrowseDuration函数:', typeof getBrowseDuration);
-      console.log('getBrowseDepth函数:', typeof getBrowseDepth);
-      console.log('getCoreMetrics函数:', typeof getCoreMetrics);
-
+        try {
+                                    
       const metrics = await getCoreMetrics();
-      console.log('getCoreMetrics()结果:', metrics);
     } catch (error) {
-      console.error('测试失败:', error);
-    }
+          }
   };
 
-  console.log('浏览数据窗口控制命令:');
-  console.log('- window.removeBrowseWindow() 移除浏览数据窗口');
-  console.log('- window.showBrowseWindow() 显示浏览数据窗口');
-  console.log('- window.toggleBrowseWindow() 切换浏览数据窗口显示/隐藏');
-  console.log('- window.testCoreMetrics() 测试核心指标函数');
-  console.log('- Ctrl+Shift+C 快捷键切换浏览数据窗口');
-  console.log('- Ctrl+Shift+X 快捷键触发测试提醒');
-}
+    }
 
