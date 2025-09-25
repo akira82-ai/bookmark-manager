@@ -80,10 +80,13 @@ function analyzeURL(url) {
 
 // 显示提醒弹窗
 function showReminderToast(data) {
+  console.log('showReminderToast 被调用，参数:', data);
+  
   // 移除已存在的弹窗
   const existingToast = document.getElementById('bookmark-reminder-toast');
   if (existingToast) {
     existingToast.remove();
+    console.log('移除已存在的弹窗');
   }
   
   // 分析当前URL
@@ -663,9 +666,191 @@ const CoreMetricsState = {
   debugWindow: null,
   updateInterval: null,
 
-  // 智能提醒防抖
-  lastReminderTime: 0,
-  reminderCooldown: 300000 // 5分钟冷却时间
+  // 事件驱动提醒机制
+  remindedUrls: new Set(), // 本次会话已提醒的URL集合
+  isEventDrivenInitialized: false, // 事件驱动是否已初始化
+
+  // 移除无意义的冷却时间机制
+};
+
+// 事件驱动提醒管理器
+const EventDrivenReminder = {
+  // 初始化事件监听
+  init() {
+    if (CoreMetricsState.isEventDrivenInitialized) return;
+    
+    this.setupThresholdListeners();
+    CoreMetricsState.isEventDrivenInitialized = true;
+    console.log('🎯 事件驱动提醒机制已初始化');
+  },
+  
+  // 设置阈值监听器
+  setupThresholdListeners() {
+    // 监听访问次数变化
+    this.observeVisitCount();
+    // 监听浏览时长变化  
+    this.observeBrowseDuration();
+    // 监听浏览深度变化
+    this.observeBrowseDepth();
+  },
+  
+  // 监听访问次数变化
+  observeVisitCount() {
+    const originalUpdateVisitCount = updateDomainVisitCount;
+    updateDomainVisitCount = async function() {
+      const oldCount = CoreMetricsState.visitCount || 0;
+      await originalUpdateVisitCount.call(this);
+      const newCount = CoreMetricsState.visitCount || 0;
+      
+      if (newCount > oldCount) {
+        EventDrivenReminder.checkVisitCountThreshold(newCount);
+      }
+    };
+  },
+  
+  // 监听浏览时长变化
+  observeBrowseDuration() {
+    setInterval(() => {
+      if (CoreMetricsState.isActiveTab) {
+        const duration = getBrowseDuration();
+        EventDrivenReminder.checkDurationThreshold(duration);
+      }
+    }, 2000); // 每2秒检查一次时长变化
+  },
+  
+  // 监听浏览深度变化
+  observeBrowseDepth() {
+    const originalHandleScroll = handleScroll;
+    handleScroll = function() {
+      originalHandleScroll.call(this);
+      
+      // 在滚动处理完成后检查深度
+      setTimeout(() => {
+        const depth = getBrowseDepth();
+        EventDrivenReminder.checkDepthThreshold(depth);
+      }, 1100); // 略长于滚动防抖时间
+    };
+  },
+  
+  // 检查访问次数阈值
+  checkVisitCountThreshold(count) {
+    this.evaluateAndTrigger('visitCount', count);
+  },
+  
+  // 检查浏览时长阈值
+  checkDurationThreshold(duration) {
+    this.evaluateAndTrigger('browseDuration', duration);
+  },
+  
+  // 检查浏览深度阈值
+  checkDepthThreshold(depth) {
+    this.evaluateAndTrigger('browseDepth', depth);
+  },
+  
+  // 评估并触发提醒
+  async evaluateAndTrigger(triggerType, value) {
+    const currentUrl = window.location.href;
+    
+    // 检查是否已提醒过此URL
+    if (CoreMetricsState.remindedUrls.has(currentUrl)) {
+      return; // 本次会话已提醒过，不再重复触发
+    }
+    
+    // 获取当前指标并检查是否达到阈值
+    const metrics = await this.getCurrentMetrics();
+    if (!metrics) return;
+    
+    // 获取用户设置的档位
+    const userLevel = await this.getUserLevel();
+    const thresholds = this.getThresholds(userLevel);
+    
+    // 检查是否所有关键指标都达到阈值
+    const visitHit = metrics.visitCount >= thresholds.visit;
+    const durationHit = thresholds.duration === 0 || metrics.browseDuration >= thresholds.duration;
+    const depthHit = thresholds.depth === 0 || metrics.browseDepth >= thresholds.depth;
+    
+    if (visitHit && durationHit && depthHit) {
+      console.log(`🎯 事件触发：${triggerType} 达到阈值，触发智能提醒`);
+      await this.triggerReminder(metrics, userLevel);
+      
+      // 标记此URL已提醒
+      CoreMetricsState.remindedUrls.add(currentUrl);
+    }
+  },
+  
+  // 获取当前指标
+  async getCurrentMetrics() {
+    try {
+      return {
+        visitCount: await getVisitCount(),
+        browseDuration: getBrowseDuration(),
+        browseDepth: getBrowseDepth(),
+        url: window.location.href
+      };
+    } catch (error) {
+      console.warn('获取指标失败:', error);
+      return null;
+    }
+  },
+  
+  // 获取用户设置的档位
+  async getUserLevel() {
+    try {
+      const storage = getUnifiedStorage();
+      let userLevel = await storage.get('reminder-sensitivity-level', 2);
+      
+      // 确保值在有效范围内
+      userLevel = Math.max(0, Math.min(4, userLevel));
+      
+      // 备用方案
+      if (window.sensitivitySlider && typeof window.sensitivitySlider.currentLevel !== 'undefined') {
+        userLevel = window.sensitivitySlider.currentLevel;
+      }
+      
+      return userLevel;
+    } catch (error) {
+      console.warn('获取档位失败:', error);
+      return 2;
+    }
+  },
+  
+  // 获取阈值配置
+  getThresholds(userLevel) {
+    const thresholdConfigs = [
+      { visit: 20, duration: 120, depth: 10 },   // 很少提醒
+      { visit: 12, duration: 90, depth: 5 },     // 偶尔提醒
+      { visit: 8, duration: 60, depth: 1.5 },    // 适中提醒
+      { visit: 5, duration: 30, depth: 0 },      // 常常提醒
+      { visit: 3, duration: 0, depth: 0 }        // 频繁提醒
+    ];
+    
+    return thresholdConfigs[userLevel] || thresholdConfigs[2];
+  },
+  
+  // 触发提醒
+  async triggerReminder(metrics, userLevel) {
+    try {
+      const reminderData = {
+        type: 'domain',
+        url: metrics.url,
+        title: document.title,
+        metrics: metrics
+      };
+      
+      console.log('🎯 事件驱动：准备显示提醒弹窗');
+      showReminderToast(reminderData);
+      console.log('🎯 事件驱动：提醒弹窗显示完成');
+    } catch (error) {
+      console.error('事件驱动提醒失败:', error);
+    }
+  },
+  
+  // 重置状态（页面卸载时调用）
+  reset() {
+    CoreMetricsState.remindedUrls.clear();
+    CoreMetricsState.isEventDrivenInitialized = false;
+    console.log('🎯 事件驱动提醒状态已重置');
+  }
 };
 
 // 获取主域名
@@ -796,9 +981,6 @@ function handleVisibilityChange() {
 
       // 每次激活时重新计算访问次数
       updateDomainVisitCount();
-
-      // 检查是否需要触发智能提醒（延迟执行，确保数据已更新）
-      setTimeout(triggerSmartReminder, 2000);
     }
   }
 }
@@ -851,64 +1033,135 @@ function getBrowseDepth() {
 // =============
 
 /**
+ * 档位配置映射 - 全局配置，确保所有函数都可以访问
+ */
+const levelConfigs = [
+  {
+    name: '很少提醒',
+    frequency: '每月提醒',
+    thresholds: { visit: '≥ 20次', duration: '≥ 120秒', depth: '≥ 10屏' },
+    process: '(0档,1档,2档)'
+  },
+  {
+    name: '偶尔提醒',
+    frequency: '每两周提醒',
+    thresholds: { visit: '≥ 12次', duration: '≥ 90秒', depth: '≥ 5屏' },
+    process: '(1档,2档,3档)'
+  },
+  {
+    name: '适中提醒',
+    frequency: '每周提醒',
+    thresholds: { visit: '≥ 8次', duration: '≥ 60秒', depth: '≥ 1.5屏' },
+    process: '(2档,3档,4档)'
+  },
+  {
+    name: '常常提醒',
+    frequency: '每三天提醒',
+    thresholds: { visit: '≥ 5次', duration: '≥ 30秒', depth: '无要求' },
+    process: '(3档,4档,?)'
+  },
+  {
+    name: '频繁提醒',
+    frequency: '每天提醒',
+    thresholds: { visit: '≥ 3次', duration: '无要求', depth: '无要求' },
+    process: '(4档,?,?)'
+  }
+];
+
+/**
+ * @deprecated 此函数已被事件驱动机制替代，保留用于向后兼容
  * 基于3大指标判定结果触发智能提醒
  */
 async function triggerSmartReminder() {
   try {
-    // 检查冷却时间
-    const now = Date.now();
-    if (now - CoreMetricsState.lastReminderTime < CoreMetricsState.reminderCooldown) {
-      return; // 在冷却时间内，不触发提醒
-    }
+    // 移除冷却时间检查 - 即时触发提醒
 
     const metrics = await getCoreMetrics();
 
-    if (!metrics.judgmentResult || !metrics.judgmentResult.passed) {
-      return; // 判定失败，不触发提醒
+    if (!metrics || !metrics.visitCount) {
+      return; // 数据无效，不触发提醒
     }
 
-    const result = metrics.judgmentResult;
+    // 获取用户设置的提醒档位（与调试窗口完全一致的方式）
+    const storage = getUnifiedStorage();
+    let userLevel;
+    
+    try {
+      userLevel = await storage.get('reminder-sensitivity-level', 2); // 默认适中提醒
+    } catch (error) {
+      console.warn('获取档位配置失败，使用默认值:', error);
+      userLevel = 2;
+    }
+    
+    // 确保值在有效范围内
+    userLevel = Math.max(0, Math.min(4, userLevel));
+    
+    // 备用方案：如果window.sensitivitySlider存在，使用它的值（与调试窗口一致）
+    if (window.sensitivitySlider && typeof window.sensitivitySlider.currentLevel !== 'undefined') {
+      userLevel = window.sensitivitySlider.currentLevel;
+    }
+    
+    // 使用与调试窗口完全相同的阈值配置
+    const thresholdConfigs = [
+      { visit: 20, duration: 120, depth: 10 },   // 很少提醒
+      { visit: 12, duration: 90, depth: 5 },     // 偶尔提醒
+      { visit: 8, duration: 60, depth: 1.5 },    // 适中提醒
+      { visit: 5, duration: 30, depth: 0 },      // 常常提醒
+      { visit: 3, duration: 0, depth: 0 }        // 频繁提醒
+    ];
+    
+    const thresholds = thresholdConfigs[userLevel];
+    if (!thresholds) {
+      console.warn('无效的档位级别:', userLevel);
+      return;
+    }
 
-    // 根据判定级别决定是否触发提醒
-    let shouldTrigger = false;
+    // 调试日志（与调试窗口保持一致）
+    console.log(`[触发检测] 档位级别: ${userLevel}, 时长阈值: ${thresholds.duration}秒, 当前时长: ${metrics.browseDuration}秒`);
+
+    // 使用与调试窗口完全相同的判定逻辑
+    const visitHit = metrics.visitCount >= thresholds.visit;
+    const durationHit = thresholds.duration === 0 || metrics.browseDuration >= thresholds.duration;
+    const depthHit = thresholds.depth === 0 || metrics.browseDepth >= thresholds.depth;
+
+    const shouldTrigger = visitHit && durationHit && depthHit;
+    
+    console.log(`[触发检测] 访问次数: ${metrics.visitCount}>=${thresholds.visit}=${visitHit}, 时长: ${metrics.browseDuration}>=${thresholds.duration}=${durationHit}, 深度: ${metrics.browseDepth}>=${thresholds.depth}=${depthHit}, 最终结果: ${shouldTrigger}`);
+    
+    // 生成提醒消息
     let reminderMessage = '';
-
-    // 只有达到"高度关注"及以上级别才触发提醒
-    if (result.level >= 2) {
-      shouldTrigger = true;
-      reminderMessage = `检测到您${result.levelName}此页面：`;
-
-      // 根据具体指标添加详细信息
+    if (shouldTrigger) {
+      reminderMessage = `检测到您达到${levelConfigs[userLevel].name}条件：`;
+      
       const details = [];
-      if (result.detailResults.visitCount.level >= 2) {
-        details.push(`访问${result.detailResults.visitCount.value}次`);
+      if (visitHit) {
+        details.push(`访问${metrics.visitCount}次`);
       }
-      if (result.detailResults.browseDuration.level >= 2) {
-        details.push(`浏览${result.detailResults.browseDuration.value}秒`);
+      if (durationHit && thresholds.duration > 0) {
+        details.push(`浏览${metrics.browseDuration}秒`);
       }
-      if (result.detailResults.browseDepth.level >= 2) {
-        details.push(`深度${result.detailResults.browseDepth.value.toFixed(1)}屏`);
+      if (depthHit && thresholds.depth > 0) {
+        details.push(`深度${metrics.browseDepth.toFixed(1)}屏`);
       }
-
+      
       reminderMessage += details.join('，');
     }
 
     if (shouldTrigger) {
       console.log(`🎯 触发智能提醒: ${reminderMessage}`);
 
-      // 更新最后提醒时间
-      CoreMetricsState.lastReminderTime = now;
-
+      // 移除冷却时间更新 - 即时触发弹窗
       // 显示提醒弹窗
       const reminderData = {
         type: 'domain',
         url: metrics.url,
         title: document.title,
-        metrics: metrics,
-        judgmentResult: result
+        metrics: metrics
       };
 
+      console.log('准备调用 showReminderToast, reminderData:', reminderData);
       showReminderToast(reminderData);
+      console.log('showReminderToast 调用完成');
     }
   } catch (error) {
     console.warn('智能提醒触发失败:', error);
@@ -935,17 +1188,7 @@ async function getCoreMetrics() {
     timestamp: Date.now()
   };
 
-  // 使用3大指标判定引擎进行判定
-  if (window.MetricsJudgmentEngine) {
-    try {
-      const engine = new window.MetricsJudgmentEngine();
-      engine.setDebugMode(false);
-      const judgmentResult = engine.judge(metrics);
-      metrics.judgmentResult = judgmentResult;
-    } catch (error) {
-      console.warn('3大指标判定失败:', error);
-    }
-  }
+  // 移除复杂的判定引擎，直接返回基础指标数据
 
   return metrics;
 }
@@ -970,6 +1213,9 @@ async function initCoreMetrics() {
     CoreMetricsState.lastActiveTime = Date.now();
     updateDomainVisitCount();
   }
+
+  // 初始化事件驱动提醒机制
+  EventDrivenReminder.init();
 
   CoreMetricsState.isInitialized = true;
 }
@@ -998,6 +1244,9 @@ function cleanupCoreMetrics() {
     clearTimeout(CoreMetricsState.scrollTimeout);
     CoreMetricsState.scrollTimeout = null;
   }
+
+  // 重置事件驱动提醒状态
+  EventDrivenReminder.reset();
 
   CoreMetricsState.isInitialized = false;
   CoreMetricsState.isActiveTab = false;
@@ -1588,39 +1837,7 @@ function updateBasicMetrics(metrics) {
  * 更新当前档位配置显示
  */
 async function updateCurrentLevelConfig() {
-  // 档位配置映射 - 移到函数开始处确保在try-catch块中可用
-  const levelConfigs = [
-    {
-      name: '很少提醒',
-      frequency: '每月提醒',
-      thresholds: { visit: '≥ 20次', duration: '≥ 120秒', depth: '≥ 10屏' },
-      process: '(0档,1档,2档)'
-    },
-    {
-      name: '偶尔提醒',
-      frequency: '每两周提醒',
-      thresholds: { visit: '≥ 12次', duration: '≥ 90秒', depth: '≥ 5屏' },
-      process: '(1档,2档,3档)'
-    },
-    {
-      name: '适中提醒',
-      frequency: '每周提醒',
-      thresholds: { visit: '≥ 8次', duration: '≥ 60秒', depth: '≥ 1.5屏' },
-      process: '(2档,3档,4档)'
-    },
-    {
-      name: '常常提醒',
-      frequency: '每三天提醒',
-      thresholds: { visit: '≥ 5次', duration: '≥ 30秒', depth: '无要求' },
-      process: '(3档,4档,?)'
-    },
-    {
-      name: '频繁提醒',
-      frequency: '每天提醒',
-      thresholds: { visit: '≥ 3次', duration: '无要求', depth: '无要求' },
-      process: '(4档,?,?)'
-    }
-  ];
+  // 使用全局档位配置映射
 
   try {
     // 使用统一存储系统获取当前档位配置
@@ -1929,7 +2146,7 @@ async function startDebugWindowUpdates() {
   // 立即更新一次
   await updateDebugWindow();
 
-  // 设置定时更新 - 每秒更新访问时长
+  // 设置定时更新 - 仅更新调试窗口，移除轮询检查
   CoreMetricsState.updateInterval = setInterval(async () => {
     await updateDebugWindow();
   }, 1000); // 每1秒更新一次
@@ -2151,17 +2368,48 @@ if (typeof window !== 'undefined') {
     }
   };
 
+  window.showReminderToast = showReminderToast;  // 暴露弹窗函数到全局
+  
+  // 事件驱动机制测试函数
+  window.testEventDrivenReminder = async function() {
+    console.log('🎯 测试事件驱动提醒机制...');
+    try {
+      console.log('当前状态:', {
+        isEventDrivenInitialized: CoreMetricsState.isEventDrivenInitialized,
+        remindedUrls: Array.from(CoreMetricsState.remindedUrls),
+        isActiveTab: CoreMetricsState.isActiveTab
+      });
+
+      // 手动触发事件检查
+      await EventDrivenReminder.evaluateAndTrigger('manual', 0);
+      console.log('🎯 事件驱动提醒测试完成');
+    } catch (error) {
+      console.error('测试失败:', error);
+    }
+  };
+  
+  // 重置事件驱动状态
+  window.resetEventDrivenReminder = function() {
+    console.log('🎯 重置事件驱动提醒状态...');
+    EventDrivenReminder.reset();
+    console.log('🎯 重置完成，当前URL将可以重新收到提醒');
+  };
+  
+  // 显示事件驱动状态
+  window.showEventDrivenStatus = function() {
+    console.log('🎯 事件驱动提醒状态:');
+    console.log('- 已初始化:', CoreMetricsState.isEventDrivenInitialized);
+    console.log('- 已提醒URL数量:', CoreMetricsState.remindedUrls.size);
+    console.log('- 已提醒URL列表:', Array.from(CoreMetricsState.remindedUrls));
+    console.log('- 当前页面是否可提醒:', !CoreMetricsState.remindedUrls.has(window.location.href));
+  };
+  
   window.testSmartReminder = async function() {
     console.log('测试智能提醒触发...');
     try {
-      console.log('当前冷却状态:', {
-        lastReminderTime: CoreMetricsState.lastReminderTime,
-        cooldown: CoreMetricsState.reminderCooldown,
-        timeSinceLastReminder: Date.now() - CoreMetricsState.lastReminderTime
+      console.log('当前状态:', {
+        message: '冷却时间已移除，即时触发提醒'
       });
-
-      // 重置冷却时间进行测试
-      CoreMetricsState.lastReminderTime = 0;
 
       await triggerSmartReminder();
       console.log('智能提醒触发测试完成');
@@ -2176,6 +2424,9 @@ if (typeof window !== 'undefined') {
   console.log('- window.toggleDebugWindow() 切换调试窗口显示/隐藏');
   console.log('- window.testCoreMetrics() 测试核心指标函数');
   console.log('- window.testSmartReminder() 测试智能提醒触发');
+  console.log('- window.testEventDrivenReminder() 测试事件驱动提醒');
+  console.log('- window.resetEventDrivenReminder() 重置事件驱动状态');
+  console.log('- window.showEventDrivenStatus() 显示事件驱动状态');
   console.log('- Ctrl+Shift+D 快捷键移除调试窗口');
   console.log('- Ctrl+Alt+Q+E (Windows/Linux) 或 Command+Option+Q+E (Mac) 快捷键切换调试窗口');
 }

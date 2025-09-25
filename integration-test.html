@@ -161,7 +161,7 @@
                     <li>访问任意网页，等待判定引擎加载</li>
                     <li>在页面中右下角会显示调试窗口</li>
                     <li>调试窗口会实时显示3大指标数据</li>
-                    <li>当判定达到"高度关注"级别时，会自动触发收藏提醒</li>
+                    <li>当判定达到用户设置的提醒级别时，会自动触发收藏提醒</li>
                 </ol>
 
                 <div class="test-title">调试命令（在浏览器控制台中使用）</div>
@@ -176,7 +176,12 @@
                 <ul>
                     <li><strong>优先级：</strong> 访问次数 &gt; 访问时长 &gt; 访问深度</li>
                     <li><strong>权重：</strong> 访问次数50%，访问时长30%，访问深度20%</li>
-                    <li><strong>触发条件：</strong> 达到"高度关注"级别（Level 2+）</li>
+                    <li><strong>触发条件：</strong> 根据用户设置的档位决定触发级别</li>
+                    <li><strong>很少提醒：</strong> 需要达到极度关注（Level 4）</li>
+                    <li><strong>偶尔提醒：</strong> 需要达到强烈关注（Level 3）</li>
+                    <li><strong>适中提醒：</strong> 需要达到高度关注（Level 2）</li>
+                    <li><strong>常常提醒：</strong> 需要达到适度关注（Level 1）</li>
+                    <li><strong>频繁提醒：</strong> 需要达到基础关注（Level 0）</li>
                     <li><strong>冷却时间：</strong> 5分钟内不重复触发</li>
                 </ul>
             </div>
@@ -320,7 +325,8 @@
                     `- 关注级别: ${result.levelName}\n` +
                     `- 分数: ${result.weightedScore.toFixed(2)}/4.0\n` +
                     `- 置信度: ${(result.confidence * 100).toFixed(1)}%\n\n` +
-                    '提醒触发: ' + (result.level >= 2 ? '✅ 会触发' : '❌ 不会触发');
+                    '提醒触发: ' + (result.level >= 2 ? '✅ 会触发（适中提醒档位）' : '❌ 不会触发（适中提醒档位）') + 
+                    '\n注意：实际触发条件取决于用户设置的提醒档位';
             } catch (error) {
                 statusEl.textContent = '❌ 失败';
                 statusEl.className = 'test-status status-failed';
