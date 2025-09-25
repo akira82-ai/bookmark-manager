@@ -9,7 +9,8 @@
       "Bash(dir:*)",
       "Read(//private/tmp/**)",
       "Read(//tmp/**)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
