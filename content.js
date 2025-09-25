@@ -1400,15 +1400,7 @@ function createBrowseWindow() {
       </div>
     </div>
 
-    <!-- 窗口说明 -->
-    <div class="browse-info-section">
-      <div class="browse-info-content">
-        <div class="browse-info-text">
-          💡 此窗口显示您的浏览行为数据，当达到设定条件时会自动触发收藏提醒
         </div>
-      </div>
-    </div>
-      </div>
     </div>
 
   `;
@@ -2003,7 +1995,7 @@ function updateHitStatus(isHit, metrics, thresholds) {
   // 显示建议
   if (suggestionEl && suggestionTextEl) {
     if (isHit) {
-      suggestionTextEl.textContent = '🎉 当前访问模式已达到触发条件，建议触发智能收藏提醒！';
+      suggestionTextEl.textContent = '🎉 建议触发智能收藏提醒！';
       suggestionEl.style.display = 'block';
     } else {
       suggestionEl.style.display = 'none';
