@@ -941,6 +941,12 @@ const EventDrivenReminder = {
     if (CoreMetricsState.remindedUrls.has(currentUrl)) {
       return; // 本次会话已提醒过，不再重复触发
     }
+
+    // 检查提醒是否已启用
+    const isReminderEnabled = await this.isReminderEnabled();
+    if (!isReminderEnabled) {
+      return; // 提醒已禁用，不触发
+    }
     
     // 获取当前指标并检查是否达到阈值
     const metrics = await this.getCurrentMetrics();
@@ -996,6 +1002,24 @@ const EventDrivenReminder = {
     } catch (error) {
       console.warn('获取档位失败:', error);
       return 2;
+    }
+  },
+
+  // 检查提醒是否已启用
+  async isReminderEnabled() {
+    try {
+      const storage = getUnifiedStorage();
+      const isEnabled = await storage.get('reminder-enabled', false); // 默认 false（不启用）
+      
+      // 备用方案：检查全局变量（书签管理器页面）
+      if (window.reminderEnabledSwitch && typeof window.reminderEnabledSwitch.isEnabled === 'function') {
+        return window.reminderEnabledSwitch.isEnabled();
+      }
+      
+      return isEnabled;
+    } catch (error) {
+      console.warn('检查提醒启用状态失败:', error);
+      return false; // 出错时默认不启用
     }
   },
   

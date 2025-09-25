@@ -302,6 +302,120 @@ class BookmarkManager {
       });
     }
 
+    // 启用提醒开关逻辑
+    class ReminderEnabledSwitch {
+      constructor() {
+        this.switchInput = document.getElementById('reminder-enabled');
+        this.storageKey = 'reminder-enabled';
+        this.defaultValue = false; // 默认不启用
+        
+        this.init();
+      }
+
+      init() {
+        if (!this.switchInput) {
+          console.warn('未找到启用提醒开关元素');
+          return;
+        }
+
+        this.loadSavedState();
+        this.bindEvents();
+      }
+
+      // 加载保存的开关状态
+      async loadSavedState() {
+        try {
+          let isEnabled = this.defaultValue;
+          
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            // 优先使用 Chrome storage
+            const result = await chrome.storage.local.get([this.storageKey]);
+            isEnabled = result[this.storageKey] ?? this.defaultValue;
+          } else {
+            // 降级到 localStorage
+            const savedValue = localStorage.getItem(this.storageKey);
+            isEnabled = savedValue === null ? this.defaultValue : savedValue === 'true';
+          }
+
+          // 设置开关状态（不触发 change 事件）
+          this.switchInput.checked = isEnabled;
+          console.log(`启用提醒状态已加载: ${isEnabled}`);
+          
+        } catch (error) {
+          console.warn('加载启用提醒状态失败:', error);
+          this.switchInput.checked = this.defaultValue;
+        }
+      }
+
+      // 保存开关状态
+      async saveState(isEnabled) {
+        try {
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            await chrome.storage.local.set({ [this.storageKey]: isEnabled });
+          } else {
+            localStorage.setItem(this.storageKey, isEnabled.toString());
+          }
+          console.log(`启用提醒状态已保存: ${isEnabled}`);
+        } catch (error) {
+          console.warn('保存启用提醒状态失败:', error);
+        }
+      }
+
+      // 绑定事件
+      bindEvents() {
+        this.switchInput.addEventListener('change', async (e) => {
+          const isEnabled = e.target.checked;
+          await this.saveState(isEnabled);
+          
+          // 提供用户反馈
+          this.showStatusFeedback(isEnabled);
+        });
+      }
+
+      // 显示状态反馈
+      showStatusFeedback(isEnabled) {
+        // 创建临时提示
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: ${isEnabled ? '#4CAF50' : '#FF5722'};
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-size: 14px;
+          z-index: 10000;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          transform: translateX(100%);
+          transition: transform 0.3s ease;
+        `;
+        toast.textContent = isEnabled ? '✅ 智能提醒已启用' : '❌ 智能提醒已禁用';
+        
+        document.body.appendChild(toast);
+        
+        // 动画显示
+        setTimeout(() => {
+          toast.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // 3秒后自动消失
+        setTimeout(() => {
+          toast.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 300);
+        }, 3000);
+      }
+
+      // 获取当前状态（供外部使用）
+      isEnabled() {
+        return this.switchInput.checked;
+      }
+    }
+
     // 敏感度滑块交互
     class SensitivitySlider {
       constructor() {
@@ -656,6 +770,11 @@ class BookmarkManager {
         }
       }
     }
+
+    // 初始化启用提醒开关
+    const reminderEnabledSwitch = new ReminderEnabledSwitch();
+    // 暴露到全局作用域，供智能提醒功能使用
+    window.reminderEnabledSwitch = reminderEnabledSwitch;
 
     // 初始化敏感度滑块
     const sensitivitySlider = new SensitivitySlider();
