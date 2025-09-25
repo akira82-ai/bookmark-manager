@@ -6,7 +6,10 @@
       "Bash(git add:*)",
       "Bash(git restore:*)",
       "Bash(open:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Read(//private/tmp/**)",
+      "Read(//tmp/**)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []

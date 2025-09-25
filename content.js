@@ -1,23 +1,33 @@
 // 内容脚本 - 弹窗显示功能
 
 // 监听来自popup的消息
-try {
-  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    if (request.action === 'getPageInfo') {
-      const pageInfo = {
-        title: document.title,
-        url: window.location.href,
-        description: safeGetMetaDescription()
-      };
-      sendResponse(pageInfo);
-    } else if (request.action === 'showReminder') {
-      showReminderToast(request.data);
-      sendResponse({success: true});
-    }
-  });
-} catch (error) {
-  console.warn('消息监听器设置失败:', error);
+function setupMessageListener() {
+  if (!isExtensionContextValid()) {
+    console.warn('扩展上下文无效，跳过消息监听器设置');
+    return;
+  }
+  
+  try {
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      if (request.action === 'getPageInfo') {
+        const pageInfo = {
+          title: document.title,
+          url: window.location.href,
+          description: safeGetMetaDescription()
+        };
+        sendResponse(pageInfo);
+      } else if (request.action === 'showReminder') {
+        showReminderToast(request.data);
+        sendResponse({success: true});
+      }
+    });
+  } catch (error) {
+    console.warn('消息监听器设置失败:', error);
+  }
 }
+
+// 设置消息监听器
+setupMessageListener();
 
 // URL解析函数
 function analyzeURL(url) {
@@ -339,10 +349,17 @@ const StorageRetry = {
   exponentialBackoff: true,
 
   async retry(operation, attempt = 1) {
+    // 检查Chrome API是否可用
+    if (!chrome || !chrome.storage) {
+      throw new Error('Chrome.storage API不可用');
+    }
+    
     try {
       return await operation();
     } catch (error) {
-      if (attempt >= this.maxAttempts) throw error;
+      if (attempt >= this.maxAttempts || error.message.includes('Extension context invalidated')) {
+        throw error;
+      }
 
       const delay = this.exponentialBackoff
         ? this.retryDelay * Math.pow(2, attempt - 1)
@@ -376,6 +393,20 @@ async function syncWrite(key, value) {
 
 // 智能读取策略
 async function smartRead(key, defaultValue) {
+  // 检查扩展上下文是否有效
+  if (!chrome || !chrome.storage) {
+    console.warn('Chrome.storage API不可用，直接使用localStorage');
+    try {
+      const localValue = localStorage.getItem(key);
+      if (localValue !== null) {
+        return JSON.parse(localValue);
+      }
+    } catch (error) {
+      console.warn('LocalStorage读取失败:', error);
+    }
+    return defaultValue;
+  }
+  
   // 优先级1: chrome.storage
   try {
     const result = await StorageRetry.retry(() =>
@@ -405,8 +436,16 @@ const StorageHealth = {
   isHealthy: true,
   lastCheck: 0,
   checkInterval: 30000, // 30秒检查一次
+  monitoringInterval: null,
 
   async check() {
+    // 检查Chrome API是否可用
+    if (!chrome || !chrome.storage) {
+      this.isHealthy = false;
+      console.warn('Chrome.storage API不可用');
+      return;
+    }
+    
     try {
       const testKey = '_health_check';
       await StorageRetry.retry(() =>
@@ -424,42 +463,83 @@ const StorageHealth = {
   },
 
   startMonitoring() {
-    setInterval(() => this.check(), this.checkInterval);
+    // 先清除之前的监控
+    this.stopMonitoring();
+    this.monitoringInterval = setInterval(() => this.check(), this.checkInterval);
+  },
+  
+  stopMonitoring() {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+    }
   }
 };
 
 // 智能缓存管理
 class StorageCache {
   constructor(ttl = 60000) { // 1分钟缓存
-    this.cache = new Map();
     this.ttl = ttl;
+    this.recover();
+  }
+  
+  recover() {
+    try {
+      this.cache = new Map();
+    } catch (error) {
+      console.warn('缓存恢复失败:', error);
+      this.cache = null;
+    }
   }
 
   get(key) {
-    const item = this.cache.get(key);
-    if (!item) return null;
+    if (!this.cache) return null;
+    
+    try {
+      const item = this.cache.get(key);
+      if (!item) return null;
 
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
+      if (Date.now() - item.timestamp > this.ttl) {
+        this.cache.delete(key);
+        return null;
+      }
+
+      return item.value;
+    } catch (error) {
+      console.warn('缓存读取失败:', key, error);
       return null;
     }
-
-    return item.value;
   }
 
   set(key, value) {
-    this.cache.set(key, {
-      value,
-      timestamp: Date.now()
-    });
+    if (!this.cache) return;
+    
+    try {
+      this.cache.set(key, {
+        value,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.warn('缓存设置失败:', key, error);
+    }
   }
 
   invalidate(key) {
-    this.cache.delete(key);
+    if (!this.cache) return;
+    try {
+      this.cache.delete(key);
+    } catch (error) {
+      console.warn('缓存失效失败:', key, error);
+    }
   }
 
   clear() {
-    this.cache.clear();
+    if (!this.cache) return;
+    try {
+      this.cache.clear();
+    } catch (error) {
+      console.warn('缓存清理失败:', error);
+    }
   }
 }
 
@@ -517,46 +597,76 @@ class StorageEventSystem {
 // 统一的存储API
 class UnifiedStorage {
   constructor() {
-    this.cache = new StorageCache();
-    this.eventSystem = new StorageEventSystem();
-    this.health = StorageHealth;
-    this.health.startMonitoring();
-    this.initialize();
+    try {
+      this.cache = new StorageCache();
+      this.eventSystem = new StorageEventSystem();
+      this.health = StorageHealth;
+      this.healthCheckInterval = null;
+      this.isInitialized = false;
+      this.initialize();
+    } catch (error) {
+      console.warn('UnifiedStorage初始化失败:', error);
+      // 设置最小可用的状态
+      this.cache = null;
+      this.eventSystem = null;
+      this.health = StorageHealth;
+      this.isInitialized = false;
+    }
   }
 
   initialize() {
-    // 监听存储变化，自动更新缓存
-    this.eventSystem.on('storage:changed', ({changes}) => {
-      Object.keys(changes).forEach(key => {
-        const change = changes[key];
-        if (change.newValue !== undefined) {
-          this.cache.set(key, change.newValue);
-        } else {
-          this.cache.invalidate(key);
+    if (!this.cache || !this.eventSystem) {
+      console.warn('存储系统组件无效，跳过初始化');
+      return;
+    }
+    
+    try {
+      // 监听存储变化，自动更新缓存
+      this.eventSystem.on('storage:changed', ({changes}) => {
+        if (!this.cache) return;
+        Object.keys(changes).forEach(key => {
+          const change = changes[key];
+          if (change.newValue !== undefined) {
+            this.cache.set(key, change.newValue);
+          } else {
+            this.cache.invalidate(key);
+          }
+        });
+      });
+
+      this.eventSystem.on('localStorage:changed', (event) => {
+        if (!this.cache) return;
+        if (event.key && event.newValue !== null) {
+          try {
+            this.cache.set(event.key, JSON.parse(event.newValue));
+          } catch (error) {
+            console.warn('LocalStorage值解析失败:', error);
+          }
         }
       });
-    });
 
-    this.eventSystem.on('localStorage:changed', (event) => {
-      if (event.key && event.newValue !== null) {
-        try {
-          this.cache.set(event.key, JSON.parse(event.newValue));
-        } catch (error) {
-          console.warn('LocalStorage值解析失败:', error);
+      // 监听健康状态变化
+      this.healthCheckInterval = setInterval(() => {
+        if (this.health.isHealthy && this.cache && typeof this.cache.entries === 'function') {
+          // 扩展恢复健康且缓存对象有效，刷新缓存
+          this.refreshCache();
         }
-      }
-    });
-
-    // 监听健康状态变化
-    setInterval(() => {
-      if (this.health.isHealthy) {
-        // 扩展恢复健康，刷新缓存
-        this.refreshCache();
-      }
-    }, 5000);
+      }, 5000);
+      
+      this.isInitialized = true;
+      console.log('UnifiedStorage初始化完成');
+    } catch (error) {
+      console.warn('UnifiedStorage初始化过程中出错:', error);
+      this.isInitialized = false;
+    }
   }
 
   async get(key, defaultValue = null) {
+    // 如果缓存无效，直接读取
+    if (!this.cache) {
+      return await smartRead(key, defaultValue);
+    }
+    
     // 先检查缓存
     const cached = this.cache.get(key);
     if (cached !== null) return cached;
@@ -574,11 +684,15 @@ class UnifiedStorage {
     // 双写同步
     await syncWrite(key, value);
 
-    // 更新缓存
-    this.cache.set(key, value);
+    // 更新缓存（如果有效）
+    if (this.cache) {
+      this.cache.set(key, value);
+    }
 
-    // 触发事件
-    this.eventSystem.emit('value:changed', {key, value});
+    // 触发事件（如果有效）
+    if (this.eventSystem) {
+      this.eventSystem.emit('value:changed', {key, value});
+    }
   }
 
   async remove(key) {
@@ -589,9 +703,13 @@ class UnifiedStorage {
 
       localStorage.removeItem(key);
 
-      this.cache.invalidate(key);
+      if (this.cache) {
+        this.cache.invalidate(key);
+      }
 
-      this.eventSystem.emit('value:removed', {key});
+      if (this.eventSystem) {
+        this.eventSystem.emit('value:removed', {key});
+      }
     } catch (error) {
       console.warn('删除存储项失败:', error);
     }
@@ -609,33 +727,104 @@ class UnifiedStorage {
 
   async refreshCache() {
     // 刷新所有缓存项
-    for (const [key, item] of this.cache.entries()) {
-      try {
-        const freshValue = await smartRead(key, null);
-        if (freshValue !== null) {
-          this.cache.set(key, freshValue);
-        } else {
-          this.cache.invalidate(key);
+    try {
+      if (!this.cache || typeof this.cache.entries !== 'function') {
+        // 尝试重新初始化缓存
+        this.recover();
+        if (!this.cache) {
+          console.warn('缓存对象无法恢复，跳过刷新');
+          return;
         }
-      } catch (error) {
-        console.warn('刷新缓存失败:', key, error);
       }
+      
+      const entries = this.cache.entries();
+      if (!entries) {
+        console.warn('无法获取缓存条目，跳过刷新');
+        return;
+      }
+      
+      for (const [key, item] of entries) {
+        try {
+          const freshValue = await smartRead(key, null);
+          if (freshValue !== null) {
+            this.cache.set(key, freshValue);
+          } else {
+            this.cache.invalidate(key);
+          }
+        } catch (error) {
+          console.warn('刷新缓存失败:', key, error);
+        }
+      }
+    } catch (error) {
+      console.warn('缓存刷新失败:', error);
     }
   }
 
   destroy() {
+    // 清理健康检查定时器
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+    
     this.eventSystem.destroy();
-    this.cache.clear();
+    if (this.cache) {
+      this.cache.clear();
+    }
   }
 }
 
 // 创建全局存储实例
 let unifiedStorage = null;
+let storageFallback = false;
 
 function getUnifiedStorage() {
   if (!unifiedStorage) {
-    unifiedStorage = new UnifiedStorage();
+    try {
+      unifiedStorage = new UnifiedStorage();
+      // 检查是否初始化成功
+      if (!unifiedStorage.isInitialized && !unifiedStorage.cache) {
+        console.warn('UnifiedStorage初始化不完全，启用降级模式');
+        storageFallback = true;
+      }
+    } catch (error) {
+      console.warn('UnifiedStorage创建失败，启用降级模式:', error);
+      storageFallback = true;
+    }
   }
+  
+  // 如果启用降级模式，创建一个简化的存储对象
+  if (storageFallback || !unifiedStorage) {
+    return {
+      async get(key, defaultValue = null) {
+        try {
+          return await smartRead(key, defaultValue);
+        } catch (error) {
+          console.warn('降级模式读取失败:', error);
+          return defaultValue;
+        }
+      },
+      async set(key, value) {
+        try {
+          await syncWrite(key, value);
+        } catch (error) {
+          console.warn('降级模式写入失败:', error);
+        }
+      },
+      async remove(key) {
+        try {
+          localStorage.removeItem(key);
+          if (chrome && chrome.storage) {
+            await StorageRetry.retry(() =>
+              chrome.storage.local.remove([key])
+            ).catch(() => {});
+          }
+        } catch (error) {
+          console.warn('降级模式删除失败:', error);
+        }
+      }
+    };
+  }
+  
   return unifiedStorage;
 }
 
@@ -660,6 +849,9 @@ const CoreMetricsState = {
   // 数据收集状态
   isInitialized: false,
 
+  // 浏览数据窗口相关
+  debugWindow: null,
+  updateInterval: null,
 
   // 事件驱动提醒机制
   remindedUrls: new Set(), // 本次会话已提醒的URL集合
@@ -1057,6 +1249,892 @@ const levelConfigs = [
   }
 ];
 
+// 浏览数据窗口管理
+// ===============
+
+/**
+ * 创建浏览数据窗口
+ */
+function createDebugWindow() {
+  // 如果窗口已存在，直接返回
+  if (CoreMetricsState.debugWindow) {
+    return;
+  }
+
+  // 创建窗口容器
+  const debugWindow = document.createElement('div');
+  debugWindow.id = 'core-metrics-debug-window';
+  debugWindow.innerHTML = `
+    <div class="debug-header">
+      <span class="debug-title">📊 智能书签浏览数据窗口 v2.0</span>
+      <span class="debug-close-btn" id="debug-close-btn">×</span>
+    </div>
+
+    <!-- 当前档位配置 -->
+    <div class="debug-config-section">
+      <div class="debug-config-header">
+        📊 当前提醒配置
+      </div>
+      <div class="debug-config-content">
+        <div class="debug-config-item">
+          <span class="debug-label">档位:</span>
+          <span class="debug-value" id="debug-config-level">适中提醒</span>
+        </div>
+        <div class="debug-config-item">
+          <span class="debug-label">频率:</span>
+          <span class="debug-value" id="debug-config-frequency">每周提醒</span>
+        </div>
+        <div class="debug-config-thresholds">
+          <div class="debug-threshold-item">
+            <span class="debug-label">• 访问次数:</span>
+            <span class="debug-value" id="debug-threshold-visit">≥ 8次</span>
+          </div>
+          <div class="debug-threshold-item">
+            <span class="debug-label">• 访问时长:</span>
+            <span class="debug-value" id="debug-threshold-duration">≥ 60秒</span>
+          </div>
+          <div class="debug-threshold-item">
+            <span class="debug-label">• 访问深度:</span>
+            <span class="debug-value" id="debug-threshold-depth">≥ 1.5屏</span>
+          </div>
+        </div>
+        <div class="debug-config-process">
+          <span class="debug-label">流程:</span>
+          <span class="debug-value" id="debug-config-process">(3档,2档,1档)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 实时指标数据 -->
+    <div class="debug-content">
+      <div class="debug-item">
+        <span class="debug-label">次数:</span>
+        <span class="debug-value" id="debug-visit-count">0次</span>
+      </div>
+      <div class="debug-item">
+        <span class="debug-label">时长:</span>
+        <span class="debug-value" id="debug-duration">0:00</span>
+      </div>
+      <div class="debug-item">
+        <span class="debug-label">深度:</span>
+        <span class="debug-value" id="debug-depth">0.0屏</span>
+      </div>
+
+      <!-- 进度条显示 -->
+      <div class="debug-progress-section">
+        <div class="debug-progress-item">
+          <span class="debug-progress-label">次数进度:</span>
+          <div class="debug-progress-bar">
+            <div class="debug-progress-fill" id="debug-visit-progress"></div>
+          </div>
+          <span class="debug-progress-text" id="debug-visit-percent">0%</span>
+        </div>
+        <div class="debug-progress-item">
+          <span class="debug-progress-label">时长进度:</span>
+          <div class="debug-progress-bar">
+            <div class="debug-progress-fill" id="debug-duration-progress"></div>
+          </div>
+          <span class="debug-progress-text" id="debug-duration-percent">0%</span>
+        </div>
+        <div class="debug-progress-item">
+          <span class="debug-progress-label">深度进度:</span>
+          <div class="debug-progress-bar">
+            <div class="debug-progress-fill" id="debug-depth-progress"></div>
+          </div>
+          <span class="debug-progress-text" id="debug-depth-percent">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 条件命中检测 -->
+    <div class="debug-hit-section" id="debug-hit-section">
+      <div class="debug-hit-header">
+        🎯 提醒条件检测
+      </div>
+      <div class="debug-hit-content" id="debug-hit-content">
+        <div class="debug-hit-status" id="debug-hit-status">
+          <span class="debug-label">状态:</span>
+          <span class="debug-value" id="debug-hit-text">检测中...</span>
+        </div>
+        <div class="debug-hit-analysis" id="debug-hit-analysis" style="display: none;">
+          <div class="debug-analysis-item">
+            <span class="debug-label">• 访问次数:</span>
+            <span class="debug-value" id="debug-analysis-visit">--</span>
+          </div>
+          <div class="debug-analysis-item">
+            <span class="debug-label">• 访问时长:</span>
+            <span class="debug-value" id="debug-analysis-duration">--</span>
+          </div>
+          <div class="debug-analysis-item">
+            <span class="debug-label">• 访问深度:</span>
+            <span class="debug-value" id="debug-analysis-depth">--</span>
+          </div>
+        </div>
+        <div class="debug-hit-suggestion" id="debug-hit-suggestion" style="display: none;">
+          <span class="debug-suggestion-text" id="debug-suggestion-text">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 窗口说明 -->
+    <div class="debug-info-section">
+      <div class="debug-info-content">
+        <div class="debug-info-text">
+          💡 此窗口显示您的浏览行为数据，当达到设定条件时会自动触发收藏提醒
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
+
+  `;
+
+  // 添加样式
+  const style = document.createElement('style');
+  style.setAttribute('data-debug-window', 'true');
+  style.textContent = `
+    #core-metrics-debug-window {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      width: 320px;
+      min-height: 380px;
+      max-height: 600px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 12px;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      z-index: 999999;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      pointer-events: auto;
+      user-select: none;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .debug-header {
+      padding: 10px 15px 6px 15px;
+      font-weight: 600;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      margin-bottom: 8px;
+      background: rgba(102, 126, 234, 0.2);
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .debug-title {
+      flex: 1;
+    }
+
+    .debug-close-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .debug-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    .debug-content {
+      padding: 0 15px 12px 15px;
+    }
+
+    .debug-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .debug-label {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .debug-value {
+      font-weight: 500;
+      color: #4fc3f7;
+    }
+
+    /* 档位配置区域 */
+    .debug-config-section {
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 8px;
+      margin: 8px 15px;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .debug-config-header {
+      padding: 6px 12px 4px 12px;
+      font-weight: 600;
+      font-size: 11px;
+      color: #667eea;
+      border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+      margin-bottom: 6px;
+    }
+
+    .debug-config-content {
+      padding: 0 12px 8px 12px;
+    }
+
+    .debug-config-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .debug-config-thresholds {
+      margin: 6px 0;
+      font-size: 10px;
+    }
+
+    .debug-threshold-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .debug-config-process {
+      margin-top: 4px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      font-style: italic;
+    }
+
+    /* 进度条区域 */
+    .debug-progress-section {
+      margin-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 8px;
+    }
+
+    .debug-progress-item {
+      margin-bottom: 6px;
+    }
+
+    .debug-progress-label {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .debug-progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 2px;
+    }
+
+    .debug-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .debug-progress-text {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: right;
+    }
+
+    /* 条件命中检测区域 */
+    .debug-hit-section {
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      border-radius: 8px;
+      margin: 8px 15px;
+      background: rgba(76, 175, 80, 0.1);
+    }
+
+    .debug-hit-header {
+      padding: 6px 12px 4px 12px;
+      font-weight: 600;
+      font-size: 11px;
+      color: #4caf50;
+      border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+      margin-bottom: 6px;
+    }
+
+    .debug-hit-content {
+      padding: 0 12px 8px 12px;
+    }
+
+    .debug-hit-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .debug-hit-analysis {
+      margin: 6px 0;
+      font-size: 10px;
+    }
+
+    .debug-analysis-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .debug-hit-suggestion {
+      margin-top: 6px;
+      padding: 4px 8px;
+      background: rgba(76, 175, 80, 0.2);
+      border-radius: 4px;
+      border-left: 3px solid #4caf50;
+    }
+
+    .debug-suggestion-text {
+      font-size: 10px;
+      color: #a5d6a7;
+      font-weight: 500;
+    }
+
+    /* 窗口说明区域 */
+    .debug-info-section {
+      margin: 8px 15px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .debug-info-content {
+      text-align: center;
+    }
+
+    .debug-info-text {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.4;
+    }
+  `;
+
+  try {
+    document.head.appendChild(style);
+    document.body.appendChild(debugWindow);
+  } catch (error) {
+    console.error('添加浏览数据窗口失败:', error);
+  }
+
+  // 保存引用
+  CoreMetricsState.debugWindow = debugWindow;
+}
+
+/**
+ * 更新浏览数据窗口显示的数据
+ */
+async function updateDebugWindow() {
+  if (!CoreMetricsState.debugWindow) {
+    return;
+  }
+
+  try {
+    // 获取最新的数据
+    const metrics = await getCoreMetrics();
+
+    // 更新基本数据显示
+    updateBasicMetrics(metrics);
+
+    // 更新档位配置显示
+    updateCurrentLevelConfig();
+
+    // 更新进度条显示
+    await updateProgressBars(metrics);
+
+    // 更新条件命中检测
+    await updateHitDetection(metrics);
+
+    // 绑定控制按钮事件
+    bindDebugControlEvents(metrics);
+
+  } catch (error) {
+    console.warn('更新浏览数据窗口失败:', error);
+  }
+}
+
+/**
+ * 更新基本指标数据显示
+ */
+function updateBasicMetrics(metrics) {
+  const visitCountEl = document.getElementById('debug-visit-count');
+  const durationEl = document.getElementById('debug-duration');
+  const depthEl = document.getElementById('debug-depth');
+
+  if (visitCountEl) {
+    visitCountEl.textContent = `${metrics.visitCount}次`;
+  }
+
+  if (durationEl) {
+    durationEl.textContent = formatDuration(metrics.browseDuration);
+  }
+
+  if (depthEl) {
+    depthEl.textContent = `${metrics.browseDepth.toFixed(1)}屏`;
+  }
+}
+
+/**
+ * 更新当前档位配置显示
+ */
+async function updateCurrentLevelConfig() {
+  // 档位配置映射 - 移到函数开始处确保在try-catch块中可用
+  const levelConfigs = [
+    {
+      name: '很少提醒',
+      frequency: '每月提醒',
+      thresholds: { visit: '≥ 20次', duration: '≥ 120秒', depth: '≥ 10屏' },
+      process: '(0档,1档,2档)'
+    },
+    {
+      name: '偶尔提醒',
+      frequency: '每两周提醒',
+      thresholds: { visit: '≥ 12次', duration: '≥ 90秒', depth: '≥ 5屏' },
+      process: '(1档,2档,3档)'
+    },
+    {
+      name: '适中提醒',
+      frequency: '每周提醒',
+      thresholds: { visit: '≥ 8次', duration: '≥ 60秒', depth: '≥ 1.5屏' },
+      process: '(2档,3档,4档)'
+    },
+    {
+      name: '常常提醒',
+      frequency: '每三天提醒',
+      thresholds: { visit: '≥ 5次', duration: '≥ 30秒', depth: '无要求' },
+      process: '(3档,4档,?)'
+    },
+    {
+      name: '频繁提醒',
+      frequency: '每天提醒',
+      thresholds: { visit: '≥ 3次', duration: '无要求', depth: '无要求' },
+      process: '(4档,?,?)'
+    }
+  ];
+
+  try {
+    // 使用统一存储系统获取当前档位配置
+    const storage = getUnifiedStorage();
+    let currentLevel = await storage.get('reminder-sensitivity-level', 2); // 默认适中提醒
+
+    // 确保值在有效范围内
+    currentLevel = Math.max(0, Math.min(4, currentLevel));
+
+    const config = levelConfigs[currentLevel];
+    if (!config) return;
+
+    // 更新档位配置显示
+    const configLevelEl = document.getElementById('debug-config-level');
+    const configFreqEl = document.getElementById('debug-config-frequency');
+    const thresholdVisitEl = document.getElementById('debug-threshold-visit');
+    const thresholdDurationEl = document.getElementById('debug-threshold-duration');
+    const thresholdDepthEl = document.getElementById('debug-threshold-depth');
+    const processEl = document.getElementById('debug-config-process');
+
+    if (configLevelEl) configLevelEl.textContent = config.name;
+    if (configFreqEl) configFreqEl.textContent = config.frequency;
+    if (thresholdVisitEl) thresholdVisitEl.textContent = config.thresholds.visit;
+    if (thresholdDurationEl) thresholdDurationEl.textContent = config.thresholds.duration;
+    if (thresholdDepthEl) thresholdDepthEl.textContent = config.thresholds.depth;
+    if (processEl) processEl.textContent = config.process;
+
+    // 缓存当前档位，供其他函数使用
+    window.currentDebugLevel = currentLevel;
+
+  } catch (error) {
+    console.warn('更新档位配置失败:', error);
+
+    // 使用统一存储系统的降级机制
+    try {
+      const storage = getUnifiedStorage();
+      const fallbackLevel = await storage.get('reminder-sensitivity-level', 2);
+      const fallbackConfig = levelConfigs[fallbackLevel];
+
+      if (fallbackConfig) {
+        const configLevelEl = document.getElementById('debug-config-level');
+        const configFreqEl = document.getElementById('debug-config-frequency');
+        const thresholdVisitEl = document.getElementById('debug-threshold-visit');
+        const thresholdDurationEl = document.getElementById('debug-threshold-duration');
+        const thresholdDepthEl = document.getElementById('debug-threshold-depth');
+        const processEl = document.getElementById('debug-config-process');
+
+        if (configLevelEl) configLevelEl.textContent = fallbackConfig.name;
+        if (configFreqEl) configFreqEl.textContent = fallbackConfig.frequency;
+        if (thresholdVisitEl) thresholdVisitEl.textContent = fallbackConfig.thresholds.visit;
+        if (thresholdDurationEl) thresholdDurationEl.textContent = fallbackConfig.thresholds.duration;
+        if (thresholdDepthEl) thresholdDepthEl.textContent = fallbackConfig.thresholds.depth;
+        if (processEl) processEl.textContent = fallbackConfig.process;
+
+        window.currentDebugLevel = fallbackLevel;
+      }
+    } catch (fallbackError) {
+      console.warn('档位配置降级也失败:', fallbackError);
+      // 最后保底：使用硬编码默认值
+      const configLevelEl = document.getElementById('debug-config-level');
+      const configFreqEl = document.getElementById('debug-config-frequency');
+
+      if (configLevelEl) configLevelEl.textContent = '适中提醒';
+      if (configFreqEl) configFreqEl.textContent = '每周提醒';
+
+      // 确保设置默认档位级别
+      window.currentDebugLevel = 2;
+    }
+  }
+}
+
+/**
+ * 更新进度条显示
+ */
+async function updateProgressBars(metrics) {
+  // 直接从存储获取最新档位配置，避免依赖可能过期的缓存
+  let currentLevel;
+  try {
+    const storage = getUnifiedStorage();
+    currentLevel = await storage.get('reminder-sensitivity-level', 2);
+  } catch (error) {
+    console.warn('获取档位配置失败，使用默认值:', error);
+    currentLevel = 2;
+  }
+
+  // 确保值在有效范围内
+  currentLevel = Math.max(0, Math.min(4, currentLevel));
+
+  // 同步更新缓存变量
+  window.currentDebugLevel = currentLevel;
+
+  // 档位阈值配置
+  const thresholdConfigs = [
+    { visit: 20, duration: 120, depth: 10 },   // 很少
+    { visit: 12, duration: 90, depth: 5 },     // 偶尔
+    { visit: 8, duration: 60, depth: 1.5 },    // 适中
+    { visit: 5, duration: 30, depth: 0 },      // 常常 (深度无要求)
+    { visit: 3, duration: 0, depth: 0 }        // 频繁 (时长和深度无要求)
+  ];
+
+  const thresholds = thresholdConfigs[currentLevel];
+  if (!thresholds) {
+    console.warn('无效的档位级别:', currentLevel);
+    return;
+  }
+
+  // 计算进度百分比
+  const visitProgress = Math.min(100, (metrics.visitCount / thresholds.visit) * 100);
+  const durationProgress = thresholds.duration > 0 ? Math.min(100, (metrics.browseDuration / thresholds.duration) * 100) : 100;
+  const depthProgress = thresholds.depth > 0 ? Math.min(100, (metrics.browseDepth / thresholds.depth) * 100) : 100;
+
+  // 更新进度条
+  updateProgressBar('debug-visit-progress', 'debug-visit-percent', visitProgress);
+  updateProgressBar('debug-duration-progress', 'debug-duration-percent', durationProgress);
+  updateProgressBar('debug-depth-progress', 'debug-depth-percent', depthProgress);
+}
+
+/**
+ * 更新单个进度条
+ */
+function updateProgressBar(progressId, textId, percentage) {
+  const progressEl = document.getElementById(progressId);
+  const textEl = document.getElementById(textId);
+
+  if (progressEl) {
+    progressEl.style.width = `${percentage}%`;
+
+    // 根据进度调整颜色
+    if (percentage >= 100) {
+      progressEl.style.background = 'linear-gradient(90deg, #4caf50, #66bb6a)';
+    } else if (percentage >= 80) {
+      progressEl.style.background = 'linear-gradient(90deg, #ff9800, #ffa726)';
+    } else {
+      progressEl.style.background = 'linear-gradient(90deg, #4fc3f7, #29b6f6)';
+    }
+  }
+
+  if (textEl) {
+    textEl.textContent = `${Math.round(percentage)}%`;
+  }
+}
+
+/**
+ * 更新条件命中检测
+ */
+async function updateHitDetection(metrics) {
+  // 获取当前档位配置 - 与updateProgressBars保持一致
+  let currentLevel;
+  try {
+    const storage = getUnifiedStorage();
+    currentLevel = await storage.get('reminder-sensitivity-level', 2);
+  } catch (error) {
+    console.warn('获取档位配置失败，使用默认值:', error);
+    currentLevel = 2;
+  }
+
+  // 确保值在有效范围内
+  currentLevel = Math.max(0, Math.min(4, currentLevel));
+
+  // 档位阈值配置
+  const thresholdConfigs = [
+    { visit: 20, duration: 120, depth: 10 },   // 很少
+    { visit: 12, duration: 90, depth: 5 },     // 偶尔
+    { visit: 8, duration: 60, depth: 1.5 },    // 适中
+    { visit: 5, duration: 30, depth: 0 },      // 常常
+    { visit: 3, duration: 0, depth: 0 }        // 频繁
+  ];
+
+  const thresholds = thresholdConfigs[currentLevel];
+  if (!thresholds) {
+    console.warn('无效的档位级别:', currentLevel);
+    return;
+  }
+
+  // 检查条件是否命中
+  const visitHit = metrics.visitCount >= thresholds.visit;
+  const durationHit = thresholds.duration === 0 || metrics.browseDuration >= thresholds.duration;
+  const depthHit = thresholds.depth === 0 || metrics.browseDepth >= thresholds.depth;
+
+  const isHit = visitHit && durationHit && depthHit;
+
+  // 更新命中状态显示
+  updateHitStatus(isHit, metrics, thresholds);
+}
+
+/**
+ * 更新命中状态显示
+ */
+function updateHitStatus(isHit, metrics, thresholds) {
+  const hitTextEl = document.getElementById('debug-hit-text');
+  const analysisEl = document.getElementById('debug-hit-analysis');
+  const suggestionEl = document.getElementById('debug-hit-suggestion');
+  const suggestionTextEl = document.getElementById('debug-suggestion-text');
+
+  if (hitTextEl) {
+    if (isHit) {
+      hitTextEl.textContent = '✅ 条件命中！';
+      hitTextEl.style.color = '#4caf50';
+    } else {
+      hitTextEl.textContent = '❌ 条件未满足';
+      hitTextEl.style.color = '#ff5722';
+    }
+  }
+
+  // 显示详细分析
+  if (analysisEl) {
+    const visitAnalysis = document.getElementById('debug-analysis-visit');
+    const durationAnalysis = document.getElementById('debug-analysis-duration');
+    const depthAnalysis = document.getElementById('debug-analysis-depth');
+
+    if (visitAnalysis) {
+      visitAnalysis.textContent = `${metrics.visitCount}次 ${metrics.visitCount >= thresholds.visit ? '✅' : '❌'} (需要 ≥ ${thresholds.visit}次)`;
+      visitAnalysis.style.color = metrics.visitCount >= thresholds.visit ? '#4caf50' : '#ff5722';
+    }
+
+    if (durationAnalysis) {
+      if (thresholds.duration === 0) {
+        durationAnalysis.textContent = '无要求 ✅';
+        durationAnalysis.style.color = '#4caf50';
+      } else {
+        durationAnalysis.textContent = `${Math.round(metrics.browseDuration)}秒 ${metrics.browseDuration >= thresholds.duration ? '✅' : '❌'} (需要 ≥ ${thresholds.duration}秒)`;
+        durationAnalysis.style.color = metrics.browseDuration >= thresholds.duration ? '#4caf50' : '#ff5722';
+      }
+    }
+
+    if (depthAnalysis) {
+      if (thresholds.depth === 0) {
+        depthAnalysis.textContent = '无要求 ✅';
+        depthAnalysis.style.color = '#4caf50';
+      } else {
+        depthAnalysis.textContent = `${metrics.browseDepth.toFixed(1)}屏 ${metrics.browseDepth >= thresholds.depth ? '✅' : '❌'} (需要 ≥ ${thresholds.depth}屏)`;
+        depthAnalysis.style.color = metrics.browseDepth >= thresholds.depth ? '#4caf50' : '#ff5722';
+      }
+    }
+
+    analysisEl.style.display = 'block';
+  }
+
+  // 显示建议
+  if (suggestionEl && suggestionTextEl) {
+    if (isHit) {
+      suggestionTextEl.textContent = '🎉 当前访问模式已达到触发条件，建议触发智能收藏提醒！';
+      suggestionEl.style.display = 'block';
+    } else {
+      suggestionEl.style.display = 'none';
+    }
+  }
+}
+
+/**
+ * 绑定控制按钮事件
+ */
+function bindDebugControlEvents(metrics) {
+  // 只绑定一次事件
+  if (window.debugEventsBound) return;
+  window.debugEventsBound = true;
+
+  // 关闭窗口按钮（标题栏右侧）
+  const closeBtn = document.getElementById('debug-close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      removeDebugWindow();
+    });
+  }
+}
+
+/**
+ * 格式化时长显示
+ * @param {number} seconds - 秒数
+ * @returns {string} 格式化的时长字符串
+ */
+function formatDuration(seconds) {
+  if (seconds < 60) {
+    return `0:${seconds.toString().padStart(2, '0')}`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+}
+
+/**
+ * 启动浏览数据窗口数据更新
+ */
+async function startDebugWindowUpdates() {
+  // 立即更新一次
+  await updateDebugWindow();
+
+  // 设置定时更新 - 每秒更新访问时长
+  CoreMetricsState.updateInterval = setInterval(async () => {
+    await updateDebugWindow();
+  }, 1000); // 每1秒更新一次
+
+  // 使用统一存储系统的事件监听
+  try {
+    const storage = getUnifiedStorage();
+
+    // 监听档位配置变化
+    CoreMetricsState.storageChangeListener = async ({key, value}) => {
+      if (key === 'reminder-sensitivity-level') {
+        console.log('浏览数据窗口：检测到档位配置变化，重新加载配置');
+        await updateCurrentLevelConfig();
+        await updateDebugWindow();
+      }
+    };
+
+    storage.onValueChanged(CoreMetricsState.storageChangeListener);
+    console.log('浏览数据窗口：统一存储事件监听器已注册');
+
+  } catch (error) {
+    console.warn('统一存储事件监听器注册失败，使用传统监听:', error);
+
+    // 降级到传统监听方式
+    CoreMetricsState.storageChangeListener = async function(changes, namespace) {
+      if (namespace === 'local') {
+        if (changes['reminder-sensitivity-level']) {
+          console.log('浏览数据窗口：检测到档位配置变化(传统监听)，重新加载配置');
+          await updateCurrentLevelConfig();
+          await updateDebugWindow();
+        }
+      }
+    };
+
+    if (chrome.storage) {
+      chrome.storage.onChanged.addListener(CoreMetricsState.storageChangeListener);
+      console.log('浏览数据窗口：传统存储变化监听器已注册');
+    }
+  }
+}
+
+/**
+ * 停止浏览数据窗口更新
+ */
+function stopDebugWindowUpdates() {
+  if (CoreMetricsState.updateInterval) {
+    clearInterval(CoreMetricsState.updateInterval);
+    CoreMetricsState.updateInterval = null;
+  }
+
+  // 移除存储变化监听器
+  if (CoreMetricsState.storageChangeListener) {
+    try {
+      // 尝试从统一存储系统移除监听器
+      const storage = getUnifiedStorage();
+      storage.offValueChanged(CoreMetricsState.storageChangeListener);
+      console.log('浏览数据窗口：统一存储事件监听器已移除');
+    } catch (error) {
+      console.warn('统一存储事件监听器移除失败，尝试传统方式:', error);
+
+      // 降级到传统方式移除
+      if (chrome.storage) {
+        chrome.storage.onChanged.removeListener(CoreMetricsState.storageChangeListener);
+        console.log('浏览数据窗口：传统存储变化监听器已移除');
+      }
+    }
+    CoreMetricsState.storageChangeListener = null;
+  }
+}
+
+/**
+ * 切换浏览数据窗口显示/隐藏状态
+ */
+function toggleDebugWindow() {
+  if (CoreMetricsState.debugWindow) {
+    removeDebugWindow();
+    console.log('[浏览数据窗口] 通过快捷键隐藏');
+  } else {
+    window.showDebugWindow();
+    console.log('[浏览数据窗口] 通过快捷键显示');
+  }
+}
+
+/**
+ * 移除浏览数据窗口
+ */
+function removeDebugWindow() {
+  stopDebugWindowUpdates();
+
+  if (CoreMetricsState.debugWindow) {
+    CoreMetricsState.debugWindow.remove();
+    CoreMetricsState.debugWindow = null;
+  }
+
+  // 移除样式
+  const style = document.querySelector('style[data-debug-window="true"]');
+  if (style) {
+    style.remove();
+  }
+
+  console.log('浏览数据窗口已移除');
+}
+
 /**
  * @deprecated 此函数已被事件驱动机制替代，保留用于向后兼容
  * 基于3大指标判定结果触发智能提醒
@@ -1210,6 +2288,8 @@ async function initCoreMetrics() {
 function cleanupCoreMetrics() {
   if (!CoreMetricsState.isInitialized) return;
 
+  // 移除浏览数据窗口
+  removeDebugWindow();
 
   // 移除事件监听器
   document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -1258,10 +2338,25 @@ function loadMetricsJudgmentEngine() {
   });
 }
 
+// 检查扩展上下文是否有效
+function isExtensionContextValid() {
+  try {
+    return !!(chrome && chrome.runtime && chrome.runtime.id);
+  } catch (error) {
+    return false;
+  }
+}
+
 // 页面加载完成后初始化
 function initOnLoad() {
   setTimeout(async () => {
     try {
+      // 检查扩展上下文
+      if (!isExtensionContextValid()) {
+        console.warn('扩展上下文无效，跳过初始化');
+        return;
+      }
+      
       // 先加载3大指标判定引擎
       await loadMetricsJudgmentEngine();
 
@@ -1298,9 +2393,15 @@ function getMetaDescription() {
 
 
 
+
 // 发送消息到扩展
 function safeSendMessage(message) {
   return new Promise((resolve, reject) => {
+    if (!isExtensionContextValid()) {
+      reject(new Error('扩展上下文无效'));      
+      return;
+    }
+    
     try {
       chrome.runtime.sendMessage(message, (response) => {
         if (chrome.runtime.lastError) {
@@ -1315,4 +2416,64 @@ function safeSendMessage(message) {
   });
 }
 
+// 添加键盘快捷键
+document.addEventListener('keydown', function(event) {
+  // Ctrl+Shift+C 触发浏览数据窗口（Mac和Windows通用）
+  if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+    event.preventDefault();
+    toggleDebugWindow();
+    console.log('[浏览数据窗口] 快捷键触发: Ctrl+Shift+C');
+  }
+
+  // Ctrl+Shift+X 触发智能提醒弹窗
+  if (event.ctrlKey && event.shiftKey && event.key === 'X') {
+    event.preventDefault();
+    showTestReminder();
+  }
+});
+
+// 显示测试弹窗
+function showTestReminder() {
+  const testData = {
+    type: 'domain',
+    url: window.location.href,
+    title: document.title
+  };
+  
+  showReminderToast(testData);
+}
+
+// 添加控制台命令（开发用）
+if (typeof window !== 'undefined') {
+  window.removeDebugWindow = removeDebugWindow;
+  window.toggleDebugWindow = toggleDebugWindow;
+  window.showDebugWindow = async function() {
+    createDebugWindow();
+    await startDebugWindowUpdates();
+  };
+  window.testCoreMetrics = async function() {
+    console.log('测试核心指标函数...');
+    try {
+      console.log('CoreMetricsState:', CoreMetricsState);
+      console.log('getMainDomain函数:', typeof getMainDomain);
+      console.log('getVisitCount函数:', typeof getVisitCount);
+      console.log('getBrowseDuration函数:', typeof getBrowseDuration);
+      console.log('getBrowseDepth函数:', typeof getBrowseDepth);
+      console.log('getCoreMetrics函数:', typeof getCoreMetrics);
+
+      const metrics = await getCoreMetrics();
+      console.log('getCoreMetrics()结果:', metrics);
+    } catch (error) {
+      console.error('测试失败:', error);
+    }
+  };
+
+  console.log('浏览数据窗口控制命令:');
+  console.log('- window.removeDebugWindow() 移除浏览数据窗口');
+  console.log('- window.showDebugWindow() 显示浏览数据窗口');
+  console.log('- window.toggleDebugWindow() 切换浏览数据窗口显示/隐藏');
+  console.log('- window.testCoreMetrics() 测试核心指标函数');
+  console.log('- Ctrl+Shift+C 快捷键切换浏览数据窗口');
+  console.log('- Ctrl+Shift+X 快捷键触发测试提醒');
+}
 
