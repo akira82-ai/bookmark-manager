@@ -1,5 +1,17 @@
 // 内容脚本 - 弹窗显示功能
 
+// 全局集合用于跟踪已提醒的URL，防止同一次会话中重复提醒
+const remindedUrls = new Set();
+
+// URL去重检查函数
+function isUrlReminded(url) {
+  return remindedUrls.has(url);
+}
+
+function markUrlAsReminded(url) {
+  remindedUrls.add(url);
+}
+
 // 监听来自popup的消息
 function setupMessageListener() {
   if (!isExtensionContextValid()) {
@@ -16,7 +28,11 @@ function setupMessageListener() {
         };
         sendResponse(pageInfo);
       } else if (request.action === 'showReminder') {
-        showReminderToast(request.data);
+        // URL去重检查
+        if (!isUrlReminded(window.location.href)) {
+          markUrlAsReminded(window.location.href);
+          showReminderToast(request.data);
+        }
         sendResponse({success: true});
       }
     });
@@ -1011,7 +1027,11 @@ const EventDrivenReminder = {
         metrics: metrics
       };
       
-      showReminderToast(reminderData);
+      // URL去重检查
+      if (!isUrlReminded(metrics.url)) {
+        markUrlAsReminded(metrics.url);
+        showReminderToast(reminderData);
+      }
     } catch (error) {
           }
   },
@@ -2181,7 +2201,11 @@ async function triggerSmartReminder() {
         metrics: metrics
       };
 
-      showReminderToast(reminderData);
+      // URL去重检查
+      if (!isUrlReminded(metrics.url)) {
+        markUrlAsReminded(metrics.url);
+        showReminderToast(reminderData);
+      }
     }
   } catch (error) {
       }
@@ -2393,7 +2417,11 @@ function showTestReminder() {
     title: document.title
   };
   
-  showReminderToast(testData);
+  // URL去重检查
+  if (!isUrlReminded(window.location.href)) {
+    markUrlAsReminded(window.location.href);
+    showReminderToast(testData);
+  }
 }
 
 // 添加控制台命令（开发用）
