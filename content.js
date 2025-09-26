@@ -24,13 +24,21 @@ function extractMainDomain(url) {
   }
 }
 
-// 主域名去重检查函数
+// 主域名去重检查函数 - 委托给EventDrivenReminder
 function isDomainReminded(url) {
+  if (typeof EventDrivenReminder !== 'undefined' && EventDrivenReminder.isDomainReminded) {
+    return EventDrivenReminder.isDomainReminded(url);
+  }
+  // 降级到本地检查
   const domain = extractMainDomain(url);
   return remindedDomains.has(domain);
 }
 
 function markDomainAsReminded(url) {
+  if (typeof EventDrivenReminder !== 'undefined' && EventDrivenReminder.markDomainAsReminded) {
+    return EventDrivenReminder.markDomainAsReminded(url);
+  }
+  // 降级到本地标记
   const domain = extractMainDomain(url);
   if (domain) {
     remindedDomains.add(domain);
@@ -864,6 +872,7 @@ const CoreMetricsState = {
 
   // 事件驱动提醒机制
   remindedUrls: new Set(), // 本次会话已提醒的URL集合
+  remindedDomains: new Set(), // 本次会话已提醒的主域名集合
   isEventDrivenInitialized: false, // 事件驱动是否已初始化
 
   // URL变化检测
@@ -909,6 +918,11 @@ const EventDrivenReminder = {
     window.addEventListener('hashchange', () => {
       EventDrivenReminder.handleUrlChange();
     });
+    
+    // 添加定期URL检查，防止遗漏某些单页应用的URL变化
+    this.urlCheckInterval = setInterval(() => {
+      EventDrivenReminder.checkUrlChange();
+    }, 1000);
   },
 
   // 处理URL变化
@@ -927,7 +941,35 @@ const EventDrivenReminder = {
     CoreMetricsState.lastUrl = currentUrl;
     CoreMetricsState.lastHitDetectionUrl = null;
     
-    console.log('URL已变化，重置检测状态:', currentUrl);
+    // 重要：URL变化时，清空已提醒的URL集合，但保留主域名去重
+    CoreMetricsState.remindedUrls.clear();
+    
+    console.log('URL已变化，重置检测状态和URL去重集合:', currentUrl);
+  },
+
+  // 统一的主域名去重检查函数
+  isDomainReminded(url) {
+    const domain = extractMainDomain(url);
+    return CoreMetricsState.remindedDomains.has(domain);
+  },
+
+  // 统一的主域名标记函数
+  markDomainAsReminded(url) {
+    const domain = extractMainDomain(url);
+    if (domain) {
+      CoreMetricsState.remindedDomains.add(domain);
+    }
+  },
+
+  // 定期检查URL变化
+  checkUrlChange() {
+    const currentUrl = window.location.href;
+    
+    // 如果URL有变化，调用handleUrlChange
+    if (currentUrl !== CoreMetricsState.lastUrl) {
+      console.log('检测到URL变化（定期检查）:', currentUrl);
+      this.handleUrlChange();
+    }
   },
 
   // 重置浏览明细窗口状态
@@ -1199,9 +1241,9 @@ const EventDrivenReminder = {
         metrics: metrics
       };
       
-      // 主域名去重检查
-      if (!isDomainReminded(metrics.url)) {
-        markDomainAsReminded(metrics.url);
+      // 使用统一的主域名去重检查
+      if (!this.isDomainReminded(metrics.url)) {
+        this.markDomainAsReminded(metrics.url);
         showReminderToast(reminderData);
       }
     } catch (error) {
@@ -1210,7 +1252,14 @@ const EventDrivenReminder = {
   
   // 重置状态（页面卸载时调用）
   reset() {
+    // 清理定期检查定时器
+    if (this.urlCheckInterval) {
+      clearInterval(this.urlCheckInterval);
+      this.urlCheckInterval = null;
+    }
+    
     CoreMetricsState.remindedUrls.clear();
+    CoreMetricsState.remindedDomains.clear();
     CoreMetricsState.isEventDrivenInitialized = false;
   }
 };
