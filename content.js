@@ -1,15 +1,40 @@
 // 内容脚本 - 弹窗显示功能
 
-// 全局集合用于跟踪已提醒的URL，防止同一次会话中重复提醒
-const remindedUrls = new Set();
+// 全局集合用于跟踪已提醒的主域名，防止同一次会话中重复提醒
+const remindedDomains = new Set();
 
-// URL去重检查函数
-function isUrlReminded(url) {
-  return remindedUrls.has(url);
+// 提取主域名函数
+function extractMainDomain(url) {
+  try {
+    // 处理没有协议的情况
+    if (!url.match(/^https?:\/\//)) {
+      url = 'https://' + url;
+    }
+    
+    const urlObj = new URL(url);
+    const domainParts = urlObj.hostname.split('.');
+    
+    // 处理常见的二级域名情况
+    if (domainParts.length >= 2) {
+      return domainParts.slice(-2).join('.');
+    }
+    return urlObj.hostname;
+  } catch (error) {
+    return '';
+  }
 }
 
-function markUrlAsReminded(url) {
-  remindedUrls.add(url);
+// 主域名去重检查函数
+function isDomainReminded(url) {
+  const domain = extractMainDomain(url);
+  return remindedDomains.has(domain);
+}
+
+function markDomainAsReminded(url) {
+  const domain = extractMainDomain(url);
+  if (domain) {
+    remindedDomains.add(domain);
+  }
 }
 
 // 监听来自popup的消息
@@ -28,9 +53,9 @@ function setupMessageListener() {
         };
         sendResponse(pageInfo);
       } else if (request.action === 'showReminder') {
-        // URL去重检查
-        if (!isUrlReminded(window.location.href)) {
-          markUrlAsReminded(window.location.href);
+        // 主域名去重检查
+        if (!isDomainReminded(window.location.href)) {
+          markDomainAsReminded(window.location.href);
           showReminderToast(request.data);
         }
         sendResponse({success: true});
@@ -841,6 +866,10 @@ const CoreMetricsState = {
   remindedUrls: new Set(), // 本次会话已提醒的URL集合
   isEventDrivenInitialized: false, // 事件驱动是否已初始化
 
+  // URL变化检测
+  lastUrl: window.location.href, // 记录上一个URL
+  lastHitDetectionUrl: null, // 记录上次进行命中检测的URL
+  
   // 移除无意义的冷却时间机制
 };
 
@@ -851,7 +880,79 @@ const EventDrivenReminder = {
     if (CoreMetricsState.isEventDrivenInitialized) return;
     
     this.setupThresholdListeners();
+    this.setupUrlChangeListener();
     CoreMetricsState.isEventDrivenInitialized = true;
+  },
+
+  // 设置URL变化监听器
+  setupUrlChangeListener() {
+    // 监听单页应用的路由变化
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      EventDrivenReminder.handleUrlChange();
+    };
+    
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      EventDrivenReminder.handleUrlChange();
+    };
+    
+    // 监听popstate事件（浏览器前进/后退）
+    window.addEventListener('popstate', () => {
+      EventDrivenReminder.handleUrlChange();
+    });
+    
+    // 监听hash变化
+    window.addEventListener('hashchange', () => {
+      EventDrivenReminder.handleUrlChange();
+    });
+  },
+
+  // 处理URL变化
+  handleUrlChange() {
+    const currentUrl = window.location.href;
+    
+    // 如果URL没有变化，不处理
+    if (currentUrl === CoreMetricsState.lastUrl) {
+      return;
+    }
+    
+    // 重置浏览明细窗口中的状态
+    this.resetBrowseWindowState();
+    
+    // 更新URL记录
+    CoreMetricsState.lastUrl = currentUrl;
+    CoreMetricsState.lastHitDetectionUrl = null;
+    
+    console.log('URL已变化，重置检测状态:', currentUrl);
+  },
+
+  // 重置浏览明细窗口状态
+  resetBrowseWindowState() {
+    if (!CoreMetricsState.browseWindow) return;
+    
+    try {
+      // 重置命中检测状态
+      const hitTextEl = document.getElementById('browse-hit-text');
+      if (hitTextEl) {
+        hitTextEl.textContent = '检测中...';
+        hitTextEl.style.color = '#4caf50';
+      }
+      
+      // 重置收藏夹检查状态
+      updateBookmarkCheckStatusInWindow('pending');
+      
+      // 隐藏建议和错误信息
+      const suggestionEl = document.getElementById('browse-hit-suggestion');
+      const errorEl = document.getElementById('browse-bookmark-error');
+      if (suggestionEl) suggestionEl.style.display = 'none';
+      if (errorEl) errorEl.style.display = 'none';
+    } catch (error) {
+      console.warn('重置浏览明细窗口状态失败:', error);
+    }
   },
   
   // 设置阈值监听器
@@ -926,6 +1027,11 @@ const EventDrivenReminder = {
       return; // 本次会话已提醒过，不再重复触发
     }
 
+    // 检查是否已经对当前URL进行过命中检测（避免重复检测）
+    if (CoreMetricsState.lastHitDetectionUrl === currentUrl) {
+      return; // 已经检测过，不再重复触发
+    }
+
     // 检查提醒是否已启用
     const isReminderEnabled = await this.isReminderEnabled();
     if (!isReminderEnabled) {
@@ -946,10 +1052,28 @@ const EventDrivenReminder = {
     const depthHit = thresholds.depth === 0 || metrics.browseDepth >= thresholds.depth;
     
     if (visitHit && durationHit && depthHit) {
-      await this.triggerReminder(metrics, userLevel);
+      // 标记此URL已进行命中检测
+      CoreMetricsState.lastHitDetectionUrl = currentUrl;
       
-      // 标记此URL已提醒
-      CoreMetricsState.remindedUrls.add(currentUrl);
+      // 创建metrics副本并标记跳过收藏夹检查
+      const displayMetrics = {...metrics, skipBookmarkCheck: true};
+      
+      // 更新浏览明细窗口的条件命中检测（只调用一次，避免闪烁）
+      await updateHitDetection(displayMetrics);
+      
+      // 检查URL是否在收藏夹中
+      const isInBookmarks = await this.checkUrlInBookmarks(metrics.url);
+      
+      // 只有不在收藏夹中的页面才触发提醒
+      if (!isInBookmarks) {
+        console.log('智能提醒触发：URL不在收藏夹中，显示提醒弹窗');
+        await this.triggerReminder(metrics, userLevel);
+        
+        // 标记此URL已提醒
+        CoreMetricsState.remindedUrls.add(currentUrl);
+      } else {
+        console.log('智能提醒跳过：URL已在收藏夹中');
+      }
     }
   },
   
@@ -1016,6 +1140,54 @@ const EventDrivenReminder = {
     
     return thresholdConfigs[userLevel] || thresholdConfigs[2];
   },
+
+  // 检查URL是否在收藏夹中
+  async checkUrlInBookmarks(url) {
+    try {
+      if (!url || !isExtensionContextValid()) {
+        throw new Error('URL无效或扩展上下文不可用');
+      }
+
+      // 更新浏览明细窗口状态为检查中
+      this.updateBookmarkCheckStatus('checking');
+
+      const response = await safeSendMessage({
+        action: 'checkUrlInBookmarks',
+        url: url
+      });
+
+      if (response && typeof response.isInBookmarks === 'boolean') {
+        // 更新浏览明细窗口状态为检查成功
+        this.updateBookmarkCheckStatus('success', response.isInBookmarks);
+        return response.isInBookmarks;
+      }
+
+      throw new Error('检查收藏夹失败');
+    } catch (error) {
+      // 采用保守策略：检查失败时返回true（表示在收藏夹中，避免提醒）
+      console.warn('收藏夹检查失败，跳过提醒:', error.message);
+      
+      // 更新浏览明细窗口状态为检查失败
+      this.updateBookmarkCheckStatus('error', error.message);
+      return true;
+    }
+  },
+
+  // 更新浏览明细窗口中的收藏夹检查状态
+  updateBookmarkCheckStatus(status, data = null) {
+    // 映射状态到新的函数调用
+    let newStatus = status;
+    if (status === 'checking') {
+      newStatus = 'checking';
+    } else if (status === 'success') {
+      newStatus = 'success';
+    } else if (status === 'error') {
+      newStatus = 'error';
+    }
+    
+    // 调用独立的状态更新函数
+    updateBookmarkCheckStatusInWindow(newStatus, data);
+  },
   
   // 触发提醒
   async triggerReminder(metrics, userLevel) {
@@ -1027,9 +1199,9 @@ const EventDrivenReminder = {
         metrics: metrics
       };
       
-      // URL去重检查
-      if (!isUrlReminded(metrics.url)) {
-        markUrlAsReminded(metrics.url);
+      // 主域名去重检查
+      if (!isDomainReminded(metrics.url)) {
+        markDomainAsReminded(metrics.url);
         showReminderToast(reminderData);
       }
     } catch (error) {
@@ -1383,6 +1555,22 @@ function createBrowseWindow() {
       </div>
     </div>
 
+    <!-- 收藏夹检查状态 -->
+    <div class="browse-bookmark-section" id="browse-bookmark-section">
+      <div class="browse-bookmark-header">
+        🔍 收藏夹检查
+      </div>
+      <div class="browse-bookmark-content" id="browse-bookmark-content">
+        <div class="browse-bookmark-status" id="browse-bookmark-status">
+          <span class="browse-label">状态:</span>
+          <span class="browse-value" id="browse-bookmark-text">待检查</span>
+        </div>
+        <div class="browse-bookmark-error" id="browse-bookmark-error" style="display: none;">
+          <span class="browse-error-text" id="browse-error-text">--</span>
+        </div>
+      </div>
+    </div>
+
         </div>
     </div>
 
@@ -1616,6 +1804,49 @@ function createBrowseWindow() {
       font-weight: 500;
     }
 
+    /* 收藏夹检查状态区域 */
+    .browse-bookmark-section {
+      border: 1px solid rgba(255, 152, 0, 0.3);
+      border-radius: 8px;
+      margin: 8px 15px;
+      background: rgba(255, 152, 0, 0.1);
+    }
+
+    .browse-bookmark-header {
+      padding: 6px 12px 4px 12px;
+      font-weight: 600;
+      font-size: 11px;
+      color: #ff9800;
+      border-bottom: 1px solid rgba(255, 152, 0, 0.3);
+      margin-bottom: 6px;
+    }
+
+    .browse-bookmark-content {
+      padding: 0 12px 8px 12px;
+    }
+
+    .browse-bookmark-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .browse-bookmark-error {
+      margin-top: 6px;
+      padding: 4px 8px;
+      background: rgba(244, 67, 54, 0.2);
+      border-radius: 4px;
+      border-left: 3px solid #f44336;
+    }
+
+    .browse-error-text {
+      font-size: 10px;
+      color: #ffcdd2;
+      font-weight: 500;
+    }
+
     /* 窗口说明区域 */
     .browse-info-section {
       margin: 8px 15px;
@@ -1666,9 +1897,6 @@ async function updateBrowseWindow() {
 
     // 更新进度条显示
     await updateProgressBars(metrics);
-
-    // 更新条件命中检测
-    await updateHitDetection(metrics);
 
     // 绑定控制按钮事件
     bindBrowseControlEvents(metrics);
@@ -1912,6 +2140,95 @@ async function updateHitDetection(metrics) {
 
   // 更新命中状态显示
   updateHitStatus(isHit, metrics, thresholds);
+
+  // 如果条件命中，根据参数决定是否进行收藏夹检查
+  if (isHit) {
+    // 检查是否已经进行过收藏夹检查（避免重复检查）
+    if (!metrics.skipBookmarkCheck) {
+      try {
+        // 更新收藏夹检查状态为检查中
+        updateBookmarkCheckStatusInWindow('checking');
+        
+        // 调用EventDrivenReminder的收藏夹检查方法
+        if (typeof EventDrivenReminder !== 'undefined') {
+          const isInBookmarks = await EventDrivenReminder.checkUrlInBookmarks(metrics.url);
+          
+          // 如果不在收藏夹中，更新建议
+          if (!isInBookmarks) {
+            const suggestionEl = document.getElementById('browse-hit-suggestion');
+            const suggestionTextEl = document.getElementById('browse-suggestion-text');
+            if (suggestionEl && suggestionTextEl) {
+              suggestionTextEl.textContent = '🎉 条件命中且未收藏，建议触发提醒！';
+              suggestionEl.style.display = 'block';
+            }
+          }
+        }
+      } catch (error) {
+        // 收藏夹检查失败时显示错误
+        updateBookmarkCheckStatusInWindow('error', error.message);
+      }
+    } else {
+      // 如果标记为跳过收藏夹检查，显示基本建议
+      const suggestionEl = document.getElementById('browse-hit-suggestion');
+      const suggestionTextEl = document.getElementById('browse-suggestion-text');
+      if (suggestionEl && suggestionTextEl) {
+        suggestionTextEl.textContent = '🎉 条件已命中！';
+        suggestionEl.style.display = 'block';
+      }
+    }
+  } else {
+    // 条件未命中，重置收藏夹检查状态
+    updateBookmarkCheckStatusInWindow('pending');
+  }
+}
+
+// 更新浏览明细窗口中的收藏夹检查状态（独立函数）
+function updateBookmarkCheckStatusInWindow(status, data = null) {
+  if (!CoreMetricsState.browseWindow) return;
+
+  try {
+    const statusEl = document.getElementById('browse-bookmark-text');
+    const errorEl = document.getElementById('browse-bookmark-error');
+    const errorTextEl = document.getElementById('browse-error-text');
+
+    if (statusEl) {
+      switch (status) {
+        case 'pending':
+          statusEl.textContent = '待检查';
+          statusEl.style.color = '#ff9800';
+          break;
+        case 'checking':
+          statusEl.textContent = '🔍 检查中...';
+          statusEl.style.color = '#ff9800';
+          break;
+        case 'success':
+          if (data === true) {
+            statusEl.textContent = '✅ 已在收藏夹中';
+            statusEl.style.color = '#4caf50';
+          } else {
+            statusEl.textContent = '❌ 未在收藏夹中';
+            statusEl.style.color = '#ff5722';
+          }
+          break;
+        case 'error':
+          statusEl.textContent = '⚠️ 检查失败';
+          statusEl.style.color = '#f44336';
+          break;
+      }
+    }
+
+    // 显示或隐藏错误信息
+    if (errorEl && errorTextEl) {
+      if (status === 'error' && data) {
+        errorTextEl.textContent = `检查失败: ${data}`;
+        errorEl.style.display = 'block';
+      } else {
+        errorEl.style.display = 'none';
+      }
+    }
+  } catch (error) {
+    console.warn('更新收藏夹检查状态失败:', error);
+  }
 }
 
 /**
@@ -2201,9 +2518,9 @@ async function triggerSmartReminder() {
         metrics: metrics
       };
 
-      // URL去重检查
-      if (!isUrlReminded(metrics.url)) {
-        markUrlAsReminded(metrics.url);
+      // 主域名去重检查
+      if (!isDomainReminded(metrics.url)) {
+        markDomainAsReminded(metrics.url);
         showReminderToast(reminderData);
       }
     }
@@ -2417,9 +2734,9 @@ function showTestReminder() {
     title: document.title
   };
   
-  // URL去重检查
-  if (!isUrlReminded(window.location.href)) {
-    markUrlAsReminded(window.location.href);
+  // 主域名去重检查
+  if (!isDomainReminded(window.location.href)) {
+    markDomainAsReminded(window.location.href);
     showReminderToast(testData);
   }
 }

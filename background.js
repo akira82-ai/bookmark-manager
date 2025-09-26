@@ -46,6 +46,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       sendResponse({results: []});
     });
     return true; // 保持消息通道开放以支持异步响应
+  } else if (request.action === 'checkUrlInBookmarks') {
+    // 检查URL是否在收藏夹中
+    checkUrlInBookmarks(request.url).then(isInBookmarks => {
+      sendResponse({isInBookmarks: isInBookmarks});
+    }).catch(error => {
+      // 采用保守策略：检查失败时返回true（表示在收藏夹中，避免提醒）
+      sendResponse({isInBookmarks: true});
+    });
+    return true; // 保持消息通道开放以支持异步响应
   }
 });
 
@@ -234,6 +243,32 @@ function getMainDomainFromUrl(url) {
     return urlObj.hostname;
   } catch (error) {
     return '';
+  }
+}
+
+// 检查URL是否在收藏夹中
+async function checkUrlInBookmarks(url) {
+  try {
+    if (!url) {
+      throw new Error('URL为空');
+    }
+
+    // 使用chrome.bookmarks.search进行完全匹配查询
+    const bookmarks = await new Promise((resolve, reject) => {
+      chrome.bookmarks.search({ url: url }, (results) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    // 完全匹配：只要找到相同URL的书签就返回true
+    return bookmarks.length > 0;
+  } catch (error) {
+    // 查询失败时抛出错误，由调用方处理
+    throw error;
   }
 }
 
