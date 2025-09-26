@@ -10,7 +10,8 @@
       "Read(//private/tmp/**)",
       "Read(//tmp/**)",
       "Bash(sed:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
