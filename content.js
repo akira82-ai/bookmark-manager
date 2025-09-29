@@ -260,9 +260,12 @@ function showReminderToast(data) {
     }
   }
   
+  // 获取主域名用于标题显示
+  const mainDomain = analysis ? analysis.topLevelDomain : 'example.com';
+  
   toast.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <div style="font-weight: 600; color: #f5f5f7; font-size: 15px; letter-spacing: -0.2px;">💡 为您准备的收藏建议</div>
+      <div style="font-weight: 600; color: #f5f5f7; font-size: 15px; letter-spacing: -0.2px;">📌 要收藏 ${mainDomain} 吗？</div>
       <button id="btnDismiss" style="
         background: none;
         border: none;
@@ -272,21 +275,43 @@ function showReminderToast(data) {
         padding: 4px;
         border-radius: 4px;
         transition: all 0.2s ease;
-      ">❌</button>
-    </div>
-    
-    <div style="margin-bottom: 12px; font-size: 14px; color: #ffffff; line-height: 1.4; letter-spacing: -0.1px;">
-      看来您很喜欢这里，帮您整理了几个收藏选项：
-    </div>
-    
-    <div style="margin-bottom: 12px; font-size: 12px; color: rgba(255, 255, 255, 0.8); word-break: break-all; line-height: 1.3;">
-      当前页面: ${currentUrl}
+      ">×</button>
     </div>
     
     <div style="margin-bottom: 8px; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500;">
     </div>
     
     ${urlOptionsHTML}
+    
+    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.15); display: flex; justify-content: space-between; align-items: center;">
+      <button id="btnNeverRemind" style="
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 12px;
+        cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      ">🔕 不再提醒</button>
+      
+      <button id="btnRemindLater" style="
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 12px;
+        cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      ">⏰ 稍后提醒</button>
+    </div>
   `;
   
   document.body.appendChild(toast);
@@ -371,6 +396,28 @@ function showReminderToast(data) {
   
   // 绑定关闭按钮事件
   document.getElementById('btnDismiss').addEventListener('click', () => {
+    // 出场动画
+    toast.style.transform = 'translateX(400px)';
+    setTimeout(() => toast.remove(), 400);
+  });
+  
+  // 绑定不再提醒按钮事件
+  document.getElementById('btnNeverRemind').addEventListener('click', () => {
+    // 添加域名到不再提醒列表
+    const currentDomain = analysis ? analysis.topLevelDomain : extractMainDomain(currentUrl);
+    if (currentDomain) {
+      // 这里可以添加将域名加入黑名单的逻辑
+      console.log('不再提醒域名:', currentDomain);
+    }
+    // 出场动画
+    toast.style.transform = 'translateX(400px)';
+    setTimeout(() => toast.remove(), 400);
+  });
+  
+  // 绑定稍后提醒按钮事件
+  document.getElementById('btnRemindLater').addEventListener('click', () => {
+    // 这里可以添加稍后提醒的逻辑
+    console.log('稍后提醒');
     // 出场动画
     toast.style.transform = 'translateX(400px)';
     setTimeout(() => toast.remove(), 400);
