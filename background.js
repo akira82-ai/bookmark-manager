@@ -64,6 +64,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       sendResponse({success: false, error: error.message});
     });
     return true; // 保持消息通道开放以支持异步响应
+  } else if (request.action === 'addDomainToBlacklistFolder') {
+    // 添加域名到黑名单分类
+    addDomainToBlacklistFolder(request.domain).then(() => {
+      sendResponse({success: true});
+    }).catch(error => {
+      console.error('添加域名到黑名单分类失败:', error);
+      sendResponse({success: false, error: error.message});
+    });
+    return true; // 保持消息通道开放以支持异步响应
   } else if (request.action === 'checkDomainInBlacklist') {
     // 检查域名是否在黑名单中
     checkDomainInBlacklist(request.domain).then(isBlacklisted => {
@@ -331,12 +340,121 @@ async function checkDomainInBlacklist(domain) {
       return false;
     }
 
-    const result = await chrome.storage.local.get(['blacklistedDomains']);
-    const blacklistedDomains = result.blacklistedDomains || [];
+    // 从书签分类中检查黑名单
+    const blacklistFolder = await findBlacklistFolder();
+    if (!blacklistFolder) {
+      return false; // 黑名单分类不存在
+    }
 
-    return blacklistedDomains.includes(domain);
+    // 获取黑名单分类下的所有书签
+    const bookmarks = await chrome.bookmarks.getChildren(blacklistFolder.id);
+
+    // 检查域名是否匹配（考虑带协议前缀的情况）
+    return bookmarks.some(bookmark => {
+      const bookmarkUrl = bookmark.url || bookmark.title;
+      const bookmarkTitle = bookmark.title;
+
+      // 从URL中提取域名部分进行比较
+      let bookmarkDomain = bookmarkUrl;
+      if (bookmarkUrl.startsWith('http://')) {
+        bookmarkDomain = bookmarkUrl.replace('http://', '');
+      } else if (bookmarkUrl.startsWith('https://')) {
+        bookmarkDomain = bookmarkUrl.replace('https://', '');
+      }
+
+      return bookmarkDomain === domain || bookmarkTitle === domain;
+    });
   } catch (error) {
     console.error('检查黑名单失败:', error);
     return false;
+  }
+}
+
+// 查找黑名单分类
+async function findBlacklistFolder() {
+  try {
+    const bookmarkTree = await chrome.bookmarks.getTree();
+
+    function searchFolder(nodes) {
+      for (const node of nodes) {
+        // 检查是否是黑名单分类
+        if (node.title === '🚫 黑名单' && !node.url) {
+          return node;
+        }
+
+        // 递归搜索子节点
+        if (node.children) {
+          const found = searchFolder(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    return searchFolder(bookmarkTree);
+  } catch (error) {
+    console.error('查找黑名单分类失败:', error);
+    return null;
+  }
+}
+
+// 确保黑名单分类存在
+async function ensureBlacklistFolderExists() {
+  try {
+    // 先尝试查找
+    let blacklistFolder = await findBlacklistFolder();
+
+    if (!blacklistFolder) {
+      // 如果不存在，创建黑名单分类
+      blacklistFolder = await chrome.bookmarks.create({
+        title: '🚫 黑名单'
+      });
+      console.log('已创建黑名单分类:', blacklistFolder.id);
+    }
+
+    return blacklistFolder;
+  } catch (error) {
+    console.error('确保黑名单分类存在失败:', error);
+    return null;
+  }
+}
+
+// 添加域名到黑名单分类
+async function addDomainToBlacklistFolder(domain) {
+  try {
+    if (!domain) {
+      throw new Error('域名为空');
+    }
+
+    // 确保黑名单分类存在
+    const blacklistFolder = await ensureBlacklistFolderExists();
+    if (!blacklistFolder) {
+      throw new Error('无法创建或找到黑名单分类');
+    }
+
+    // 检查是否已存在
+    const bookmarks = await chrome.bookmarks.getChildren(blacklistFolder.id);
+    const exists = bookmarks.some(bookmark => {
+      const bookmarkDomain = bookmark.url || bookmark.title;
+      return bookmarkDomain === domain || bookmarkDomain === 'http://' + domain;
+    });
+
+    if (exists) {
+      console.log('域名已在黑名单中:', domain);
+      return true;
+    }
+
+    // 添加新书签到黑名单分类（添加协议前缀）
+    await chrome.bookmarks.create({
+      parentId: blacklistFolder.id,
+      title: domain,
+      url: 'http://' + domain
+    });
+
+    console.log('域名已添加到黑名单分类:', domain);
+    return true;
+  } catch (error) {
+    console.error('添加域名到黑名单分类失败:', error);
+    throw error;
   }
 }

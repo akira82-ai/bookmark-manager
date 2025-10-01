@@ -408,18 +408,25 @@ function showReminderToast(data) {
   
   // 绑定不再提醒按钮事件
   document.getElementById('btnNeverRemind').addEventListener('click', () => {
-    // 添加域名到黑名单
+    // 添加域名到黑名单分类
     const currentDomain = analysis ? analysis.topLevelDomain : extractMainDomain(currentUrl);
     if (currentDomain) {
-      // 发送消息给background script添加域名到黑名单
+      // 发送消息给background script添加域名到黑名单分类
       chrome.runtime.sendMessage({
-        action: 'addDomainToBlacklist',
+        action: 'addDomainToBlacklistFolder',
         domain: currentDomain
-      }, (response) => {
+      }, async (response) => {
         if (response && response.success) {
-          console.log('域名已添加到黑名单:', currentDomain);
+          console.log('域名已添加到黑名单分类:', currentDomain);
+
+          // 触发浏览数据窗口的黑名单状态更新
+          try {
+            await checkUrlInBlacklist(currentUrl);
+          } catch (error) {
+            console.warn('更新黑名单状态失败:', error);
+          }
         } else {
-          console.error('添加域名到黑名单失败:', response ? response.error : '未知错误');
+          console.error('添加域名到黑名单分类失败:', response ? response.error : '未知错误');
         }
       });
     }
@@ -2350,30 +2357,29 @@ function updateBlacklistCheckStatus(status, data = null) {
 }
 
 /**
- * 检查URL是否在黑名单中
+ * 检查URL是否在黑名单中（基于书签分类）
  */
 async function checkUrlInBlacklist(url) {
   try {
     // 更新状态为检查中
     updateBlacklistCheckStatus('checking');
 
-    // 从chrome.storage.local获取新的黑名单数据
-    const result = await chrome.storage.local.get(['blacklistedDomains']);
-    const blacklistedDomains = result.blacklistedDomains || [];
-
-    if (!Array.isArray(blacklistedDomains)) {
-      throw new Error('黑名单数据格式错误');
-    }
-
     // 提取当前页面的主域名
     const currentDomain = extractMainDomain(url);
+    if (!currentDomain) {
+      throw new Error('无法提取域名');
+    }
 
-    // 检查是否在黑名单中（新的数据结构：简单字符串数组）
-    const isInBlacklist = blacklistedDomains.some(domain => {
-      if (!domain) return false;
-      const blacklistDomain = extractMainDomain(domain);
-      return blacklistDomain === currentDomain;
+    // 发送消息给background script检查黑名单
+    const response = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        action: 'checkDomainInBlacklist',
+        domain: currentDomain
+      }, resolve);
     });
+
+    // 检查响应结果
+    const isInBlacklist = response ? response.isBlacklisted : false;
 
     // 更新状态
     updateBlacklistCheckStatus('success', isInBlacklist);
