@@ -63,8 +63,13 @@ function setupMessageListener() {
       } else if (request.action === 'showReminder') {
         // 主域名去重检查
         if (!isDomainReminded(window.location.href)) {
-          markDomainAsReminded(window.location.href);
-          showReminderToast(request.data);
+          // 检查是否在黑名单中
+          checkUrlInBlacklist(window.location.href).then(isInBlacklist => {
+            if (!isInBlacklist) {
+              markDomainAsReminded(window.location.href);
+              showReminderToast(request.data);
+            }
+          });
         }
         sendResponse({success: true});
       }
@@ -1164,9 +1169,8 @@ const EventDrivenReminder = {
       
       // 只有不在收藏夹中的页面才触发提醒
       if (!isInBookmarks) {
-        console.log('智能提醒触发：URL不在收藏夹中，显示提醒弹窗');
         await this.triggerReminder(metrics, userLevel);
-        
+
         // 标记此URL已提醒
         CoreMetricsState.remindedUrls.add(currentUrl);
       } else {
@@ -1299,8 +1303,13 @@ const EventDrivenReminder = {
       
       // 使用统一的主域名去重检查
       if (!this.isDomainReminded(metrics.url)) {
-        this.markDomainAsReminded(metrics.url);
-        showReminderToast(reminderData);
+        // 检查是否在黑名单中
+        checkUrlInBlacklist(metrics.url).then(isInBlacklist => {
+          if (!isInBlacklist) {
+            this.markDomainAsReminded(metrics.url);
+            showReminderToast(reminderData);
+          }
+        });
       }
     } catch (error) {
           }
@@ -2649,8 +2658,13 @@ async function triggerSmartReminder() {
 
       // 主域名去重检查
       if (!isDomainReminded(metrics.url)) {
-        markDomainAsReminded(metrics.url);
-        showReminderToast(reminderData);
+        // 检查是否在黑名单中
+        checkUrlInBlacklist(metrics.url).then(isInBlacklist => {
+          if (!isInBlacklist) {
+            markDomainAsReminded(metrics.url);
+            showReminderToast(reminderData);
+          }
+        });
       }
     }
   } catch (error) {
@@ -2865,8 +2879,13 @@ function showTestReminder() {
   
   // 主域名去重检查
   if (!isDomainReminded(window.location.href)) {
-    markDomainAsReminded(window.location.href);
-    showReminderToast(testData);
+    // 检查是否在黑名单中
+    checkUrlInBlacklist(window.location.href).then(isInBlacklist => {
+      if (!isInBlacklist) {
+        markDomainAsReminded(window.location.href);
+        showReminderToast(testData);
+      }
+    });
   }
 }
 
