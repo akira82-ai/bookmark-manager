@@ -838,24 +838,31 @@ class BookmarkManager {
   renderFolderTree() {
     const folderTree = document.getElementById('folder-tree');
     folderTree.innerHTML = '';
-    
+
     // 显示所有文件夹（包括所有层级的文件夹）
     const allFolders = this.folders.filter(f => f.id !== '0'); // 过滤掉根目录
-    
-    // 将「最近收藏」文件夹放在最前面
+
+    // 将「最近收藏」和「黑名单」文件夹固定在前两位
     const recentFolder = allFolders.find(f => f.title === '📌 最近收藏');
-    const otherFolders = allFolders.filter(f => f.title !== '📌 最近收藏');
-    
+    const blacklistFolder = allFolders.find(f => f.title === '🚫 黑名单');
+    const otherFolders = allFolders.filter(f => f.title !== '📌 最近收藏' && f.title !== '🚫 黑名单');
+
     // 其他文件夹按标题排序
     otherFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
-    
+
     // 先添加最近收藏文件夹（如果存在）
     if (recentFolder) {
       const recentFolderElement = this.createFolderElement(recentFolder);
       folderTree.appendChild(recentFolderElement);
     }
-    
-    // 然后添加其他文件夹
+
+    // 然后添加黑名单文件夹（如果存在）
+    if (blacklistFolder) {
+      const blacklistFolderElement = this.createFolderElement(blacklistFolder);
+      folderTree.appendChild(blacklistFolderElement);
+    }
+
+    // 最后添加其他文件夹
     otherFolders.forEach(folder => {
       const folderElement = this.createFolderElement(folder);
       folderTree.appendChild(folderElement);
