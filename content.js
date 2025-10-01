@@ -403,11 +403,20 @@ function showReminderToast(data) {
   
   // 绑定不再提醒按钮事件
   document.getElementById('btnNeverRemind').addEventListener('click', () => {
-    // 添加域名到不再提醒列表
+    // 添加域名到黑名单
     const currentDomain = analysis ? analysis.topLevelDomain : extractMainDomain(currentUrl);
     if (currentDomain) {
-      // 这里可以添加将域名加入黑名单的逻辑
-      console.log('不再提醒域名:', currentDomain);
+      // 发送消息给background script添加域名到黑名单
+      chrome.runtime.sendMessage({
+        action: 'addDomainToBlacklist',
+        domain: currentDomain
+      }, (response) => {
+        if (response && response.success) {
+          console.log('域名已添加到黑名单:', currentDomain);
+        } else {
+          console.error('添加域名到黑名单失败:', response ? response.error : '未知错误');
+        }
+      });
     }
     // 出场动画
     toast.style.transform = 'translateX(400px)';
@@ -2339,22 +2348,21 @@ async function checkUrlInBlacklist(url) {
     // 更新状态为检查中
     updateBlacklistCheckStatus('checking');
 
-    // 从存储中获取黑名单
-    const storage = getUnifiedStorage();
-    const blacklist = await storage.get('blacklist', []);
+    // 从chrome.storage.local获取新的黑名单数据
+    const result = await chrome.storage.local.get(['blacklistedDomains']);
+    const blacklistedDomains = result.blacklistedDomains || [];
 
-    if (!Array.isArray(blacklist)) {
+    if (!Array.isArray(blacklistedDomains)) {
       throw new Error('黑名单数据格式错误');
     }
 
     // 提取当前页面的主域名
     const currentDomain = extractMainDomain(url);
 
-    // 检查是否在黑名单中
-    const isInBlacklist = blacklist.some(item => {
-      if (!item || !item.domain) return false;
-
-      const blacklistDomain = extractMainDomain(item.domain);
+    // 检查是否在黑名单中（新的数据结构：简单字符串数组）
+    const isInBlacklist = blacklistedDomains.some(domain => {
+      if (!domain) return false;
+      const blacklistDomain = extractMainDomain(domain);
       return blacklistDomain === currentDomain;
     });
 

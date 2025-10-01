@@ -55,6 +55,24 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       sendResponse({isInBookmarks: true});
     });
     return true; // 保持消息通道开放以支持异步响应
+  } else if (request.action === 'addDomainToBlacklist') {
+    // 添加域名到黑名单
+    addDomainToBlacklist(request.domain).then(() => {
+      sendResponse({success: true});
+    }).catch(error => {
+      console.error('添加域名到黑名单失败:', error);
+      sendResponse({success: false, error: error.message});
+    });
+    return true; // 保持消息通道开放以支持异步响应
+  } else if (request.action === 'checkDomainInBlacklist') {
+    // 检查域名是否在黑名单中
+    checkDomainInBlacklist(request.domain).then(isBlacklisted => {
+      sendResponse({isBlacklisted: isBlacklisted});
+    }).catch(error => {
+      console.error('检查黑名单失败:', error);
+      sendResponse({isBlacklisted: false});
+    });
+    return true; // 保持消息通道开放以支持异步响应
   }
 });
 
@@ -280,4 +298,45 @@ function showNotification(message) {
     title: '书签管理器',
     message: message
   });
+}
+
+// 添加域名到黑名单
+async function addDomainToBlacklist(domain) {
+  try {
+    if (!domain) {
+      throw new Error('域名为空');
+    }
+
+    // 获取当前黑名单
+    const result = await chrome.storage.local.get(['blacklistedDomains']);
+    const blacklistedDomains = result.blacklistedDomains || [];
+
+    // 检查是否已存在
+    if (!blacklistedDomains.includes(domain)) {
+      blacklistedDomains.push(domain);
+      await chrome.storage.local.set({ blacklistedDomains: blacklistedDomains });
+    }
+
+    return true;
+  } catch (error) {
+    console.error('添加域名到黑名单失败:', error);
+    throw error;
+  }
+}
+
+// 检查域名是否在黑名单中
+async function checkDomainInBlacklist(domain) {
+  try {
+    if (!domain) {
+      return false;
+    }
+
+    const result = await chrome.storage.local.get(['blacklistedDomains']);
+    const blacklistedDomains = result.blacklistedDomains || [];
+
+    return blacklistedDomains.includes(domain);
+  } catch (error) {
+    console.error('检查黑名单失败:', error);
+    return false;
+  }
 }
