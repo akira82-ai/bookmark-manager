@@ -1621,48 +1621,23 @@ function createBrowseWindow() {
       </div>
     </div>
 
-    <!-- 条件命中检测 -->
-    <div class="browse-hit-section" id="browse-hit-section">
-      <div class="browse-hit-header">
-        🎯 提醒条件检测
+    <!-- 收藏与黑名单检测 -->
+    <div class="browse-detection-section" id="browse-detection-section">
+      <div class="browse-detection-header">
+        📋 收藏与黑名单检测
       </div>
-      <div class="browse-hit-content" id="browse-hit-content">
-        <div class="browse-hit-status" id="browse-hit-status">
-          <span class="browse-label">状态:</span>
-          <span class="browse-value" id="browse-hit-text">检测中...</span>
+      <div class="browse-detection-content" id="browse-detection-content">
+        <div class="browse-detection-item">
+          <span class="browse-detection-label">是否命中提醒:</span>
+          <span class="browse-detection-value" id="browse-hit-status">检测中...</span>
         </div>
-        <div class="browse-hit-analysis" id="browse-hit-analysis" style="display: none;">
-          <div class="browse-analysis-item">
-            <span class="browse-label">• 访问次数:</span>
-            <span class="browse-value" id="browse-analysis-visit">--</span>
-          </div>
-          <div class="browse-analysis-item">
-            <span class="browse-label">• 访问时长:</span>
-            <span class="browse-value" id="browse-analysis-duration">--</span>
-          </div>
-          <div class="browse-analysis-item">
-            <span class="browse-label">• 访问深度:</span>
-            <span class="browse-value" id="browse-analysis-depth">--</span>
-          </div>
+        <div class="browse-detection-item">
+          <span class="browse-detection-label">是否在收藏夹:</span>
+          <span class="browse-detection-value" id="browse-bookmark-status">待检查</span>
         </div>
-        <div class="browse-hit-suggestion" id="browse-hit-suggestion" style="display: none;">
-          <span class="browse-suggestion-text" id="browse-suggestion-text">--</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 收藏夹检查状态 -->
-    <div class="browse-bookmark-section" id="browse-bookmark-section">
-      <div class="browse-bookmark-header">
-        🔍 收藏夹检查
-      </div>
-      <div class="browse-bookmark-content" id="browse-bookmark-content">
-        <div class="browse-bookmark-status" id="browse-bookmark-status">
-          <span class="browse-label">状态:</span>
-          <span class="browse-value" id="browse-bookmark-text">待检查</span>
-        </div>
-        <div class="browse-bookmark-error" id="browse-bookmark-error" style="display: none;">
-          <span class="browse-error-text" id="browse-error-text">--</span>
+        <div class="browse-detection-item">
+          <span class="browse-detection-label">是否在黑名单:</span>
+          <span class="browse-detection-value" id="browse-blacklist-status">待检查</span>
         </div>
       </div>
     </div>
@@ -1900,47 +1875,67 @@ function createBrowseWindow() {
       font-weight: 500;
     }
 
-    /* 收藏夹检查状态区域 */
-    .browse-bookmark-section {
-      border: 1px solid rgba(255, 152, 0, 0.3);
+    /* 收藏与黑名单检测区域 */
+    .browse-detection-section {
+      border: 1px solid rgba(156, 39, 176, 0.3);
       border-radius: 8px;
       margin: 8px 15px;
-      background: rgba(255, 152, 0, 0.1);
+      background: rgba(156, 39, 176, 0.1);
     }
 
-    .browse-bookmark-header {
+    .browse-detection-header {
       padding: 6px 12px 4px 12px;
       font-weight: 600;
       font-size: 11px;
-      color: #ff9800;
-      border-bottom: 1px solid rgba(255, 152, 0, 0.3);
+      color: #9c27b0;
+      border-bottom: 1px solid rgba(156, 39, 176, 0.3);
       margin-bottom: 6px;
     }
 
-    .browse-bookmark-content {
+    .browse-detection-content {
       padding: 0 12px 8px 12px;
     }
 
-    .browse-bookmark-status {
+    .browse-detection-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 6px;
+      padding: 4px 0;
+    }
+
+    .browse-detection-label {
       font-size: 11px;
+      color: #ddd;
+      flex: 1;
     }
 
-    .browse-bookmark-error {
-      margin-top: 6px;
-      padding: 4px 8px;
-      background: rgba(244, 67, 54, 0.2);
-      border-radius: 4px;
-      border-left: 3px solid #f44336;
+    .browse-detection-value {
+      font-size: 11px;
+      font-weight: 600;
+      flex: 1.5;
+      text-align: right;
     }
 
-    .browse-error-text {
-      font-size: 10px;
-      color: #ffcdd2;
-      font-weight: 500;
+    /* 状态颜色 */
+    .detection-success {
+      color: #4caf50;
+    }
+
+    .detection-warning {
+      color: #ff9800;
+    }
+
+    .detection-error {
+      color: #f44336;
+    }
+
+    .detection-info {
+      color: #2196f3;
+    }
+
+    .detection-pending {
+      color: #ff9800;
     }
 
     /* 窗口说明区域 */
@@ -1971,6 +1966,16 @@ function createBrowseWindow() {
 
   // 保存引用
   CoreMetricsState.browseWindow = browseWindow;
+
+  // 初始化检测状态
+  setTimeout(async () => {
+    try {
+      const metrics = await getCoreMetrics();
+      await updateAllDetectionStatus(metrics.url);
+    } catch (error) {
+      console.warn('初始化检测状态失败:', error);
+    }
+  }, 500);
 }
 
 /**
@@ -2227,99 +2232,59 @@ async function updateHitDetection(metrics) {
         return;
   }
 
-  // 检查条件是否命中
-  const visitHit = metrics.visitCount >= thresholds.visit;
-  const durationHit = thresholds.duration === 0 || metrics.browseDuration >= thresholds.duration;
-  const depthHit = thresholds.depth === 0 || metrics.browseDepth >= thresholds.depth;
+  // 使用新的统一检测函数
+  await performHitDetection(metrics, thresholds);
+}
 
-  const isHit = visitHit && durationHit && depthHit;
+/**
+ * 更新命中状态显示
+ */
+function updateHitStatus(isHit, metrics, thresholds) {
+  const hitStatusEl = document.getElementById('browse-hit-status');
 
-  // 更新命中状态显示
-  updateHitStatus(isHit, metrics, thresholds);
-
-  // 如果条件命中，根据参数决定是否进行收藏夹检查
-  if (isHit) {
-    // 检查是否已经进行过收藏夹检查（避免重复检查）
-    if (!metrics.skipBookmarkCheck) {
-      try {
-        // 更新收藏夹检查状态为检查中
-        updateBookmarkCheckStatusInWindow('checking');
-        
-        // 调用EventDrivenReminder的收藏夹检查方法
-        if (typeof EventDrivenReminder !== 'undefined') {
-          const isInBookmarks = await EventDrivenReminder.checkUrlInBookmarks(metrics.url);
-          
-          // 如果不在收藏夹中，更新建议
-          if (!isInBookmarks) {
-            const suggestionEl = document.getElementById('browse-hit-suggestion');
-            const suggestionTextEl = document.getElementById('browse-suggestion-text');
-            if (suggestionEl && suggestionTextEl) {
-              suggestionTextEl.textContent = '🎉 条件命中且未收藏，建议触发提醒！';
-              suggestionEl.style.display = 'block';
-            }
-          }
-        }
-      } catch (error) {
-        // 收藏夹检查失败时显示错误
-        updateBookmarkCheckStatusInWindow('error', error.message);
-      }
+  if (hitStatusEl) {
+    if (isHit) {
+      hitStatusEl.textContent = '✅ 命中 (已达到提醒条件)';
+      hitStatusEl.className = 'browse-detection-value detection-success';
     } else {
-      // 如果标记为跳过收藏夹检查，显示基本建议
-      const suggestionEl = document.getElementById('browse-hit-suggestion');
-      const suggestionTextEl = document.getElementById('browse-suggestion-text');
-      if (suggestionEl && suggestionTextEl) {
-        suggestionTextEl.textContent = '🎉 条件已命中！';
-        suggestionEl.style.display = 'block';
-      }
+      hitStatusEl.textContent = '❌ 未命中 (暂未达到提醒条件)';
+      hitStatusEl.className = 'browse-detection-value detection-warning';
     }
-  } else {
-    // 条件未命中，重置收藏夹检查状态
-    updateBookmarkCheckStatusInWindow('pending');
   }
 }
 
-// 更新浏览明细窗口中的收藏夹检查状态（独立函数）
+/**
+ * 更新浏览数据窗口中的收藏夹检查状态（独立函数）
+ */
 function updateBookmarkCheckStatusInWindow(status, data = null) {
   if (!CoreMetricsState.browseWindow) return;
 
   try {
-    const statusEl = document.getElementById('browse-bookmark-text');
-    const errorEl = document.getElementById('browse-bookmark-error');
-    const errorTextEl = document.getElementById('browse-error-text');
+    const statusEl = document.getElementById('browse-bookmark-status');
 
     if (statusEl) {
       switch (status) {
         case 'pending':
-          statusEl.textContent = '待检查';
-          statusEl.style.color = '#ff9800';
+          statusEl.textContent = '⏳ 待检查';
+          statusEl.className = 'browse-detection-value detection-pending';
           break;
         case 'checking':
           statusEl.textContent = '🔍 检查中...';
-          statusEl.style.color = '#ff9800';
+          statusEl.className = 'browse-detection-value detection-info';
           break;
         case 'success':
           if (data === true) {
-            statusEl.textContent = '✅ 已在收藏夹中';
-            statusEl.style.color = '#4caf50';
+            statusEl.textContent = '✅ 已收藏';
+            statusEl.className = 'browse-detection-value detection-success';
           } else {
-            statusEl.textContent = '❌ 未在收藏夹中';
-            statusEl.style.color = '#ff5722';
+            statusEl.textContent = '❌ 未收藏';
+            statusEl.className = 'browse-detection-value detection-warning';
           }
           break;
         case 'error':
-          statusEl.textContent = '⚠️ 检查失败';
-          statusEl.style.color = '#f44336';
+          statusEl.textContent = '❌ 检查失败';
+          statusEl.className = 'browse-detection-value detection-error';
           break;
-      }
-    }
-
-    // 显示或隐藏错误信息
-    if (errorEl && errorTextEl) {
-      if (status === 'error' && data) {
-        errorTextEl.textContent = `检查失败: ${data}`;
-        errorEl.style.display = 'block';
-      } else {
-        errorEl.style.display = 'none';
       }
     }
   } catch (error) {
@@ -2328,66 +2293,126 @@ function updateBookmarkCheckStatusInWindow(status, data = null) {
 }
 
 /**
- * 更新命中状态显示
+ * 更新黑名单检查状态
  */
-function updateHitStatus(isHit, metrics, thresholds) {
-  const hitTextEl = document.getElementById('browse-hit-text');
-  const analysisEl = document.getElementById('browse-hit-analysis');
-  const suggestionEl = document.getElementById('browse-hit-suggestion');
-  const suggestionTextEl = document.getElementById('browse-suggestion-text');
+function updateBlacklistCheckStatus(status, data = null) {
+  if (!CoreMetricsState.browseWindow) return;
 
-  if (hitTextEl) {
-    if (isHit) {
-      hitTextEl.textContent = '✅ 条件命中！';
-      hitTextEl.style.color = '#4caf50';
-    } else {
-      hitTextEl.textContent = '❌ 条件未满足';
-      hitTextEl.style.color = '#ff5722';
-    }
-  }
+  try {
+    const statusEl = document.getElementById('browse-blacklist-status');
 
-  // 显示详细分析
-  if (analysisEl) {
-    const visitAnalysis = document.getElementById('browse-analysis-visit');
-    const durationAnalysis = document.getElementById('browse-analysis-duration');
-    const depthAnalysis = document.getElementById('browse-analysis-depth');
-
-    if (visitAnalysis) {
-      visitAnalysis.textContent = `${metrics.visitCount}次 ${metrics.visitCount >= thresholds.visit ? '✅' : '❌'} (需要 ≥ ${thresholds.visit}次)`;
-      visitAnalysis.style.color = metrics.visitCount >= thresholds.visit ? '#4caf50' : '#ff5722';
-    }
-
-    if (durationAnalysis) {
-      if (thresholds.duration === 0) {
-        durationAnalysis.textContent = '无要求 ✅';
-        durationAnalysis.style.color = '#4caf50';
-      } else {
-        durationAnalysis.textContent = `${Math.round(metrics.browseDuration)}秒 ${metrics.browseDuration >= thresholds.duration ? '✅' : '❌'} (需要 ≥ ${thresholds.duration}秒)`;
-        durationAnalysis.style.color = metrics.browseDuration >= thresholds.duration ? '#4caf50' : '#ff5722';
+    if (statusEl) {
+      switch (status) {
+        case 'pending':
+          statusEl.textContent = '⏳ 待检查';
+          statusEl.className = 'browse-detection-value detection-pending';
+          break;
+        case 'checking':
+          statusEl.textContent = '🔍 检查中...';
+          statusEl.className = 'browse-detection-value detection-info';
+          break;
+        case 'success':
+          if (data === true) {
+            statusEl.textContent = '✅ 在黑名单中';
+            statusEl.className = 'browse-detection-value detection-error';
+          } else {
+            statusEl.textContent = '❌ 未在黑名单';
+            statusEl.className = 'browse-detection-value detection-success';
+          }
+          break;
+        case 'error':
+          statusEl.textContent = '❌ 检查失败';
+          statusEl.className = 'browse-detection-value detection-error';
+          break;
       }
     }
-
-    if (depthAnalysis) {
-      if (thresholds.depth === 0) {
-        depthAnalysis.textContent = '无要求 ✅';
-        depthAnalysis.style.color = '#4caf50';
-      } else {
-        depthAnalysis.textContent = `${metrics.browseDepth.toFixed(1)}屏 ${metrics.browseDepth >= thresholds.depth ? '✅' : '❌'} (需要 ≥ ${thresholds.depth}屏)`;
-        depthAnalysis.style.color = metrics.browseDepth >= thresholds.depth ? '#4caf50' : '#ff5722';
-      }
-    }
-
-    analysisEl.style.display = 'block';
+  } catch (error) {
+    console.warn('更新黑名单检查状态失败:', error);
   }
+}
 
-  // 显示建议
-  if (suggestionEl && suggestionTextEl) {
-    if (isHit) {
-      suggestionTextEl.textContent = '🎉 建议触发智能收藏提醒！';
-      suggestionEl.style.display = 'block';
-    } else {
-      suggestionEl.style.display = 'none';
+/**
+ * 检查URL是否在黑名单中
+ */
+async function checkUrlInBlacklist(url) {
+  try {
+    // 更新状态为检查中
+    updateBlacklistCheckStatus('checking');
+
+    // 从存储中获取黑名单
+    const storage = getUnifiedStorage();
+    const blacklist = await storage.get('blacklist', []);
+
+    if (!Array.isArray(blacklist)) {
+      throw new Error('黑名单数据格式错误');
     }
+
+    // 提取当前页面的主域名
+    const currentDomain = extractMainDomain(url);
+
+    // 检查是否在黑名单中
+    const isInBlacklist = blacklist.some(item => {
+      if (!item || !item.domain) return false;
+
+      const blacklistDomain = extractMainDomain(item.domain);
+      return blacklistDomain === currentDomain;
+    });
+
+    // 更新状态
+    updateBlacklistCheckStatus('success', isInBlacklist);
+
+    return isInBlacklist;
+  } catch (error) {
+    console.warn('黑名单检查失败:', error.message);
+    updateBlacklistCheckStatus('error', error.message);
+    return false;
+  }
+}
+
+/**
+ * 统一更新所有检测状态
+ */
+async function updateAllDetectionStatus(url) {
+  try {
+    // 检查黑名单
+    await checkUrlInBlacklist(url);
+
+    // 检查收藏夹
+    if (typeof EventDrivenReminder !== 'undefined') {
+      await EventDrivenReminder.checkUrlInBookmarks(url);
+    }
+  } catch (error) {
+    console.warn('更新检测状态失败:', error);
+  }
+}
+
+/**
+ * 更新命中检测和条件分析
+ */
+async function performHitDetection(metrics, thresholds) {
+  try {
+    // 计算是否命中
+    const visitHit = metrics.visitCount >= thresholds.visit;
+    const durationHit = thresholds.duration === 0 || metrics.browseDuration >= thresholds.duration;
+    const depthHit = thresholds.depth === 0 || metrics.browseDepth >= thresholds.depth;
+    const isHit = visitHit && durationHit && depthHit;
+
+    // 更新命中状态
+    updateHitStatus(isHit, metrics, thresholds);
+
+    // 如果条件命中，执行后续检测
+    if (isHit) {
+      await updateAllDetectionStatus(metrics.url);
+    } else {
+      // 条件未命中，重置其他状态
+      updateBookmarkCheckStatusInWindow('pending');
+      updateBlacklistCheckStatus('pending');
+    }
+
+    return isHit;
+  } catch (error) {
+    console.warn('命中检测失败:', error);
+    return false;
   }
 }
 
