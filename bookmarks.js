@@ -157,6 +157,9 @@ class BookmarkManager {
     this.folders = [];
     this.searchTerm = '';
     this.searchTimeout = null;
+
+    // 展开/收起状态管理
+    this.expandedFolders = new Set(); // 记录展开的文件夹
     
     // 访问统计相关
     this.visitStatsCache = new Map(); // 简单缓存
@@ -827,7 +830,7 @@ class BookmarkManager {
         parentId: node.parentId,
         children: node.children
       });
-      
+
       // 递归处理子节点
       node.children.forEach(child => {
         this.processBookmarkTree(child);
@@ -835,17 +838,118 @@ class BookmarkManager {
     }
   }
 
+  /**
+   * 计算文件夹层级
+   */
+  calculateFolderLevel(folderId) {
+    // 检查是否为顶级文件夹
+    const isTopLevel = folderId === '0' ||
+                      folderId === '1' ||
+                      folderId === '2' ||
+                      folderId === null ||
+                      this.folders.find(f => f.id === folderId &&
+                        (f.parentId === '0' || f.parentId === '1' || f.parentId === '2' || f.parentId === null));
+
+    if (isTopLevel) {
+      return 0; // 顶级文件夹级别为0
+    }
+
+    let level = 0;
+    let currentId = folderId;
+
+    while (currentId && currentId !== '0' && currentId !== '1' && currentId !== '2') {
+      const parent = this.folders.find(f => f.id === currentId);
+      if (!parent) break;
+      currentId = parent.parentId;
+      level++;
+
+      // 如果到达了根文件夹，停止计算
+      if (currentId === '0' || currentId === '1' || currentId === '2' || currentId === null) {
+        break;
+      }
+    }
+
+    return level;
+  }
+
+  /**
+   * 获取文件夹的所有子文件夹（递归）
+   */
+  getAllChildFolders(folderId, includeSelf = false) {
+    let folders = [];
+
+    if (includeSelf) {
+      const self = this.folders.find(f => f.id === folderId);
+      if (self) folders.push(self);
+    }
+
+    // 查找直接子文件夹
+    const directChildren = this.folders.filter(f => f.parentId === folderId);
+    folders.push(...directChildren);
+
+    // 递归查找子文件夹的子文件夹
+    directChildren.forEach(child => {
+      folders.push(...this.getAllChildFolders(child.id));
+    });
+
+    return folders;
+  }
+
+  /**
+   * 按层级获取所有文件夹
+   */
+  getFoldersByLevel() {
+    const folderLevels = {};
+
+    this.folders.forEach(folder => {
+      const level = this.calculateFolderLevel(folder.id);
+      if (!folderLevels[level]) {
+        folderLevels[level] = [];
+      }
+      folderLevels[level].push(folder);
+    });
+
+    return folderLevels;
+  }
+
+  /**
+   * 检查文件夹是否有子文件夹
+   */
+  hasChildFolders(folderId) {
+    return this.folders.some(f => f.parentId === folderId);
+  }
+
+  /**
+   * 展开/收起文件夹
+   */
+  toggleFolder(folderId) {
+    if (this.expandedFolders.has(folderId)) {
+      this.expandedFolders.delete(folderId);
+    } else {
+      this.expandedFolders.add(folderId);
+    }
+  }
+
+  /**
+   * 检查文件夹是否已展开
+   */
+  isFolderExpanded(folderId) {
+    return this.expandedFolders.has(folderId);
+  }
+
   renderFolderTree() {
     const folderTree = document.getElementById('folder-tree');
     folderTree.innerHTML = '';
 
-    // 显示所有文件夹（包括所有层级的文件夹）
-    const allFolders = this.folders.filter(f => f.id !== '0'); // 过滤掉根目录
+    // 获取顶级文件夹（根目录的直接子文件夹）
+    const topLevelFolders = this.getTopLevelFolders();
 
     // 将「最近收藏」和「黑名单」文件夹固定在前两位
-    const recentFolder = allFolders.find(f => f.title === '📌 最近收藏');
-    const blacklistFolder = allFolders.find(f => f.title === '🚫 黑名单');
-    const otherFolders = allFolders.filter(f => f.title !== '📌 最近收藏' && f.title !== '🚫 黑名单');
+    const recentFolder = topLevelFolders.find(f => f.title === '📌 最近收藏');
+    const blacklistFolder = topLevelFolders.find(f => f.title === '🚫 黑名单');
+    const otherFolders = topLevelFolders.filter(f =>
+      f.title !== '📌 最近收藏' && f.title !== '🚫 黑名单'
+    );
 
     // 其他文件夹按标题排序
     otherFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
@@ -854,52 +958,221 @@ class BookmarkManager {
     if (recentFolder) {
       const recentFolderElement = this.createFolderElement(recentFolder);
       folderTree.appendChild(recentFolderElement);
+
+      // 如果展开，添加子文件夹
+      if (this.isFolderExpanded(recentFolder.id)) {
+        this.addChildFolders(recentFolder.id, folderTree, 1);
+      }
     }
 
     // 然后添加黑名单文件夹（如果存在）
     if (blacklistFolder) {
       const blacklistFolderElement = this.createFolderElement(blacklistFolder);
       folderTree.appendChild(blacklistFolderElement);
+
+      // 如果展开，添加子文件夹
+      if (this.isFolderExpanded(blacklistFolder.id)) {
+        this.addChildFolders(blacklistFolder.id, folderTree, 1);
+      }
     }
 
-    // 最后添加其他文件夹
+    // 最后添加其他一级分类及其子文件夹
     otherFolders.forEach(folder => {
+      // 添加一级文件夹
       const folderElement = this.createFolderElement(folder);
       folderTree.appendChild(folderElement);
+
+      // 如果展开，递归添加子文件夹
+      if (this.isFolderExpanded(folder.id)) {
+        this.addChildFolders(folder.id, folderTree, 1);
+      }
     });
+  }
+
+  /**
+   * 获取顶级文件夹（根目录的直接子文件夹）
+   */
+  getTopLevelFolders() {
+    return this.folders.filter(folder => {
+      // 只返回根目录的直接子文件夹
+      return folder.parentId === '0' ||
+             folder.parentId === '1' || // 书签栏
+             folder.parentId === '2' || // 其他书签栏
+             folder.parentId === null;
+    });
+  }
+
+  /**
+   * 递归添加子文件夹（只添加已展开的）
+   */
+  addChildFolders(parentId, container, parentLevel) {
+    // 获取当前文件夹的子文件夹
+    const childFolders = this.folders.filter(f => f.parentId === parentId);
+
+    // 按标题排序子文件夹
+    childFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+
+    // 创建子文件夹容器
+    const childrenContainer = document.createElement('div');
+    childrenContainer.className = 'folder-children';
+    childrenContainer.dataset.parentId = parentId;
+
+    // 设置展开状态
+    if (this.isFolderExpanded(parentId)) {
+      childrenContainer.classList.add('expanded');
+    }
+
+    // 渲染子文件夹
+    childFolders.forEach((childFolder, index) => {
+      const childElement = this.createFolderElement(childFolder);
+      childElement.classList.add('folder-child');
+      childElement.style.animationDelay = `${index * 0.05}s`; // 渐进动画延迟
+      childrenContainer.appendChild(childElement);
+
+      // 如果子文件夹也展开了，递归添加它的子文件夹
+      if (this.isFolderExpanded(childFolder.id)) {
+        this.addChildFolders(childFolder.id, childrenContainer, parentLevel + 1);
+      }
+    });
+
+    // 只有当有子文件夹时才添加容器
+    if (childFolders.length > 0) {
+      container.appendChild(childrenContainer);
+    }
   }
 
   createFolderElement(folder) {
     const folderElement = document.createElement('div');
     folderElement.className = 'folder-item';
     folderElement.dataset.folderId = folder.id;
-    
+
+    // 计算并设置层级
+    const level = this.calculateFolderLevel(folder.id);
+    folderElement.dataset.level = level;
+
+    // 展开指示器（只有有子文件夹时才显示）
+    const expandIcon = document.createElement('span');
+    expandIcon.className = 'expand-icon';
+    const hasChildren = this.hasChildFolders(folder.id);
+    expandIcon.textContent = hasChildren ? '▶' : '';
+    expandIcon.style.visibility = hasChildren ? 'visible' : 'hidden';
+
+    // 设置展开指示器状态
+    if (hasChildren && this.isFolderExpanded(folder.id)) {
+      expandIcon.textContent = '▼';
+      expandIcon.classList.add('expanded');
+    }
+
     const folderIcon = document.createElement('span');
     folderIcon.className = 'folder-icon';
     folderIcon.textContent = '📁';
-    
+
     const folderName = document.createElement('span');
     folderName.className = 'folder-name';
     folderName.textContent = folder.title;
-    
-    // 计算该文件夹内的书签数量
-    const childBookmarks = this.bookmarks.filter(b => b.parentId === folder.id);
-    
+
+    // 计算该文件夹内的书签数量（包括子文件夹中的书签）
+    const totalBookmarks = this.countTotalBookmarks(folder.id);
+
     const folderCount = document.createElement('span');
     folderCount.className = 'folder-count';
-    folderCount.textContent = childBookmarks.length;
-    
+    folderCount.textContent = totalBookmarks;
+
+    folderElement.appendChild(expandIcon);
     folderElement.appendChild(folderIcon);
     folderElement.appendChild(folderName);
     folderElement.appendChild(folderCount);
-    
+
     // 点击文件夹
     folderElement.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.selectFolder(folder.id, folder.title);
+      this.handleFolderClick(folderElement, folder.id, folder.title);
     });
-    
+
     return folderElement;
+  }
+
+  /**
+   * 处理文件夹点击事件 - 支持展开/收起
+   */
+  handleFolderClick(folderElement, folderId, folderTitle) {
+    const hasChildren = this.hasChildFolders(folderId);
+    const isExpanded = this.isFolderExpanded(folderId);
+
+    // 如果有子文件夹，切换展开/收起状态
+    if (hasChildren) {
+      this.toggleFolder(folderId);
+
+      // 更新展开指示器
+      const expandIcon = folderElement.querySelector('.expand-icon');
+      if (expandIcon) {
+        if (isExpanded) {
+          expandIcon.textContent = '▶';
+          expandIcon.classList.remove('expanded');
+        } else {
+          expandIcon.textContent = '▼';
+          expandIcon.classList.add('expanded');
+        }
+      }
+
+      // 使用动画方式重新渲染文件夹树
+      this.animateFolderTreeUpdate();
+    }
+
+    // 选择文件夹并显示书签
+    this.selectFolder(folderId, folderTitle);
+  }
+
+  /**
+   * 动画方式更新文件夹树
+   */
+  animateFolderTreeUpdate() {
+    const folderTree = document.getElementById('folder-tree');
+    const currentExpanded = new Set(this.expandedFolders);
+
+    // 重新渲染文件夹树
+    this.renderFolderTree();
+
+    // 触发动画
+    setTimeout(() => {
+      const allChildrenContainers = folderTree.querySelectorAll('.folder-children');
+      allChildrenContainers.forEach(container => {
+        const parentId = container.dataset.parentId;
+        if (currentExpanded.has(parentId)) {
+          // 强制触发展开动画
+          container.style.maxHeight = '0';
+          container.style.opacity = '0';
+          container.style.transform = 'scaleY(0)';
+
+          setTimeout(() => {
+            container.classList.add('expanded');
+            // 计算实际高度
+            const height = container.scrollHeight;
+            container.style.maxHeight = height + 'px';
+            container.style.opacity = '1';
+            container.style.transform = 'scaleY(1)';
+          }, 50);
+        }
+      });
+    }, 10);
+  }
+
+  /**
+   * 计算文件夹内总书签数量（包括子文件夹中的书签）
+   */
+  countTotalBookmarks(folderId) {
+    let count = 0;
+
+    // 直接子书签
+    count += this.bookmarks.filter(b => b.parentId === folderId).length;
+
+    // 递归计算子文件夹中的书签
+    const childFolders = this.folders.filter(f => f.parentId === folderId);
+    childFolders.forEach(childFolder => {
+      count += this.countTotalBookmarks(childFolder.id);
+    });
+
+    return count;
   }
 
   
