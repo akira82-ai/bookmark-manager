@@ -11,7 +11,9 @@
       "Read(//tmp/**)",
       "Bash(sed:*)",
       "Bash(git log:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(start:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

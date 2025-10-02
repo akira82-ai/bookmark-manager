@@ -604,25 +604,17 @@ body.dark-mode .folder-item .folder-count {
 .expand-icon {
   font-size: 0.8rem;
   margin-right: 0.5rem;
-  transition: transform 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease;
   cursor: pointer;
   flex-shrink: 0;
   width: 1rem;
   text-align: center;
 }
 
-.expand-icon.expanded {
-  transform: rotate(90deg);
-}
-
 /* 展开指示器hover效果 */
 .folder-item:hover .expand-icon {
   color: #667eea;
   transform: scale(1.1);
-}
-
-.folder-item:hover .expand-icon.expanded {
-  transform: rotate(90deg) scale(1.1);
 }
 
 /* 子文件夹容器样式 - 手风琴式展开动画 */

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bookmark Manager",
-  "version": "1.2",
+  "version": "2.10.1",
   "description": "一个功能完整的书签管理插件",
   "permissions": [
     "storage",

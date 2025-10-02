@@ -941,13 +941,13 @@ class BookmarkManager {
     const folderTree = document.getElementById('folder-tree');
     folderTree.innerHTML = '';
 
-    // 获取顶级文件夹（根目录的直接子文件夹）
-    const topLevelFolders = this.getTopLevelFolders();
+    // 获取二级文件夹（跳过顶级目录，直接显示子文件夹）
+    const secondLevelFolders = this.getSecondLevelFolders();
 
     // 将「最近收藏」和「黑名单」文件夹固定在前两位
-    const recentFolder = topLevelFolders.find(f => f.title === '📌 最近收藏');
-    const blacklistFolder = topLevelFolders.find(f => f.title === '🚫 黑名单');
-    const otherFolders = topLevelFolders.filter(f =>
+    const recentFolder = secondLevelFolders.find(f => f.title === '📌 最近收藏');
+    const blacklistFolder = secondLevelFolders.find(f => f.title === '🚫 黑名单');
+    const otherFolders = secondLevelFolders.filter(f =>
       f.title !== '📌 最近收藏' && f.title !== '🚫 黑名单'
     );
 
@@ -976,9 +976,9 @@ class BookmarkManager {
       }
     }
 
-    // 最后添加其他一级分类及其子文件夹
+    // 最后添加其他二级分类及其子文件夹
     otherFolders.forEach(folder => {
-      // 添加一级文件夹
+      // 添加二级文件夹
       const folderElement = this.createFolderElement(folder);
       folderTree.appendChild(folderElement);
 
@@ -990,15 +990,17 @@ class BookmarkManager {
   }
 
   /**
-   * 获取顶级文件夹（根目录的直接子文件夹）
+   * 获取二级文件夹（跳过顶级目录，直接显示子文件夹）
    */
-  getTopLevelFolders() {
+  getSecondLevelFolders() {
+    // 根据Chrome书签结构，主要的顶级文件夹ID是：
+    // 1: 收藏夹栏, 2: 其他收藏夹
+    // 我们要直接显示这些文件夹的子文件夹作为二级分类
+    const mainTopLevelIds = new Set(['1', '2']);
+
+    // 返回所有父文件夹是主要顶级文件夹的二级文件夹
     return this.folders.filter(folder => {
-      // 只返回根目录的直接子文件夹
-      return folder.parentId === '0' ||
-             folder.parentId === '1' || // 书签栏
-             folder.parentId === '2' || // 其他书签栏
-             folder.parentId === null;
+      return mainTopLevelIds.has(folder.parentId);
     });
   }
 
@@ -1103,15 +1105,17 @@ class BookmarkManager {
     if (hasChildren) {
       this.toggleFolder(folderId);
 
-      // 更新展开指示器
+      // 更新展开指示器 - 使用切换后的状态
       const expandIcon = folderElement.querySelector('.expand-icon');
       if (expandIcon) {
-        if (isExpanded) {
-          expandIcon.textContent = '▶';
-          expandIcon.classList.remove('expanded');
-        } else {
+        if (!isExpanded) {
+          // 原来是收起的，现在展开
           expandIcon.textContent = '▼';
           expandIcon.classList.add('expanded');
+        } else {
+          // 原来是展开的，现在收起
+          expandIcon.textContent = '▶';
+          expandIcon.classList.remove('expanded');
         }
       }
 
