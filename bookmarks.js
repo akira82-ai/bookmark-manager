@@ -924,9 +924,14 @@ class BookmarkManager {
    */
   toggleFolder(folderId) {
     if (this.expandedFolders.has(folderId)) {
+      // 收起文件夹
       this.expandedFolders.delete(folderId);
+      // 同时收起所有子文件夹
+      this.collapseChildFolders(folderId);
     } else {
-      this.expandedFolders.add(folderId);
+      // 展开文件夹，同时收起所有子文件夹以确保只展开一级
+      this.collapseChildFolders(folderId); // 先收起子文件夹
+      this.expandedFolders.add(folderId);   // 再展开当前文件夹
     }
   }
 
@@ -935,6 +940,82 @@ class BookmarkManager {
    */
   isFolderExpanded(folderId) {
     return this.expandedFolders.has(folderId);
+  }
+
+  /**
+   * 收起指定文件夹的所有子文件夹（递归）
+   */
+  collapseChildFolders(parentId) {
+    // 获取直接子文件夹
+    const childFolders = this.folders.filter(f => f.parentId === parentId);
+
+    // 收起每个子文件夹
+    childFolders.forEach(child => {
+      // 从展开状态中移除
+      this.expandedFolders.delete(child.id);
+
+      // 递归收起子文件夹的子文件夹
+      this.collapseChildFolders(child.id);
+    });
+  }
+
+  /**
+   * 折叠所有已展开的文件夹
+   */
+  collapseAllFolders() {
+    // 清空所有展开状态
+    this.expandedFolders.clear();
+  }
+
+  /**
+   * 判断文件夹是否为二级分类（父类是0、1、2的顶级文件夹）
+   */
+  isSecondLevelFolder(folderId) {
+    const folder = this.folders.find(f => f.id === folderId);
+    if (!folder) return false;
+
+    // 检查父文件夹是否是顶级文件夹（0、1、2）
+    return folder.parentId === '0' || folder.parentId === '1' || folder.parentId === '2';
+  }
+
+  /**
+   * 判断两个文件夹是否属于同一个二级分类
+   */
+  isInSameSecondLevel(folderId1, folderId2) {
+    // 获取两个文件夹的顶级父文件夹
+    const topLevel1 = this.getTopLevelParent(folderId1);
+    const topLevel2 = this.getTopLevelParent(folderId2);
+
+    // 如果顶级父文件夹相同，则属于同一个二级分类
+    return topLevel1 === topLevel2;
+  }
+
+  /**
+   * 获取文件夹的顶级父文件夹（二级分类）
+   */
+  getTopLevelParent(folderId) {
+    // 如果文件夹本身就是二级分类，返回自己
+    if (this.isSecondLevelFolder(folderId)) {
+      return folderId;
+    }
+
+    // 否则向上查找，直到找到二级分类
+    const folder = this.folders.find(f => f.id === folderId);
+    if (!folder) return null;
+
+    let currentId = folder.parentId;
+    while (currentId) {
+      if (this.isSecondLevelFolder(currentId)) {
+        return currentId;
+      }
+
+      const parentFolder = this.folders.find(f => f.id === currentId);
+      if (!parentFolder) break;
+
+      currentId = parentFolder.parentId;
+    }
+
+    return null;
   }
 
   renderFolderTree() {
@@ -1005,7 +1086,7 @@ class BookmarkManager {
   }
 
   /**
-   * 递归添加子文件夹（只添加已展开的）
+   * 添加子文件夹（递归添加已展开的子文件夹）
    */
   addChildFolders(parentId, container, parentLevel) {
     // 获取当前文件夹的子文件夹
@@ -1032,6 +1113,7 @@ class BookmarkManager {
       childrenContainer.appendChild(childElement);
 
       // 如果子文件夹也展开了，递归添加它的子文件夹
+      // 这样用户可以逐级点击展开深层文件夹
       if (this.isFolderExpanded(childFolder.id)) {
         this.addChildFolders(childFolder.id, childrenContainer, parentLevel + 1);
       }
@@ -1051,6 +1133,17 @@ class BookmarkManager {
     // 计算并设置层级
     const level = this.calculateFolderLevel(folder.id);
     folderElement.dataset.level = level;
+
+    // 根据层级添加对应的CSS类，用于不同层级的选中颜色
+    if (level === 0) {
+      folderElement.classList.add('folder-level-0'); // 二级分类（第一级显示）
+    } else if (level === 1) {
+      folderElement.classList.add('folder-level-1'); // 三级分类
+    } else if (level === 2) {
+      folderElement.classList.add('folder-level-2'); // 四级分类
+    } else if (level >= 3) {
+      folderElement.classList.add('folder-level-3-plus'); // 五级及更深层级
+    }
 
     // 展开指示器（只有有子文件夹时才显示）
     const expandIcon = document.createElement('span');
@@ -1185,25 +1278,35 @@ class BookmarkManager {
     if (this.searchTerm) {
       this.exitSearchState();
     }
-    
+
     // 如果当前在检测模式，先退出检测模式
     if (this.isCheckMode) {
       this.exitCheckMode();
     }
-    
+
+    // 只有切换到不同的二级分类时才折叠所有展开的文件夹
+    if (this.currentFolder !== folderId &&
+        this.isSecondLevelFolder(folderId) &&
+        (!this.currentFolder || !this.isInSameSecondLevel(this.currentFolder, folderId))) {
+      this.collapseAllFolders();
+    }
+
     // 更新当前文件夹
     this.currentFolder = folderId;
-    
+
     // 更新侧边栏状态
     document.querySelectorAll('.folder-item').forEach(item => {
       item.classList.remove('active');
     });
-    
+
     const selectedFolder = document.querySelector(`[data-folder-id="${folderId}"]`);
     if (selectedFolder) {
       selectedFolder.classList.add('active');
     }
-    
+
+    // 重新渲染文件夹树以应用折叠状态
+    this.renderFolderTree();
+
     // 渲染书签
     this.renderBookmarks();
   }

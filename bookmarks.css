@@ -562,8 +562,28 @@ body.dark-mode .folder-item:hover {
 }
 
 .folder-item.active {
-  background: #667eea;
   color: white;
+}
+
+/* 不同层级的选中颜色 - 增强对比度 */
+.folder-item.folder-level-0.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 二级分类 - 蓝紫渐变 */
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.folder-item.folder-level-1.active {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%); /* 三级分类 - 略深的蓝紫渐变 */
+  box-shadow: 0 2px 8px rgba(90, 111, 216, 0.3);
+}
+
+.folder-item.folder-level-2.active {
+  background: linear-gradient(135deg, #4e63c6 0%, #5e3a7e 100%); /* 四级分类 - 更深的蓝紫渐变 */
+  box-shadow: 0 2px 8px rgba(78, 99, 198, 0.3);
+}
+
+.folder-item.folder-level-3-plus.active {
+  background: linear-gradient(135deg, #4257b4 0%, #52336c 100%); /* 五级及更深 - 最深的蓝紫渐变 */
+  box-shadow: 0 2px 8px rgba(66, 87, 180, 0.3);
 }
 
 .folder-item .folder-icon {
@@ -596,8 +616,28 @@ body.dark-mode .folder-item .folder-count {
 }
 
 .folder-item.active .folder-count {
-  background: rgba(100, 100, 120, 0.3);
   color: white;
+}
+
+/* 不同层级选中状态下的文件夹计数背景色 - 增强可见性 */
+.folder-item.folder-level-0.active .folder-count {
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.folder-item.folder-level-1.active .folder-count {
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.folder-item.folder-level-2.active .folder-count {
+  background: rgba(255, 255, 255, 0.19);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.folder-item.folder-level-3-plus.active .folder-count {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
 /* 展开指示器样式 */
