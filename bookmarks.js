@@ -1095,21 +1095,33 @@ class BookmarkManager {
     // 按标题排序子文件夹
     childFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
 
+    // 只有当有子文件夹时才创建容器
+    if (childFolders.length === 0) return;
+
     // 创建子文件夹容器
     const childrenContainer = document.createElement('div');
     childrenContainer.className = 'folder-children';
     childrenContainer.dataset.parentId = parentId;
 
     // 设置展开状态
-    if (this.isFolderExpanded(parentId)) {
+    const isExpanded = this.isFolderExpanded(parentId);
+    if (isExpanded) {
       childrenContainer.classList.add('expanded');
+      // 为展开状态的容器设置实际高度，避免固定高度导致的跳跃感
+      setTimeout(() => {
+        this.setContainerHeight(childrenContainer);
+      }, 0);
     }
 
-    // 渲染子文件夹
+    // 渲染子文件夹，使用更自然的延迟时间
     childFolders.forEach((childFolder, index) => {
       const childElement = this.createFolderElement(childFolder);
       childElement.classList.add('folder-child');
-      childElement.style.animationDelay = `${index * 0.05}s`; // 渐进动画延迟
+
+      // 优化的渐进动画延迟 - 更短的时间间隔，更流畅的展开效果
+      const delay = Math.min(index * 0.035, 0.2); // 最大延迟0.2秒
+      childElement.style.transitionDelay = `${delay}s`;
+
       childrenContainer.appendChild(childElement);
 
       // 如果子文件夹也展开了，递归添加它的子文件夹
@@ -1119,10 +1131,84 @@ class BookmarkManager {
       }
     });
 
-    // 只有当有子文件夹时才添加容器
-    if (childFolders.length > 0) {
-      container.appendChild(childrenContainer);
+    container.appendChild(childrenContainer);
+  }
+
+  /**
+   * 动态设置容器高度，实现精确的高度动画
+   */
+  setContainerHeight(container) {
+    if (!container || !container.classList.contains('expanded')) return;
+
+    // 临时移除高度限制以计算实际高度
+    const originalMaxHeight = container.style.maxHeight;
+    container.style.maxHeight = 'none';
+
+    // 计算实际高度
+    const actualHeight = container.scrollHeight;
+
+    // 恢复并设置动画高度
+    container.style.maxHeight = originalMaxHeight;
+
+    // 使用requestAnimationFrame确保DOM更新后再设置高度
+    requestAnimationFrame(() => {
+      container.style.maxHeight = `${actualHeight}px`;
+    });
+  }
+
+  /**
+   * 优化的文件夹展开/收起动画
+   */
+  toggleFolderAnimation(folderId) {
+    const folderElement = document.querySelector(`[data-folder-id="${folderId}"]`);
+    if (!folderElement) return;
+
+    const childrenContainer = folderElement.nextElementSibling;
+    if (!childrenContainer || !childrenContainer.classList.contains('folder-children')) return;
+
+    const expandIcon = folderElement.querySelector('.expand-icon');
+    const isExpanding = !childrenContainer.classList.contains('expanded');
+
+    if (isExpanding) {
+      // 展开动画
+      childrenContainer.classList.add('expanded');
+      expandIcon?.classList.add('expanded');
+
+      // 设置精确高度
+      requestAnimationFrame(() => {
+        this.setContainerHeight(childrenContainer);
+      });
+    } else {
+      // 收起动画
+      childrenContainer.classList.remove('expanded');
+      expandIcon?.classList.remove('expanded');
     }
+  }
+
+  /**
+   * 优化的文件夹树重新渲染 - 保持动画流畅
+   */
+  animateFolderTreeUpdate() {
+    // 保存当前展开的文件夹列表
+    const expandedFolders = [...this.expandedFolders];
+
+    // 重新渲染文件夹树
+    setTimeout(() => {
+      this.renderFolderTree();
+
+      // 为所有已展开的子容器设置正确的高度
+      expandedFolders.forEach(folderId => {
+        const folderElement = document.querySelector(`[data-folder-id="${folderId}"]`);
+        if (folderElement) {
+          const childrenContainer = folderElement.nextElementSibling;
+          if (childrenContainer && childrenContainer.classList.contains('folder-children')) {
+            setTimeout(() => {
+              this.setContainerHeight(childrenContainer);
+            }, 50); // 稍微延迟确保DOM完全更新
+          }
+        }
+      });
+    }, 10);
   }
 
   createFolderElement(folder) {
@@ -1188,7 +1274,7 @@ class BookmarkManager {
   }
 
   /**
-   * 处理文件夹点击事件 - 支持展开/收起
+   * 处理文件夹点击事件 - 支持丝滑展开/收起动画
    */
   handleFolderClick(folderElement, folderId, folderTitle) {
     const hasChildren = this.hasChildFolders(folderId);
@@ -1196,24 +1282,24 @@ class BookmarkManager {
 
     // 如果有子文件夹，切换展开/收起状态
     if (hasChildren) {
+      // 先更新状态
       this.toggleFolder(folderId);
 
-      // 更新展开指示器 - 使用切换后的状态
+      // 使用优化的动画方式处理展开/收起
+      this.toggleFolderAnimation(folderId);
+
+      // 更新展开指示器图标
       const expandIcon = folderElement.querySelector('.expand-icon');
       if (expandIcon) {
-        if (!isExpanded) {
-          // 原来是收起的，现在展开
-          expandIcon.textContent = '▼';
+        const newExpandedState = this.isFolderExpanded(folderId);
+        expandIcon.textContent = newExpandedState ? '▼' : '▶';
+
+        if (newExpandedState) {
           expandIcon.classList.add('expanded');
         } else {
-          // 原来是展开的，现在收起
-          expandIcon.textContent = '▶';
           expandIcon.classList.remove('expanded');
         }
       }
-
-      // 使用动画方式重新渲染文件夹树
-      this.animateFolderTreeUpdate();
     }
 
     // 选择文件夹并显示书签

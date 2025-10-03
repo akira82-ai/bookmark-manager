@@ -640,81 +640,103 @@ body.dark-mode .folder-item .folder-count {
   border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
-/* 展开指示器样式 */
+/* 展开指示器样式 - 丝滑旋转动画 */
 .expand-icon {
   font-size: 0.8rem;
   margin-right: 0.5rem;
-  transition: color 0.3s ease, transform 0.3s ease;
+  transition: color 0.3s ease, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   cursor: pointer;
   flex-shrink: 0;
   width: 1rem;
   text-align: center;
+  display: inline-block;
+  will-change: transform, color;
 }
 
-/* 展开指示器hover效果 */
+/* 展开指示器hover效果 - 更优雅的缩放 */
 .folder-item:hover .expand-icon {
   color: #667eea;
-  transform: scale(1.1);
+  transform: scale(1.05) rotate(0deg);
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* 子文件夹容器样式 - 手风琴式展开动画 */
+/* 展开状态的指示器旋转动画 */
+.expand-icon.expanded {
+  transform: rotate(90deg);
+  color: #667eea;
+}
+
+/* 展开指示器点击时的微弹跳效果 */
+.expand-icon:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+/* 子文件夹容器样式 - 丝滑向下展开动画 */
 .folder-children {
   max-height: 0;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
-  transform: scaleY(0);
   transform-origin: top center;
+  /* 使用更自然的贝塞尔曲线 */
+  transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: max-height, opacity;
 }
 
 .folder-children.expanded {
-  max-height: 2000px; /* 足够大的值 */
+  max-height: 100vh; /* 使用视窗高度，动态计算 */
   opacity: 1;
-  transform: scaleY(1);
 }
 
-/* 优化过渡效果 */
-.folder-children {
-  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.3s ease-in-out,
-              transform 0.3s ease-in-out;
-}
-
-/* 子文件夹动画进入效果 */
+/* 子文件夹动画进入效果 - 丝滑向下展开 */
 .folder-child {
   opacity: 0;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
+  transform: translateY(-8px) scale(0.98);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: opacity, transform;
 }
 
 .folder-children.expanded .folder-child {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-/* 渐进式动画延迟 */
+/* 优化的渐进式动画延迟 - 更自然的展开节奏 */
 .folder-children.expanded .folder-child:nth-child(1) {
-  transition-delay: 0.05s;
+  transition-delay: 0.03s;
 }
 
 .folder-children.expanded .folder-child:nth-child(2) {
-  transition-delay: 0.1s;
+  transition-delay: 0.06s;
 }
 
 .folder-children.expanded .folder-child:nth-child(3) {
-  transition-delay: 0.15s;
+  transition-delay: 0.09s;
 }
 
 .folder-children.expanded .folder-child:nth-child(4) {
-  transition-delay: 0.2s;
+  transition-delay: 0.12s;
 }
 
 .folder-children.expanded .folder-child:nth-child(5) {
-  transition-delay: 0.25s;
+  transition-delay: 0.15s;
 }
 
-.folder-children.expanded .folder-child:nth-child(n+6) {
-  transition-delay: 0.3s;
+.folder-children.expanded .folder-child:nth-child(6) {
+  transition-delay: 0.18s;
+}
+
+.folder-children.expanded .folder-child:nth-child(7) {
+  transition-delay: 0.21s;
+}
+
+.folder-children.expanded .folder-child:nth-child(8) {
+  transition-delay: 0.24s;
+}
+
+.folder-children.expanded .folder-child:nth-child(n+9) {
+  transition-delay: 0.27s;
 }
 
 /* 层级缩进样式 - 方案一：缩进式层级显示 */
