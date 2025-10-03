@@ -542,53 +542,80 @@ body.dark-mode .folder-tree::-webkit-scrollbar-thumb:hover {
   border-color: #f8f9fa;
 }
 
+
 .folder-item {
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
   margin-bottom: 0.25rem;
   gap: 0.75rem;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .folder-item:hover {
-  background: #f8f9fa;
+  background-color: #f8f9fa;
 }
 
 body.dark-mode .folder-item:hover {
-  background: var(--hover-bg);
+  background-color: var(--hover-bg);
 }
 
 .folder-item.active {
   color: white;
 }
 
-/* 不同层级的选中颜色 - 增强对比度 */
+/* 不同层级的选中颜色 - 增强对比度，避免字体权重变化 */
 .folder-item.folder-level-0.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 二级分类 - 蓝紫渐变 */
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  border: 1px solid rgba(102, 126, 234, 0.3);
 }
 
 .folder-item.folder-level-1.active {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%); /* 三级分类 - 略深的蓝紫渐变 */
-  box-shadow: 0 2px 8px rgba(90, 111, 216, 0.3);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); /* 三级分类 - 紫蓝渐变 */
+  box-shadow: 0 3px 14px rgba(79, 70, 229, 0.35);
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
 .folder-item.folder-level-2.active {
-  background: linear-gradient(135deg, #4e63c6 0%, #5e3a7e 100%); /* 四级分类 - 更深的蓝紫渐变 */
-  box-shadow: 0 2px 8px rgba(78, 99, 198, 0.3);
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); /* 四级分类 - 深紫蓝渐变 */
+  box-shadow: 0 2px 12px rgba(67, 56, 202, 0.3);
+  border: 1px solid rgba(67, 56, 202, 0.2);
 }
 
 .folder-item.folder-level-3-plus.active {
-  background: linear-gradient(135deg, #4257b4 0%, #52336c 100%); /* 五级及更深 - 最深的蓝紫渐变 */
-  box-shadow: 0 2px 8px rgba(66, 87, 180, 0.3);
+  background: linear-gradient(135deg, #3730a3 0%, #5b21b6 100%); /* 五级及更深 - 深紫渐变 */
+  box-shadow: 0 2px 10px rgba(55, 48, 163, 0.25);
+  border: 1px solid rgba(55, 48, 163, 0.15);
+}
+
+/* 不同层级的hover状态 - 增强视觉反馈 */
+.folder-item.folder-level-0:hover:not(.active) {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.folder-item.folder-level-1:hover:not(.active) {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+  border: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+.folder-item.folder-level-2:hover:not(.active) {
+  background: linear-gradient(135deg, rgba(67, 56, 202, 0.1) 0%, rgba(109, 40, 217, 0.1) 100%);
+  border: 1px solid rgba(67, 56, 202, 0.1);
+}
+
+.folder-item.folder-level-3-plus:hover:not(.active) {
+  background: linear-gradient(135deg, rgba(55, 48, 163, 0.1) 0%, rgba(91, 33, 182, 0.1) 100%);
+  border: 1px solid rgba(55, 48, 163, 0.05);
 }
 
 .folder-item .folder-icon {
   font-size: 1rem;
   flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .folder-item .folder-name {
@@ -598,6 +625,7 @@ body.dark-mode .folder-item:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .folder-item .folder-count {
@@ -608,6 +636,91 @@ body.dark-mode .folder-item:hover {
   padding: 0.2rem 0.5rem;
   border-radius: 12px;
   flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* 层级字体大小调整 - 避免字体权重变化导致的位移 */
+.folder-item.folder-level-0 .folder-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.folder-item.folder-level-1 .folder-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.folder-item.folder-level-2 .folder-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.folder-item.folder-level-3-plus .folder-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* 层级图标大小调整 */
+.folder-item.folder-level-0 .folder-icon {
+  font-size: 1.1rem;
+}
+
+.folder-item.folder-level-1 .folder-icon {
+  font-size: 1rem;
+}
+
+.folder-item.folder-level-2 .folder-icon {
+  font-size: 0.9rem;
+}
+
+.folder-item.folder-level-3-plus .folder-icon {
+  font-size: 0.85rem;
+}
+
+/* 层级缩进和间距 */
+.folder-item.folder-level-0 {
+  padding-left: 0.5rem;
+}
+
+.folder-item.folder-level-1 {
+  padding-left: 1.5rem;
+}
+
+.folder-item.folder-level-2 {
+  padding-left: 2.5rem;
+}
+
+.folder-item.folder-level-3-plus {
+  padding-left: 3.5rem;
+}
+
+/* 不同层级的计数标签样式 */
+.folder-item.folder-level-0 .folder-count {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 1px solid #dee2e6;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.folder-item.folder-level-1 .folder-count {
+  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+  border: 1px solid #ced4da;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.folder-item.folder-level-2 .folder-count {
+  background: linear-gradient(135deg, #dee2e6, #ced4da);
+  border: 1px solid #adb5bd;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+}
+
+.folder-item.folder-level-3-plus .folder-count {
+  background: linear-gradient(135deg, #ced4da, #adb5bd);
+  border: 1px solid #868e96;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
 }
 
 body.dark-mode .folder-item .folder-count {
@@ -644,32 +757,30 @@ body.dark-mode .folder-item .folder-count {
 .expand-icon {
   font-size: 0.8rem;
   margin-right: 0.5rem;
-  transition: color 0.3s ease, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: color 0.3s ease,
+              transform 0.3s ease;
   cursor: pointer;
   flex-shrink: 0;
   width: 1rem;
   text-align: center;
   display: inline-block;
-  will-change: transform, color;
+  position: relative;
 }
 
-/* 展开指示器hover效果 - 更优雅的缩放 */
+/* 展开指示器hover效果 - 简洁的颜色变化 */
 .folder-item:hover .expand-icon {
   color: #667eea;
-  transform: scale(1.05) rotate(0deg);
-  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* 展开状态的指示器旋转动画 */
+/* 展开状态的指示器旋转动画 - 简洁 */
 .expand-icon.expanded {
   transform: rotate(90deg);
   color: #667eea;
 }
 
-/* 展开指示器点击时的微弹跳效果 */
+/* 展开指示器点击时的反馈 - 颜色变化 */
 .expand-icon:active {
-  transform: scale(0.95);
-  transition: transform 0.1s ease;
+  color: #5a67d8;
 }
 
 /* 子文件夹容器样式 - 丝滑向下展开动画 */
@@ -678,41 +789,46 @@ body.dark-mode .folder-item .folder-count {
   overflow: hidden;
   opacity: 0;
   transform-origin: top center;
-  /* 使用更自然的贝塞尔曲线 */
-  transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: max-height, opacity;
+  /* 分层动画：高度、透明度、轻微缩放 */
+  transition: max-height 0.6s cubic-bezier(0.25, 0.1, 0.25, 1),
+              opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0.1s,
+              transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transform: scaleY(0);
+  will-change: max-height, opacity, transform;
 }
 
 .folder-children.expanded {
   max-height: 100vh; /* 使用视窗高度，动态计算 */
   opacity: 1;
+  transform: scaleY(1);
 }
 
-/* 子文件夹动画进入效果 - 丝滑向下展开 */
+/* 子文件夹动画进入效果 - 流体式渐进展开 */
 .folder-child {
   opacity: 0;
-  transform: translateY(-8px) scale(0.98);
-  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translateY(-12px) scale(0.96) translateZ(0);
+  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
   will-change: opacity, transform;
+  filter: blur(1px);
 }
 
 .folder-children.expanded .folder-child {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0) scale(1) translateZ(0);
+  filter: blur(0);
 }
 
-/* 优化的渐进式动画延迟 - 更自然的展开节奏 */
+/* 优化的渐进式动画延迟 - 波浪式展开效果 */
 .folder-children.expanded .folder-child:nth-child(1) {
-  transition-delay: 0.03s;
+  transition-delay: 0s;
 }
 
 .folder-children.expanded .folder-child:nth-child(2) {
-  transition-delay: 0.06s;
+  transition-delay: 0.04s;
 }
 
 .folder-children.expanded .folder-child:nth-child(3) {
-  transition-delay: 0.09s;
+  transition-delay: 0.08s;
 }
 
 .folder-children.expanded .folder-child:nth-child(4) {
@@ -720,23 +836,28 @@ body.dark-mode .folder-item .folder-count {
 }
 
 .folder-children.expanded .folder-child:nth-child(5) {
-  transition-delay: 0.15s;
+  transition-delay: 0.16s;
 }
 
 .folder-children.expanded .folder-child:nth-child(6) {
-  transition-delay: 0.18s;
+  transition-delay: 0.20s;
 }
 
 .folder-children.expanded .folder-child:nth-child(7) {
-  transition-delay: 0.21s;
-}
-
-.folder-children.expanded .folder-child:nth-child(8) {
   transition-delay: 0.24s;
 }
 
+.folder-children.expanded .folder-child:nth-child(8) {
+  transition-delay: 0.28s;
+}
+
 .folder-children.expanded .folder-child:nth-child(n+9) {
-  transition-delay: 0.27s;
+  transition-delay: 0.32s;
+}
+
+/* 按下时的反馈效果 - 简化 */
+.folder-item:active {
+  background-color: #e9ecef;
 }
 
 /* 层级缩进样式 - 方案一：缩进式层级显示 */
@@ -3607,6 +3728,4 @@ body.dark-mode .mode-text strong {
   .create-folder-btn {
     width: 100%;
   }
-}
-
 }
