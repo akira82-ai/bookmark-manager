@@ -563,32 +563,35 @@ body.dark-mode .folder-item:hover {
 }
 
 .folder-item.active {
-  color: white;
+  color: white !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4) !important;
+  border: 1px solid rgba(102, 126, 234, 0.3) !important;
 }
 
-/* 不同层级的选中颜色 - 增强对比度，避免字体权重变化 */
+/* 不同层级的选中颜色 - 更深但美观的渐变 */
 .folder-item.folder-level-0.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 二级分类 - 蓝紫渐变 */
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
-  border: 1px solid rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, #5a67d8 0%, #667eea 50%, #764ba2 100%) !important; /* 二级分类 - 深蓝紫渐变 */
+  box-shadow: 0 4px 20px rgba(90, 103, 216, 0.5) !important;
+  border: 1px solid rgba(90, 103, 216, 0.4) !important;
 }
 
 .folder-item.folder-level-1.active {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); /* 三级分类 - 紫蓝渐变 */
-  box-shadow: 0 3px 14px rgba(79, 70, 229, 0.35);
-  border: 1px solid rgba(79, 70, 229, 0.25);
+  background: linear-gradient(135deg, #4338ca 0%, #5b21b6 50%, #6d28d9 100%) !important; /* 三级分类 - 深靛蓝渐变 */
+  box-shadow: 0 4px 18px rgba(67, 56, 202, 0.45) !important;
+  border: 1px solid rgba(67, 56, 202, 0.35) !important;
 }
 
 .folder-item.folder-level-2.active {
-  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); /* 四级分类 - 深紫蓝渐变 */
-  box-shadow: 0 2px 12px rgba(67, 56, 202, 0.3);
-  border: 1px solid rgba(67, 56, 202, 0.2);
+  background: linear-gradient(135deg, #3730a3 0%, #4c1d95 50%, #5b21b6 100%) !important; /* 四级分类 - 深紫渐变 */
+  box-shadow: 0 3px 16px rgba(55, 48, 163, 0.4) !important;
+  border: 1px solid rgba(55, 48, 163, 0.3) !important;
 }
 
 .folder-item.folder-level-3-plus.active {
-  background: linear-gradient(135deg, #3730a3 0%, #5b21b6 100%); /* 五级及更深 - 深紫渐变 */
-  box-shadow: 0 2px 10px rgba(55, 48, 163, 0.25);
-  border: 1px solid rgba(55, 48, 163, 0.15);
+  background: linear-gradient(135deg, #2d1b69 0%, #3730a3 50%, #4c1d95 100%) !important; /* 五级及更深 - 极深紫渐变 */
+  box-shadow: 0 3px 14px rgba(45, 27, 105, 0.35) !important;
+  border: 1px solid rgba(45, 27, 105, 0.25) !important;
 }
 
 
@@ -682,8 +685,9 @@ body.dark-mode .folder-item .folder-count {
 
 .folder-item.active .folder-count {
   color: white;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 
@@ -717,76 +721,58 @@ body.dark-mode .folder-item .folder-count {
   color: #5a67d8;
 }
 
-/* 子文件夹容器样式 - 丝滑向下展开动画 */
+/* 子文件夹容器样式 - 真正的滑动下拉效果 */
 .folder-children {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
+  transform: translateY(-20px);
   transform-origin: top center;
-  /* 分层动画：高度、透明度、轻微缩放 */
-  transition: max-height 0.6s cubic-bezier(0.25, 0.1, 0.25, 1),
-              opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0.1s,
-              transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
-  transform: scaleY(0);
-  will-change: max-height, opacity, transform;
+  /* 滑动动画：高度变化 + 垂直位移 + 透明度变化 */
+  transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.3s ease-in-out 0.1s;
+  will-change: max-height, transform, opacity;
 }
 
 .folder-children.expanded {
-  max-height: 100vh; /* 使用视窗高度，动态计算 */
+  max-height: 1000px; /* 足够大的固定值 */
   opacity: 1;
-  transform: scaleY(1);
+  transform: translateY(0);
 }
 
-/* 子文件夹动画进入效果 - 流体式渐进展开 */
+/* 子文件夹动画进入效果 - 配合滑动效果 */
 .folder-child {
   opacity: 0;
-  transform: translateY(-12px) scale(0.96) translateZ(0);
-  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
-  will-change: opacity, transform;
-  filter: blur(1px);
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease-in-out,
+              transform 0.3s ease-in-out;
 }
 
 .folder-children.expanded .folder-child {
   opacity: 1;
-  transform: translateY(0) scale(1) translateZ(0);
-  filter: blur(0);
+  transform: translateY(0);
 }
 
-/* 优化的渐进式动画延迟 - 波浪式展开效果 */
+/* 简化的渐进式动画延迟 - 配合滑动效果 */
 .folder-children.expanded .folder-child:nth-child(1) {
-  transition-delay: 0s;
+  transition-delay: 0.2s;
 }
 
 .folder-children.expanded .folder-child:nth-child(2) {
-  transition-delay: 0.04s;
+  transition-delay: 0.25s;
 }
 
 .folder-children.expanded .folder-child:nth-child(3) {
-  transition-delay: 0.08s;
+  transition-delay: 0.3s;
 }
 
 .folder-children.expanded .folder-child:nth-child(4) {
-  transition-delay: 0.12s;
+  transition-delay: 0.35s;
 }
 
-.folder-children.expanded .folder-child:nth-child(5) {
-  transition-delay: 0.16s;
-}
-
-.folder-children.expanded .folder-child:nth-child(6) {
-  transition-delay: 0.20s;
-}
-
-.folder-children.expanded .folder-child:nth-child(7) {
-  transition-delay: 0.24s;
-}
-
-.folder-children.expanded .folder-child:nth-child(8) {
-  transition-delay: 0.28s;
-}
-
-.folder-children.expanded .folder-child:nth-child(n+9) {
-  transition-delay: 0.32s;
+.folder-children.expanded .folder-child:nth-child(n+5) {
+  transition-delay: 0.4s;
 }
 
 /* 按下时的反馈效果 - 简化 */

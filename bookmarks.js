@@ -1135,23 +1135,17 @@ class BookmarkManager {
   }
 
   /**
-   * 动态设置容器高度，实现精确的高度动画
+   * 动态设置容器高度，实现真正的滑动下拉效果
    */
   setContainerHeight(container) {
     if (!container || !container.classList.contains('expanded')) return;
 
-    // 临时移除高度限制以计算实际高度
-    const originalMaxHeight = container.style.maxHeight;
-    container.style.maxHeight = 'none';
+    // 先设置一个足够大的高度，让滑动动画开始
+    container.style.maxHeight = '1000px';
 
-    // 计算实际高度
-    const actualHeight = container.scrollHeight;
-
-    // 恢复并设置动画高度
-    container.style.maxHeight = originalMaxHeight;
-
-    // 使用requestAnimationFrame确保DOM更新后再设置高度
+    // 在动画进行中计算并设置精确高度，确保滑动效果流畅
     requestAnimationFrame(() => {
+      const actualHeight = container.scrollHeight;
       container.style.maxHeight = `${actualHeight}px`;
     });
   }
