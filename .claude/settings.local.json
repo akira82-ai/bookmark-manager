@@ -13,7 +13,16 @@
       "Bash(git log:*)",
       "Bash(git commit:*)",
       "Bash(start:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "WebSearch",
+      "mcp__fetch__fetch",
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(./download-libs.sh:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "Bash(xargs:*)",
+      "WebFetch(domain:reactjs.org)"
     ],
     "deny": [],
     "ask": []
