@@ -203,7 +203,7 @@ class BookmarkManager {
     // 确保初始状态下隐藏检测结果分组UI
     this.ensureCheckResultsHidden();
     this.loadBookmarks();
-    
+
     // 预初始化域名索引（异步进行，不阻塞UI）
     if (this.useDomainStats) {
       this.initializeDomainIndex().catch(error => {
@@ -211,7 +211,7 @@ class BookmarkManager {
         this.useDomainStats = false;
       });
     }
-    
+
   }
 
   bindEvents() {
@@ -920,7 +920,7 @@ class BookmarkManager {
   }
 
   /**
-   * 展开/收起文件夹
+   * 展开/收起文件夹 - 纵向展开，每次仅展开一级
    */
   toggleFolder(folderId) {
     if (this.expandedFolders.has(folderId)) {
@@ -929,9 +929,10 @@ class BookmarkManager {
       // 同时收起所有子文件夹
       this.collapseChildFolders(folderId);
     } else {
-      // 展开文件夹，同时收起所有子文件夹以确保只展开一级
-      this.collapseChildFolders(folderId); // 先收起子文件夹
-      this.expandedFolders.add(folderId);   // 再展开当前文件夹
+      // 智能手风琴：只收起不同分支的文件夹，保持当前分支的展开状态
+      this.collapseOtherBranches(folderId);
+      // 展开当前文件夹
+      this.expandedFolders.add(folderId);
     }
   }
 
@@ -965,6 +966,45 @@ class BookmarkManager {
   collapseAllFolders() {
     // 清空所有展开状态
     this.expandedFolders.clear();
+  }
+
+  /**
+   * 只收起不同分支的文件夹，保持当前分支的展开状态
+   */
+  collapseOtherBranches(currentFolderId) {
+    // 获取当前文件夹的所有祖先文件夹ID
+    const currentBranch = this.getFolderBranch(currentFolderId);
+
+    // 找到所有不在当前分支的已展开文件夹
+    const otherBranchFolders = [...this.expandedFolders].filter(folderId => {
+      return !currentBranch.includes(folderId);
+    });
+
+    // 收起其他分支的文件夹
+    otherBranchFolders.forEach(folderId => {
+      this.expandedFolders.delete(folderId);
+    });
+  }
+
+  /**
+   * 获取文件夹的完整分支路径（包括所有祖先）
+   */
+  getFolderBranch(folderId) {
+    const branch = [folderId];
+    let currentId = folderId;
+
+    // 向上查找所有祖先文件夹
+    while (currentId && currentId !== '0' && currentId !== '1' && currentId !== '2') {
+      const parent = this.folders.find(f => f.id === currentId);
+      if (!parent) break;
+
+      currentId = parent.parentId;
+      if (currentId && currentId !== '0' && currentId !== '1' && currentId !== '2') {
+        branch.push(currentId);
+      }
+    }
+
+    return branch;
   }
 
   /**
@@ -1019,15 +1059,68 @@ class BookmarkManager {
   }
 
   renderFolderTree() {
-    // 使用 Semi Design Collapse 组件渲染文件夹树（支持多级手风琴）
-    this.renderFolderTreeWithCollapse();
-    
-    // 初始化Semi Design Collapse组件行为
-    setTimeout(() => {
-      this.initSemiDesignCollapse();
-    }, 0);
+    const folderTree = document.getElementById('folder-tree');
+    if (!folderTree) return;
+
+    // 清空容器
+    folderTree.innerHTML = '';
+
+    // 获取根级文件夹
+    const rootFolders = this.getRootFolders();
+
+    // 将「最近收藏」和「黑名单」文件夹固定在前两位
+    const recentFolder = rootFolders.find(f => f.title === '📌 最近收藏');
+    const blacklistFolder = rootFolders.find(f => f.title === '🚫 黑名单');
+    const otherFolders = rootFolders.filter(f =>
+      f.title !== '📌 最近收藏' && f.title !== '🚫 黑名单'
+    );
+
+    // 其他文件夹按标题排序
+    otherFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+
+    // 创建文件夹列表
+    const foldersToRender = [];
+    if (recentFolder) foldersToRender.push(recentFolder);
+    if (blacklistFolder) foldersToRender.push(blacklistFolder);
+    foldersToRender.push(...otherFolders);
+
+    // 渲染每个文件夹
+    foldersToRender.forEach(folder => {
+      const folderElement = this.createFolderElement(folder);
+      folderTree.appendChild(folderElement);
+
+      // 如果文件夹有子文件夹且处于展开状态，动态创建子容器
+      if (this.isFolderExpanded(folder.id) && this.hasChildFolders(folder.id)) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'folder-children';
+        childrenContainer.classList.add('expanded');
+        childrenContainer.dataset.parentId = folder.id;
+        folderTree.appendChild(childrenContainer);
+
+        // 添加子文件夹到容器
+        this.addChildFolders(folder.id, childrenContainer, 0);
+      }
+    });
   }
 
+  /**
+   * 获取根级文件夹
+   */
+  getRootFolders() {
+    // 根据Chrome书签结构，主要的顶级文件夹ID是：
+    // 1: 收藏夹栏, 2: 其他收藏夹
+    const mainTopLevelIds = new Set(['1', '2']);
+    return this.folders.filter(folder => mainTopLevelIds.has(folder.parentId));
+  }
+
+  /**
+   * 获取指定文件夹的子文件夹
+   */
+  getChildFolders(parentId) {
+    return this.folders.filter(folder => folder.parentId === parentId);
+  }
+
+  
   /**
    * 获取二级文件夹（跳过顶级目录，直接显示子文件夹）
    */
@@ -1098,10 +1191,7 @@ class BookmarkManager {
   setContainerHeight(container) {
     if (!container || !container.classList.contains('expanded')) return;
 
-    // 先设置一个足够大的高度，让滑动动画开始
-    container.style.maxHeight = '1000px';
-
-    // 在动画进行中计算并设置精确高度，确保滑动效果流畅
+    // 计算实际高度并设置，确保内容完全显示
     requestAnimationFrame(() => {
       const actualHeight = container.scrollHeight;
       container.style.maxHeight = `${actualHeight}px`;
@@ -1109,31 +1199,66 @@ class BookmarkManager {
   }
 
   /**
-   * 优化的文件夹展开/收起动画
+   * 纵向文件夹展开/收起动画 - 每次仅展开一级，手风琴效果
    */
   toggleFolderAnimation(folderId) {
     const folderElement = document.querySelector(`[data-folder-id="${folderId}"]`);
     if (!folderElement) return;
 
-    const childrenContainer = folderElement.nextElementSibling;
-    if (!childrenContainer || !childrenContainer.classList.contains('folder-children')) return;
+    // 查找或创建子容器
+    let childrenContainer = folderElement.nextElementSibling;
+    if (!childrenContainer || !childrenContainer.classList.contains('folder-children')) {
+      // 如果子容器不存在，创建它
+      childrenContainer = document.createElement('div');
+      childrenContainer.className = 'folder-children';
+      childrenContainer.dataset.parentId = folderId;
+      folderElement.parentNode.insertBefore(childrenContainer, folderElement.nextSibling);
+
+      // 添加子文件夹到容器
+      this.addChildFolders(folderId, childrenContainer, 0);
+    }
 
     const expandIcon = folderElement.querySelector('.expand-icon');
     const isExpanding = !childrenContainer.classList.contains('expanded');
 
     if (isExpanding) {
-      // 展开动画
+      // 展开动画 - 纵向渐进式展开
       childrenContainer.classList.add('expanded');
       expandIcon?.classList.add('expanded');
 
-      // 设置精确高度
+      // 初始化所有子元素的动画状态
+      const childElements = childrenContainer.querySelectorAll('.folder-child');
+      childElements.forEach((child, index) => {
+        child.style.opacity = '0';
+        child.style.transform = 'translateY(-15px)';
+        child.style.transition = `opacity 0.3s ease ${index * 0.05}s, transform 0.3s ease ${index * 0.05}s`;
+      });
+
+      // 设置容器高度并开始动画
       requestAnimationFrame(() => {
         this.setContainerHeight(childrenContainer);
+
+        // 触发子元素渐进式进入动画
+        setTimeout(() => {
+          childElements.forEach(child => {
+            child.style.opacity = '1';
+            child.style.transform = 'translateY(0)';
+          });
+        }, 50);
       });
+
     } else {
-      // 收起动画
+      // 收起动画 - 纵向渐进式收起
       childrenContainer.classList.remove('expanded');
       expandIcon?.classList.remove('expanded');
+
+      // 先收起所有子元素
+      const childElements = childrenContainer.querySelectorAll('.folder-child');
+      childElements.forEach((child, index) => {
+        child.style.opacity = '0';
+        child.style.transform = 'translateY(-15px)';
+        child.style.transition = `opacity 0.2s ease ${index * 0.03}s, transform 0.2s ease ${index * 0.03}s`;
+      });
     }
   }
 
@@ -1172,33 +1297,22 @@ class BookmarkManager {
     const level = this.calculateFolderLevel(folder.id);
     folderElement.dataset.level = level;
 
-    // 根据层级添加对应的CSS类，用于不同层级的选中颜色
-    if (level === 0) {
-      folderElement.classList.add('folder-level-0'); // 二级分类（第一级显示）
-    } else if (level === 1) {
-      folderElement.classList.add('folder-level-1'); // 三级分类
-    } else if (level === 2) {
-      folderElement.classList.add('folder-level-2'); // 四级分类
-    } else if (level >= 3) {
-      folderElement.classList.add('folder-level-3-plus'); // 五级及更深层级
-    }
-
-    // 展开指示器（只有有子文件夹时才显示）
+    // 展开/折叠指示器（+/- 号）
     const expandIcon = document.createElement('span');
     expandIcon.className = 'expand-icon';
     const hasChildren = this.hasChildFolders(folder.id);
-    expandIcon.textContent = hasChildren ? '▶' : '';
-    expandIcon.style.visibility = hasChildren ? 'visible' : 'hidden';
 
-    // 设置展开指示器状态
-    if (hasChildren && this.isFolderExpanded(folder.id)) {
-      expandIcon.textContent = '▼';
-      expandIcon.classList.add('expanded');
+    if (hasChildren) {
+      // 有子文件夹显示 - 号（可展开/折叠）
+      expandIcon.textContent = this.isFolderExpanded(folder.id) ? '−' : '+';
+      expandIcon.style.cursor = 'pointer';
+      expandIcon.classList.add('has-children');
+    } else {
+      // 无子文件夹显示圆点（底层目录）
+      expandIcon.textContent = ''; // 清空文本内容，使用CSS伪元素显示圆点
+      expandIcon.style.cursor = 'default';
+      expandIcon.classList.add('no-children');
     }
-
-    const folderIcon = document.createElement('span');
-    folderIcon.className = 'folder-icon';
-    folderIcon.textContent = '📁';
 
     const folderName = document.createElement('span');
     folderName.className = 'folder-name';
@@ -1212,7 +1326,6 @@ class BookmarkManager {
     folderCount.textContent = totalBookmarks;
 
     folderElement.appendChild(expandIcon);
-    folderElement.appendChild(folderIcon);
     folderElement.appendChild(folderName);
     folderElement.appendChild(folderCount);
 
@@ -1225,202 +1338,9 @@ class BookmarkManager {
     return folderElement;
   }
   
-  // 使用 Semi Design Collapse 组件渲染文件夹树（支持多级手风琴）
-  renderFolderTreeWithCollapse() {
-    const folderTree = document.getElementById('folder-tree');
-    if (!folderTree) return;
-
-    // 获取根级文件夹（顶级文件夹的直接子文件夹）
-    const rootFolders = this.getRootLevelFolders();
-
-    // 将「最近收藏」和「黑名单」文件夹固定在前两位
-    const recentFolder = rootFolders.find(f => f.title === '📌 最近收藏');
-    const blacklistFolder = rootFolders.find(f => f.title === '🚫 黑名单');
-    const otherFolders = rootFolders.filter(f =>
-      f.title !== '📌 最近收藏' && f.title !== '🚫 黑名单'
-    );
-
-    // 其他文件夹按标题排序
-    otherFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
-
-    // 清空容器
-    folderTree.innerHTML = '<div id="semi-collapse-wrapper" class="semi-collapse-wrapper" data-accordion="true"></div>';
-    const wrapper = document.getElementById('semi-collapse-wrapper');
-
-    // 创建一个包含所有根级Collapse Panel的数组
-    const rootFoldersToRender = [];
-    if (recentFolder) rootFoldersToRender.push(recentFolder);
-    if (blacklistFolder) rootFoldersToRender.push(blacklistFolder);
-    rootFoldersToRender.push(...otherFolders);
-
-    // 为每个根级文件夹创建Collapse Panel HTML结构
-    const panelsHtml = rootFoldersToRender.map(folder => {
-      return this.createSemiCollapsePanel(folder, 0);
-    }).join('');
-
-    wrapper.innerHTML = panelsHtml;
-
-    // 初始化Semi Design Collapse组件（如果可用）
-    if (typeof window.SemiDesign !== 'undefined' && typeof window.SemiDesign.Collapse !== 'undefined') {
-      // 尝试使用Semi Design的JavaScript API来初始化Collapse组件
-      this.initSemiDesignCollapse();
-    }
-  }
-  
-  // 创建单个Semi Design Collapse Panel
-  createSemiCollapsePanel(folder, level) {
-    const totalBookmarks = this.countTotalBookmarks(folder.id);
-    const hasChildren = this.hasChildFolders(folder.id);
-    const expanded = this.isFolderExpanded(folder.id);
-
-    // 创建子文件夹内容
-    let childContent = '';
-    if (hasChildren) {
-      const childFolders = this.getChildFoldersByParentId(folder.id);
-      childFolders.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
-      
-      const contentDisplayStyle = expanded ? 'block' : 'none';
-      childContent = `<div class="semi-collapse-panel-content" style="display: ${contentDisplayStyle}; padding-left: 20px;">
-        ${childFolders.map(childFolder => {
-          return this.createSemiCollapsePanel(childFolder, level + 1);
-        }).join('')}
-      </div>`;
-    }
-
-    return `
-      <div class="semi-collapse-panel-wrapper" style="margin-left: ${level * 10}px;">
-        <div class="semi-collapse-panel ${hasChildren ? 'semi-collapse-panel-expandable' : ''}" 
-             data-folder-id="${folder.id}" 
-             data-expanded="${expanded}"
-             data-parent-id="${folder.parentId}"
-             data-accordion="true"
-             onclick="bookmarkManager.handleFolderClickSemiAccordion('${folder.id}', '${this.escapeHtml(folder.title)}', ${hasChildren})">
-          <div class="semi-collapse-panel-header">
-            <span class="semi-collapse-arrow">${hasChildren ? (expanded ? '▼' : '▶') : ''}</span>
-            <span class="semi-collapse-title">${this.escapeHtml(folder.title)}</span>
-            <span class="semi-collapse-extra" style="color: #666; font-size: 0.8rem; margin-left: auto;">${totalBookmarks}</span>
-          </div>
-        </div>
-        ${childContent}
-      </div>
-    `;
-  }
-  
-  // 获取根级文件夹（顶级文件夹的直接子文件夹）
-  getRootLevelFolders() {
-    // 根据Chrome书签结构，主要的顶级文件夹ID是：
-    // 1: 收藏夹栏, 2: 其他收藏夹
-    // 我们要直接显示这些文件夹的子文件夹作为根级分类
-    const mainTopLevelIds = new Set(['1', '2']);
-
-    // 返回所有父文件夹是主要顶级文件夹的文件夹
-    return this.folders.filter(folder => {
-      return mainTopLevelIds.has(folder.parentId);
-    });
-  }
-  
-  // 根据父ID获取直接子文件夹
-  getChildFoldersByParentId(parentId) {
-    return this.folders.filter(folder => folder.parentId === parentId);
-  }
-  
-  // Semi Design Collapse 面板点击处理（手风琴效果）
-  handleFolderClickSemiAccordion(folderId, folderTitle, hasChildren) {
-    // 如果有子文件夹，切换展开/收起状态
-    if (hasChildren) {
-      // 获取当前文件夹的父ID
-      const currentFolder = this.folders.find(f => f.id === folderId);
-      if (currentFolder) {
-        // 手风琴效果：在同一父目录级别内，只展开当前文件夹，关闭同级的其他文件夹
-        this.closeSiblingsInSameLevel(folderId, currentFolder.parentId);
-        this.expandFolder(folderId); // 确保当前文件夹被展开
-      }
-    }
-    // 选择文件夹并显示其内容
-    this.selectFolder(folderId, folderTitle);
-  }
   
   /**
-   * 展开指定文件夹
-   */
-  expandFolder(folderId) {
-    if (!this.expandedFolders.has(folderId)) {
-      this.expandedFolders.add(folderId);
-      // 收起当前文件夹的子文件夹
-      this.collapseChildFolders(folderId);
-    }
-  }
-  
-  /**
-   * 关闭同级的其他文件夹（相同父目录下的其他子文件夹）
-   */
-  closeSiblingsInSameLevel(folderId, parentId) {
-    // 获取相同父目录下的所有文件夹
-    const siblingFolders = this.folders.filter(f => f.parentId === parentId && f.id !== folderId);
-    
-    // 关闭当前展开的同级文件夹
-    for (const sibling of siblingFolders) {
-      if (this.expandedFolders.has(sibling.id)) {
-        this.expandedFolders.delete(sibling.id);
-        // 更新UI状态
-        const panel = document.querySelector(`[data-folder-id="${sibling.id}"]`);
-        if (panel) {
-          panel.dataset.expanded = 'false';
-          const arrow = panel.querySelector('.semi-collapse-arrow');
-          if (arrow) {
-            arrow.textContent = '▶';
-          }
-          // 隐藏子内容
-          const content = panel.nextElementSibling;
-          if (content && content.classList.contains('semi-collapse-panel-content')) {
-            content.style.display = 'none';
-          }
-        }
-      }
-    }
-  }
-  
-  // 初始化Semi Design Collapse组件
-  initSemiDesignCollapse() {
-    // 在浏览器扩展环境中，我们使用HTML + CSS + JavaScript来模拟Semi Design的Collapse组件
-    // 因为Semi Design的JS组件可能需要特定的初始化方式
-    const panels = document.querySelectorAll('.semi-collapse-panel-expandable');
-    
-    panels.forEach(panel => {
-      const folderId = panel.dataset.folderId;
-      const content = panel.nextElementSibling;
-      
-      if (content && content.classList.contains('semi-collapse-panel-content')) {
-        // 绑定点击事件以模拟Collapse行为
-        panel.addEventListener('click', (e) => {
-          // 防止事件冒泡到父组件
-          e.stopPropagation();
-          
-          // 切换展开/收起状态
-          const isExpanded = panel.dataset.expanded === 'true';
-          
-          if (isExpanded) {
-            // 收起
-            content.style.display = 'none';
-            panel.dataset.expanded = 'false';
-            // 更新箭头图标
-            const arrow = panel.querySelector('.semi-collapse-arrow');
-            if (arrow) arrow.textContent = '▶';
-          } else {
-            // 展开
-            content.style.display = 'block';
-            panel.dataset.expanded = 'true';
-            // 更新箭头图标
-            const arrow = panel.querySelector('.semi-collapse-arrow');
-            if (arrow) arrow.textContent = '▼';
-          }
-        });
-      }
-    });
-  }
-
-  /**
-   * 处理文件夹点击事件 - 支持丝滑展开/收起动画
+   * 处理文件夹点击事件 - 纵向展开，手风琴效果，每次仅展开一级
    */
   handleFolderClick(folderElement, folderId, folderTitle) {
     const hasChildren = this.hasChildFolders(folderId);
@@ -1428,23 +1348,20 @@ class BookmarkManager {
 
     // 如果有子文件夹，切换展开/收起状态
     if (hasChildren) {
-      // 先更新状态
+      // 切换当前文件夹状态（包含智能手风琴效果）
       this.toggleFolder(folderId);
 
-      // 使用优化的动画方式处理展开/收起
+      // 使用纵向动画方式处理展开/收起
       this.toggleFolderAnimation(folderId);
 
-      // 更新展开指示器图标
-      const expandIcon = folderElement.querySelector('.expand-icon');
-      if (expandIcon) {
-        const newExpandedState = this.isFolderExpanded(folderId);
-        expandIcon.textContent = newExpandedState ? '▼' : '▶';
+      // 重新渲染文件夹树以保持分支展开状态
+      this.animateFolderTreeUpdate();
 
-        if (newExpandedState) {
-          expandIcon.classList.add('expanded');
-        } else {
-          expandIcon.classList.remove('expanded');
-        }
+      // 更新展开/折叠指示器图标
+      const expandIcon = folderElement.querySelector('.expand-icon');
+      if (expandIcon && expandIcon.classList.contains('has-children')) {
+        const newExpandedState = this.isFolderExpanded(folderId);
+        expandIcon.textContent = newExpandedState ? '−' : '+';
       }
     }
 
@@ -1531,13 +1448,14 @@ class BookmarkManager {
       item.classList.remove('active');
     });
 
+    // 重新渲染文件夹树以应用折叠状态
+    this.renderFolderTree();
+
+    // 在重新渲染后应用选中状态
     const selectedFolder = document.querySelector(`[data-folder-id="${folderId}"]`);
     if (selectedFolder) {
       selectedFolder.classList.add('active');
     }
-
-    // 重新渲染文件夹树以应用折叠状态
-    this.renderFolderTree();
 
     // 渲染书签
     this.renderBookmarks();
@@ -2009,10 +1927,13 @@ bindCardEvents(card, bookmark) {
     
     // 如果有当前选中的文件夹，恢复其选中状态
     if (this.currentFolder) {
-      const selectedFolder = document.querySelector(`[data-folder-id="${this.currentFolder}"]`);
-      if (selectedFolder) {
-        selectedFolder.classList.add('active');
-      }
+      // 在重新渲染后应用选中状态
+      setTimeout(() => {
+        const selectedFolder = document.querySelector(`[data-folder-id="${this.currentFolder}"]`);
+        if (selectedFolder) {
+          selectedFolder.classList.add('active');
+        }
+      }, 10); // 小延迟确保DOM更新完成
     }
   }
 
@@ -2524,7 +2445,6 @@ bindCardEvents(card, bookmark) {
     header.className = 'search-group-header';
     header.innerHTML = `
       <div class="folder-info">
-        <span class="folder-icon">📁</span>
         <span class="folder-name">${this.escapeHtml(folderName)}</span>
       </div>
       <div class="result-info">

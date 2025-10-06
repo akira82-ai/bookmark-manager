@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bookmark Manager",
-  "version": "2.10.1",
+  "version": "2.11.2",
   "description": "一个功能完整的书签管理插件",
   "permissions": [
     "storage",
@@ -32,7 +32,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["bookmarks.html", "bookmarks.css", "bookmarks.js", "log.md", "release.md", "metrics-judgment-engine.js", "lib/**/*"],
+      "resources": ["bookmarks.html", "bookmarks.css", "bookmarks.js", "log.md", "release.md", "metrics-judgment-engine.js"],
       "matches": ["<all_urls>"]
     }
   ]
