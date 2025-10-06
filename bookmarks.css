@@ -562,52 +562,50 @@ body.dark-mode .folder-item:hover {
   background-color: rgba(102, 126, 234, 0.12);
 }
 
-/* 新的选中状态设计 - 确保清晰的整行对比色 */
+/* 简洁的直线下划线选中状态设计 */
 .folder-item.active {
-  background: #667eea !important; /* 使用实色背景确保明显对比 */
-  color: white !important;
+  background: transparent !important; /* 移除整行背景 */
+  border-bottom: 1px solid #667eea; /* 简化为单一直线下划线 */
+  color: inherit; /* 保持原有文字颜色 */
   font-weight: 600;
-  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  transition: border-bottom-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: none; /* 移除阴影 */
+  border-radius: 0; /* 确保没有圆角 */
 }
 
 /* 选中状态下的子元素样式 */
 .folder-item.active .folder-name {
-  color: white !important;
+  color: inherit; /* 保持原有文字颜色 */
   font-weight: 600;
 }
 
 .folder-item.active .folder-count {
-  background: white !important;
-  color: #667eea !important;
-  border-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* 保持原有样式，无需修改 */
 }
 
 .folder-item.active .expand-icon.has-children {
-  color: white !important;
+  color: #667eea; /* 展开指示器使用主题色强调 */
 }
 
 /* 深色模式下的选中状态 */
 body.dark-mode .folder-item.active {
-  background: #667eea !important;
-  color: white !important;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+  background: transparent !important; /* 移除整行背景 */
+  border-bottom: 1px solid #667eea; /* 简化为单一直线下划线 */
+  color: inherit; /* 保持原有文字颜色 */
+  box-shadow: none; /* 移除阴影 */
+  border-radius: 0; /* 确保没有圆角 */
 }
 
 body.dark-mode .folder-item.active .folder-name {
-  color: white !important;
+  color: inherit; /* 保持原有文字颜色 */
 }
 
 body.dark-mode .folder-item.active .folder-count {
-  background: white !important;
-  color: #667eea !important;
-  border-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  /* 保持原有样式 */
 }
 
 body.dark-mode .folder-item.active .expand-icon.has-children {
-  color: white !important;
+  color: #667eea; /* 展开指示器使用主题色强调 */
 }
 
 
@@ -664,16 +662,19 @@ body.dark-mode .folder-item:focus-visible {
 /* 高对比度模式支持 */
 @media (prefers-contrast: high) {
   .folder-item.active {
-    background: rgba(102, 126, 234, 0.3);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: transparent !important; /* 保持透明背景 */
+    border-bottom: 2px solid #667eea; /* 简洁的直线下划线，无需加粗 */
+    box-shadow: none; /* 移除阴影 */
+    border-radius: 0; /* 确保没有圆角 */
   }
 
   .folder-item.active .folder-name {
     font-weight: 700;
+    color: #667eea; /* 高对比模式下文字使用主题色 */
   }
 
   .folder-item:hover {
-    background: rgba(102, 126, 234, 0.15);
+    background: rgba(102, 126, 234, 0.1); /* 保持悬停效果 */
   }
 }
 
