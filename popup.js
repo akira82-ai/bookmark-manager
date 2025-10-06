@@ -9,79 +9,60 @@ document.addEventListener('DOMContentLoaded', function() {
 function createPopupUI() {
   const container = document.querySelector('.container');
   container.innerHTML = `
-    <div class="popup-header">
-      <h1>📚 书签管理器</h1>
-      <p class="subtitle">管理您的浏览器书签</p>
-    </div>
-    
     <div class="popup-actions">
       <div class="button-row">
         <button id="current-page-btn" class="secondary-btn" disabled>
           <span class="btn-icon">🔖</span>
-          <span class="btn-text">添加到最近收藏</span>
+          <span class="btn-text">收藏此页</span>
         </button>
         <button id="open-manager-btn" class="primary-btn">
           <span class="btn-icon">📂</span>
-          打开书签管理器
+          管理书签
         </button>
       </div>
     </div>
-    
+
+    <div class="divider"></div>
+
     <div class="recent-section">
-      <h3>📌 最近收藏</h3>
+      <h3>📌 最近收藏（近 5 条）</h3>
       <div id="recent-bookmarks" class="recent-list">
         <!-- 最近书签将通过JavaScript动态加载 -->
       </div>
     </div>
-    
+
     <!-- 智能提醒设置 -->
     <div class="reminder-settings">
-      <div class="settings-header">
-        <span class="settings-title">🧠 智能提醒</span>
-        <button id="settings-toggle" class="settings-toggle-btn" title="展开/收起设置">
-          <span class="toggle-icon">▼</span>
-        </button>
-      </div>
-      <div class="settings-content" id="reminder-settings-content" style="display: none;">
-        <div class="setting-item">
-          <label class="setting-label">
-            <span class="setting-text">启用智能提醒</span>
-            <div class="ios-switch">
-              <input type="checkbox" id="reminder-enabled" class="ios-switch-input">
-              <span class="ios-switch-slider"></span>
-            </div>
-          </label>
-        </div>
-
-        <div class="setting-item">
-          <div class="sensitivity-container">
-            <div class="sensitivity-label">提醒频次:</div>
-            <div class="sensitivity-slider-container">
-              <div class="sensitivity-track">
-                <div class="sensitivity-fill"></div>
-                <div class="sensitivity-thumb" data-level="2"></div>
-              </div>
-              <div class="sensitivity-ticks">
-                <div class="sensitivity-tick major"></div>
-                <div class="sensitivity-tick"></div>
-                <div class="sensitivity-tick major"></div>
-                <div class="sensitivity-tick"></div>
-                <div class="sensitivity-tick major"></div>
-              </div>
-              <div class="sensitivity-labels">
-                <span class="label-conservative">很少</span>
-                <span class="label-balance">适中</span>
-                <span class="label-aggressive">频繁</span>
-              </div>
-            </div>
+      <div class="setting-item">
+        <label class="setting-label">
+          <span class="setting-text">启用智能提醒</span>
+          <div class="ios-switch">
+            <input type="checkbox" id="reminder-enabled" class="ios-switch-input">
+            <span class="ios-switch-slider"></span>
           </div>
-        </div>
+        </label>
+      </div>
 
-        <div class="setting-item">
-          <div class="current-mode-info">
-            <div class="mode-info-row">
-              <span class="mode-icon">🔒</span>
-              <span class="mode-text">当前模式: <strong id="current-mode-name">专题研究模式</strong></span>
+      <div class="setting-item">
+        <div class="sensitivity-container">
+          <div class="sensitivity-slider-container">
+            <div class="sensitivity-track">
+              <div class="sensitivity-fill"></div>
+              <div class="sensitivity-thumb" data-level="2"></div>
+            </div>
+            <div class="sensitivity-ticks">
+              <div class="sensitivity-tick major"></div>
+              <div class="sensitivity-tick"></div>
+              <div class="sensitivity-tick major"></div>
+              <div class="sensitivity-tick"></div>
+              <div class="sensitivity-tick major"></div>
+            </div>
+            <div class="sensitivity-labels">
+              <span class="label-conservative">很少</span>
+              <span class="label-occasional">偶尔</span>
+              <span class="label-balance">适中</span>
+              <span class="label-often">常常</span>
+              <span class="label-aggressive">频繁</span>
             </div>
           </div>
         </div>
@@ -145,25 +126,7 @@ function bindEvents() {
     addCurrentPage();
   });
 
-  // 智能提醒设置展开/收起 - 点击整个横条区域
-  const settingsHeader = document.querySelector('.settings-header');
-  if (settingsHeader) {
-    settingsHeader.addEventListener('click', () => {
-      const content = document.getElementById('reminder-settings-content');
-      const icon = settingsHeader.querySelector('.toggle-icon');
-
-      if (content.style.display === 'none') {
-        content.style.display = 'block';
-        icon.textContent = '▲';
-        settingsHeader.classList.add('expanded');
-      } else {
-        content.style.display = 'none';
-        icon.textContent = '▼';
-        settingsHeader.classList.remove('expanded');
-      }
-    });
-  }
-  
+    
   // 事件委托：处理最近书签的点击
   document.getElementById('recent-bookmarks').addEventListener('click', function(e) {
     const recentItem = e.target.closest('.recent-item');
@@ -333,7 +296,7 @@ function setButtonState(state, reason = '') {
     button.classList.remove('disabled');
     button.title = '添加当前页面到最近收藏';
     if (buttonText) {
-      buttonText.textContent = '添加到最近收藏';
+      buttonText.textContent = '收藏此页';
     }
   } else {
     button.disabled = true;
@@ -513,22 +476,17 @@ function createRecentBookmarkItem(bookmark) {
   item.className = 'recent-item';
   item.dataset.bookmarkId = bookmark.id;
   item.dataset.bookmarkUrl = bookmark.url;
-  
-  const favicon = getFaviconUrl(bookmark.url);
-  
+
   item.innerHTML = `
-    <img class="recent-favicon" src="${favicon}" alt="favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiByeD0iMyIgZmlsbD0iI0U1RTVFNSIvPgo8cGF0aCBkPSJNOCAzQzUuMjQgMyAzIDUuMjQgMyA4QzMgMTAuNzYgNS4yNCAxMyA4IDEzQzEwLjc2IDEzIDEzIDEwLjc2IDEzIDhDMTMgNS4yNCAxMC43NiAzIDggM1oiIGZpbGw9IiM5OTk5OTkiLz4KPC9zdmc+'">
-    <div class="recent-info">
-      <div class="recent-title">${escapeHtml(bookmark.title)}</div>
-      <div class="recent-url">${escapeHtml(bookmark.url)}</div>
-    </div>
+    <div class="recent-title">${escapeHtml(bookmark.title)}</div>
+    <div class="recent-url">${escapeHtml(bookmark.url)}</div>
     <div class="recent-actions">
       <button class="action-btn delete-btn" title="删除">
         🗑️
       </button>
     </div>
   `;
-  
+
   return item;
 }
 
