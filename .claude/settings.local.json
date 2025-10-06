@@ -22,7 +22,10 @@
       "Bash(curl:*)",
       "Bash(find:*)",
       "Bash(xargs:*)",
-      "WebFetch(domain:reactjs.org)"
+      "WebFetch(domain:reactjs.org)",
+      "Bash(for file in *.js)",
+      "Bash(do echo:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

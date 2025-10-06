@@ -1629,10 +1629,133 @@ bindCardEvents(card, bookmark) {
   if (deleteBtn) {
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.deleteBookmark(bookmark.id);
+      this.handleDeleteButtonClick(deleteBtn, bookmark, card);
     });
   }
 }
+
+  /**
+   * 处理删除按钮点击事件
+   * @param {HTMLElement} deleteBtn - 删除按钮元素
+   * @param {Object} bookmark - 书签对象
+   * @param {HTMLElement} card - 书签卡片元素
+   */
+  handleDeleteButtonClick(deleteBtn, bookmark, card) {
+    // 检查是否已经是确认状态
+    if (deleteBtn.classList.contains('confirm')) {
+      // 确认状态：执行删除
+      this.deleteBookmark(bookmark.id);
+    } else {
+      // 进入确认状态
+      this.enterDeleteConfirmState(deleteBtn, card);
+    }
+  }
+
+  /**
+   * 进入删除确认状态
+   * @param {HTMLElement} deleteBtn - 删除按钮元素
+   * @param {HTMLElement} card - 书签卡片元素
+   */
+  enterDeleteConfirmState(deleteBtn, card) {
+    // 如果按钮已经在确认状态，不重复处理
+    if (deleteBtn.classList.contains('confirm')) {
+      return;
+    }
+
+    // 添加确认样式类
+    deleteBtn.classList.add('confirm');
+    deleteBtn.textContent = '✓';
+
+    // 创建事件监听器函数的引用，便于移除
+    const cancelConfirm = (e) => {
+      // 如果点击的不是当前删除按钮，取消确认状态
+      if (!deleteBtn.contains(e.target)) {
+        this.exitDeleteConfirmState(deleteBtn);
+        this.cleanupConfirmListeners(deleteBtn, cancelConfirm, handleKeydown, autoCancelTimeout);
+      }
+    };
+
+    const handleKeydown = (e) => {
+      if (e.key === 'Escape') {
+        this.exitDeleteConfirmState(deleteBtn);
+        this.cleanupConfirmListeners(deleteBtn, cancelConfirm, handleKeydown, autoCancelTimeout);
+      }
+    };
+
+    // 设置自动取消（3秒后）
+    const autoCancelTimeout = setTimeout(() => {
+      this.exitDeleteConfirmState(deleteBtn);
+      this.cleanupConfirmListeners(deleteBtn, cancelConfirm, handleKeydown, autoCancelTimeout);
+    }, 3000);
+
+    // 保存事件监听器引用到按钮上，便于清理
+    deleteBtn._confirmListeners = {
+      cancelConfirm,
+      handleKeydown,
+      autoCancelTimeout
+    };
+
+    // 延迟添加事件监听器，避免立即触发
+    setTimeout(() => {
+      // 只有当按钮仍然存在且处于确认状态时才添加监听器
+      if (deleteBtn && deleteBtn.classList.contains('confirm')) {
+        document.addEventListener('click', cancelConfirm);
+        document.addEventListener('keydown', handleKeydown);
+      }
+    }, 100);
+  }
+
+  /**
+   * 清理确认状态相关的事件监听器
+   * @param {HTMLElement} deleteBtn - 删除按钮元素
+   * @param {Function} cancelConfirm - 点击取消函数
+   * @param {Function} handleKeydown - 键盘事件函数
+   * @param {number} autoCancelTimeout - 自动取消定时器
+   */
+  cleanupConfirmListeners(deleteBtn, cancelConfirm, handleKeydown, autoCancelTimeout) {
+    // 移除事件监听器
+    document.removeEventListener('click', cancelConfirm);
+    document.removeEventListener('keydown', handleKeydown);
+
+    // 清理定时器
+    if (autoCancelTimeout) {
+      clearTimeout(autoCancelTimeout);
+    }
+
+    // 清理按钮上的引用
+    delete deleteBtn._confirmListeners;
+  }
+
+  /**
+   * 退出删除确认状态
+   * @param {HTMLElement} deleteBtn - 删除按钮元素
+   */
+  exitDeleteConfirmState(deleteBtn) {
+    // 如果按钮不处于确认状态，不处理
+    if (!deleteBtn || !deleteBtn.classList.contains('confirm')) {
+      return;
+    }
+
+    // 移除确认样式类
+    deleteBtn.classList.remove('confirm');
+    deleteBtn.textContent = '删除';
+
+    // 清理相关的事件监听器和定时器
+    if (deleteBtn._confirmListeners) {
+      this.cleanupConfirmListeners(
+        deleteBtn,
+        deleteBtn._confirmListeners.cancelConfirm,
+        deleteBtn._confirmListeners.handleKeydown,
+        deleteBtn._confirmListeners.autoCancelTimeout
+      );
+    }
+
+    // 清理旧的dataset属性（向后兼容）
+    if (deleteBtn.dataset.autoCancelTimeout) {
+      clearTimeout(parseInt(deleteBtn.dataset.autoCancelTimeout));
+      delete deleteBtn.dataset.autoCancelTimeout;
+    }
+  }
 
   getFaviconUrl(url) {
     try {
@@ -1874,10 +1997,15 @@ bindCardEvents(card, bookmark) {
   }
 
   async deleteBookmark(bookmarkId) {
-    if (!confirm('确定要删除这个书签吗？')) {
-      return;
+    // 在删除前，先清理可能存在的确认状态
+    const card = document.querySelector(`[data-bookmark-id="${bookmarkId}"]`);
+    if (card) {
+      const deleteBtn = card.querySelector('.delete-btn');
+      if (deleteBtn && deleteBtn.classList.contains('confirm')) {
+        this.exitDeleteConfirmState(deleteBtn);
+      }
     }
-    
+
     try {
       await chrome.bookmarks.remove(bookmarkId);
       
