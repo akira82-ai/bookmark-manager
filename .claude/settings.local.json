@@ -1,31 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)",
-      "Bash(node:*)",
       "Bash(git add:*)",
-      "Bash(git restore:*)",
-      "Bash(open:*)",
-      "Bash(dir:*)",
-      "Read(//private/tmp/**)",
-      "Read(//tmp/**)",
-      "Bash(sed:*)",
-      "Bash(git log:*)",
-      "Bash(git commit:*)",
-      "Bash(start:*)",
-      "Bash(git reset:*)",
-      "WebSearch",
-      "mcp__fetch__fetch",
-      "Bash(mkdir:*)",
-      "Bash(chmod:*)",
-      "Bash(./download-libs.sh:*)",
-      "Bash(curl:*)",
-      "Bash(find:*)",
-      "Bash(xargs:*)",
-      "WebFetch(domain:reactjs.org)",
-      "Bash(for file in *.js)",
-      "Bash(do echo:*)",
-      "Bash(done)"
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
