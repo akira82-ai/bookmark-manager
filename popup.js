@@ -34,6 +34,60 @@ function createPopupUI() {
       </div>
     </div>
     
+    <!-- 智能提醒设置 -->
+    <div class="reminder-settings">
+      <div class="settings-header">
+        <span class="settings-title">🧠 智能提醒</span>
+        <button id="settings-toggle" class="settings-toggle-btn" title="展开/收起设置">
+          <span class="toggle-icon">▼</span>
+        </button>
+      </div>
+      <div class="settings-content" id="reminder-settings-content" style="display: none;">
+        <div class="setting-item">
+          <label class="setting-label">
+            <span class="setting-text">启用智能提醒</span>
+            <div class="ios-switch">
+              <input type="checkbox" id="reminder-enabled" class="ios-switch-input">
+              <span class="ios-switch-slider"></span>
+            </div>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="sensitivity-container">
+            <div class="sensitivity-label">提醒频次:</div>
+            <div class="sensitivity-slider-container">
+              <div class="sensitivity-track">
+                <div class="sensitivity-fill"></div>
+                <div class="sensitivity-thumb" data-level="2"></div>
+              </div>
+              <div class="sensitivity-ticks">
+                <div class="sensitivity-tick major"></div>
+                <div class="sensitivity-tick"></div>
+                <div class="sensitivity-tick major"></div>
+                <div class="sensitivity-tick"></div>
+                <div class="sensitivity-tick major"></div>
+              </div>
+              <div class="sensitivity-labels">
+                <span class="label-conservative">很少</span>
+                <span class="label-balance">适中</span>
+                <span class="label-aggressive">频繁</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="current-mode-info">
+            <div class="mode-info-row">
+              <span class="mode-icon">🔒</span>
+              <span class="mode-text">当前模式: <strong id="current-mode-name">专题研究模式</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="stats-section">
       <div class="stats-grid">
         <div class="stat-item">
@@ -70,6 +124,9 @@ function createPopupUI() {
   // 加载最近书签和统计信息
   loadRecentBookmarks();
   loadStats();
+
+  // 初始化智能提醒功能
+  initializeReminderSettings();
 }
 
 function bindEvents() {
@@ -77,7 +134,7 @@ function bindEvents() {
   document.getElementById('open-manager-btn').addEventListener('click', function() {
     openBookmarkManager();
   });
-  
+
   // 添加当前页面
   document.getElementById('current-page-btn').addEventListener('click', function() {
     // 如果按钮被禁用，则不执行操作
@@ -87,6 +144,25 @@ function bindEvents() {
     }
     addCurrentPage();
   });
+
+  // 智能提醒设置展开/收起 - 点击整个横条区域
+  const settingsHeader = document.querySelector('.settings-header');
+  if (settingsHeader) {
+    settingsHeader.addEventListener('click', () => {
+      const content = document.getElementById('reminder-settings-content');
+      const icon = settingsHeader.querySelector('.toggle-icon');
+
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▲';
+        settingsHeader.classList.add('expanded');
+      } else {
+        content.style.display = 'none';
+        icon.textContent = '▼';
+        settingsHeader.classList.remove('expanded');
+      }
+    });
+  }
   
   // 事件委托：处理最近书签的点击
   document.getElementById('recent-bookmarks').addEventListener('click', function(e) {
@@ -609,3 +685,285 @@ function getAllBookmarks(node) {
 }
 
 // 移除全局函数定义，现在使用事件委托
+
+// 智能提醒功能初始化
+function initializeReminderSettings() {
+  // 初始化启用提醒开关
+  const reminderEnabledSwitch = new ReminderEnabledSwitch();
+  window.reminderEnabledSwitch = reminderEnabledSwitch;
+
+  // 初始化敏感度滑块
+  const sensitivitySlider = new SensitivitySlider();
+  window.sensitivitySlider = sensitivitySlider;
+}
+
+/**
+ * 启用提醒开关类
+ */
+class ReminderEnabledSwitch {
+  constructor() {
+    this.switchInput = document.getElementById('reminder-enabled');
+    this.storageKey = 'reminder-enabled';
+    this.defaultValue = false; // 默认不启用
+
+    this.init();
+  }
+
+  init() {
+    if (!this.switchInput) {
+      return;
+    }
+
+    this.loadSavedState();
+    this.bindEvents();
+  }
+
+  // 加载保存的开关状态
+  async loadSavedState() {
+    try {
+      let isEnabled = this.defaultValue;
+
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        // 优先使用 Chrome storage
+        const result = await chrome.storage.local.get([this.storageKey]);
+        isEnabled = result[this.storageKey] ?? this.defaultValue;
+      } else {
+        // 降级到 localStorage
+        const savedValue = localStorage.getItem(this.storageKey);
+        isEnabled = savedValue === null ? this.defaultValue : savedValue === 'true';
+      }
+
+      // 设置开关状态（不触发 change 事件）
+      this.switchInput.checked = isEnabled;
+
+    } catch (error) {
+      this.switchInput.checked = this.defaultValue;
+    }
+  }
+
+  // 保存开关状态
+  async saveState(isEnabled) {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        await chrome.storage.local.set({ [this.storageKey]: isEnabled });
+      } else {
+        localStorage.setItem(this.storageKey, isEnabled.toString());
+      }
+    } catch (error) {
+      // 静默处理错误
+    }
+  }
+
+  // 绑定事件
+  bindEvents() {
+    this.switchInput.addEventListener('change', async (e) => {
+      const isEnabled = e.target.checked;
+      await this.saveState(isEnabled);
+
+      // 提供用户反馈
+      this.showStatusFeedback(isEnabled);
+    });
+  }
+
+  // 显示状态反馈
+  showStatusFeedback(isEnabled) {
+    showNotification(isEnabled ? '✅ 智能提醒已启用' : '❌ 智能提醒已禁用');
+  }
+}
+
+/**
+ * 敏感度滑块类
+ */
+class SensitivitySlider {
+  constructor() {
+    this.track = document.querySelector('.sensitivity-track');
+    this.thumb = document.querySelector('.sensitivity-thumb');
+    this.fill = document.querySelector('.sensitivity-fill');
+    this.isDragging = false;
+
+    // 从chrome.storage.local恢复设置，默认适中提醒（第2刻度）
+    let savedLevel = 2; // 默认值
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.local.get(['reminder-sensitivity-level']).then(result => {
+          savedLevel = result['reminder-sensitivity-level'] || 2;
+          this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+          this.updateUI(); // 确保UI更新
+        }).catch(error => {
+          savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+          this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+          this.updateUI(); // 确保UI更新
+        });
+      } else {
+        // 降级到localStorage
+        savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+        this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+      }
+    } catch (error) {
+      savedLevel = parseInt(localStorage.getItem('reminder-sensitivity-level')) || 2;
+      this.currentLevel = Math.max(0, Math.min(4, savedLevel));
+    }
+    // 设置初始值（异步加载会覆盖）
+    this.currentLevel = savedLevel;
+
+    this.levels = [
+      {
+        name: '很少',
+        frequency: '每月提醒',
+        description: '重要资料，每月提醒一次',
+        color: '#4CAF50',
+        interval: 30
+      },
+      {
+        name: '偶尔',
+        frequency: '每两周提醒',
+        description: '定期查看，每两周一次',
+        color: '#8BC34A',
+        interval: 14
+      },
+      {
+        name: '适中',
+        frequency: '每周提醒',
+        description: '适度关注，每周一次',
+        color: '#CDDC39',
+        interval: 7
+      },
+      {
+        name: '常常',
+        frequency: '每三天提醒',
+        description: '经常关注，每三天一次',
+        color: '#FFC107',
+        interval: 3
+      },
+      {
+        name: '频繁',
+        frequency: '每天提醒',
+        description: '持续关注，每天一次',
+        color: '#FF5722',
+        interval: 1
+      }
+    ];
+
+    this.init();
+  }
+
+  init() {
+    this.updateUI();
+    this.attachEvents();
+  }
+
+  attachEvents() {
+    // 鼠标事件
+    this.thumb.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    this.track.addEventListener('click', this.handleTrackClick.bind(this));
+
+    // 触摸事件
+    this.thumb.addEventListener('touchstart', this.handleTouchStart.bind(this));
+
+    // 全局事件
+    document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    document.addEventListener('touchmove', this.handleTouchMove.bind(this));
+    document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+  }
+
+  handleMouseDown(e) {
+    e.preventDefault();
+    this.isDragging = true;
+    this.thumb.style.cursor = 'grabbing';
+  }
+
+  handleTouchStart(e) {
+    e.preventDefault();
+    this.isDragging = true;
+  }
+
+  handleMouseMove(e) {
+    if (!this.isDragging) return;
+    this.updatePosition(e.clientX);
+  }
+
+  handleTouchMove(e) {
+    if (!this.isDragging) return;
+    this.updatePosition(e.touches[0].clientX);
+  }
+
+  handleMouseUp() {
+    this.isDragging = false;
+    this.thumb.style.cursor = 'grab';
+  }
+
+  handleTouchEnd() {
+    this.isDragging = false;
+  }
+
+  handleTrackClick(e) {
+    if (e.target === this.thumb) return;
+    this.updatePosition(e.clientX);
+  }
+
+  updatePosition(clientX) {
+    const rect = this.track.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+    // 计算最近的档位 (0-4)，基于5个刻度点
+    const level = Math.round(percentage / 25); // 100% / 4个间隔 = 25%
+    this.setLevel(Math.max(0, Math.min(4, level)));
+  }
+
+  setLevel(level) {
+    this.currentLevel = level;
+    this.updateUI();
+  }
+
+  updateUI() {
+    // 更新滑块位置 - 使用transform确保滑块中心对齐刻度
+    const percentage = (this.currentLevel / 4) * 100;
+    this.thumb.style.left = `${percentage}%`;
+    this.fill.style.width = `${percentage}%`;
+
+    // 更新模式信息
+    const levelData = this.levels[this.currentLevel];
+    if (!levelData) {
+      return;
+    }
+
+    const modeNameElement = document.getElementById('current-mode-name');
+    if (modeNameElement) {
+      modeNameElement.textContent = `${levelData.name}提醒`;
+    }
+
+    // 更新颜色主题
+    if (levelData.color) {
+      this.thumb.style.backgroundColor = levelData.color;
+      this.fill.style.backgroundColor = levelData.color;
+    }
+
+    // 保存配置
+    this.saveConfig(this.currentLevel, levelData.interval);
+  }
+
+  /**
+   * 保存配置
+   * @param {number} level - 当前档位级别
+   * @param {number} interval - 提醒间隔天数
+   */
+  async saveConfig(level, interval) {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        await chrome.storage.local.set({
+          'reminder-sensitivity-level': level,
+          'reminder-frequency-interval': interval
+        });
+      }
+
+      // localStorage保存（始终执行作为备份）
+      localStorage.setItem('reminder-sensitivity-level', level.toString());
+      localStorage.setItem('reminder-frequency-interval', interval.toString());
+
+    } catch (error) {
+      // 静默处理错误
+    }
+  }
+}

@@ -358,6 +358,318 @@ body.dark-mode .container {
   background: #a8a8a8;
 }
 
+/* 智能提醒设置样式 */
+.reminder-settings {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--card-background, #ffffff);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color, #333333);
+}
+
+.settings-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.settings-toggle-btn:hover {
+  background-color: var(--hover-background, #f5f5f5);
+}
+
+.toggle-icon {
+  display: inline-block;
+  transition: transform 0.3s;
+  font-size: 0.8rem;
+}
+
+.settings-header.expanded .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.settings-content {
+  margin-top: 1rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.setting-item {
+  margin-bottom: 0.75rem;
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-color, #333333);
+}
+
+/* iOS风格开关样式 */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  margin-left: 8px;
+}
+
+.ios-switch-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ios-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e0e0e0;
+  transition: background-color 0.3s ease;
+  border-radius: 28px;
+}
+
+.ios-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: transform 0.3s ease;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.ios-switch-input:checked + .ios-switch-slider {
+  background-color: #667eea;
+}
+
+.ios-switch-input:checked + .ios-switch-slider:before {
+  transform: translateX(20px);
+}
+
+/* 敏感度滑块样式 */
+.sensitivity-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.sensitivity-label {
+  font-size: 0.85rem;
+  color: var(--text-color, #333333);
+  margin-bottom: 0.5rem;
+}
+
+.sensitivity-slider-container {
+  position: relative;
+  padding: 1rem 0;
+}
+
+.sensitivity-track {
+  position: relative;
+  height: 8px;
+  background: linear-gradient(90deg, #e3f2fd 0%, #64b5f6 50%, #1976d2 100%);
+  border-radius: 4px;
+  margin: 0 1rem;
+  cursor: pointer;
+}
+
+.sensitivity-fill {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);
+  border-radius: 4px;
+  width: 50%; /* 专题研究模式位置：4/8 * 100% = 50% */
+  transition: width 0.3s ease;
+  left: 0;
+}
+
+.sensitivity-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%); /* 水平偏移-50%确保滑块中心对齐刻度 */
+  width: 20px;
+  height: 20px;
+  background: #1976d2;
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  left: 50%; /* 专题研究模式位置：4/8 * 100% = 50% */
+  z-index: 10;
+}
+
+.sensitivity-thumb:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+}
+
+.sensitivity-thumb:active {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(0.95);
+}
+
+.sensitivity-ticks {
+  position: relative;
+  height: 12px;
+  margin: 4px 1rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sensitivity-tick {
+  position: relative;
+  width: 1px;
+  height: 6px;
+  background: #90a4ae;
+  opacity: 0.6;
+  border-radius: 1px;
+}
+
+.sensitivity-tick.major {
+  height: 8px;
+  background: #607d8b;
+  opacity: 0.8;
+}
+
+.sensitivity-tick:nth-child(5) {
+  height: 10px;
+  background: #455a64;
+  opacity: 1;
+  width: 2px;
+}
+
+.sensitivity-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--secondary-text, #666666);
+  position: relative;
+}
+
+.label-conservative {
+  font-weight: 500;
+}
+
+.label-balance {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
+  color: var(--primary-color, #1976d2);
+}
+
+.label-aggressive {
+  font-weight: 500;
+}
+
+/* 当前模式信息 */
+.current-mode-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--info-background, #f8f9fa);
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color, #1976d2);
+}
+
+.mode-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-color, #333333);
+}
+
+.mode-icon {
+  font-size: 1rem;
+  width: 1.2rem;
+  text-align: center;
+}
+
+.mode-text strong {
+  color: var(--primary-color, #1976d2);
+}
+
+/* 深色模式适配 */
+body.dark-mode .reminder-settings {
+  background: var(--card-background, #2d2d2d);
+  border-color: var(--border-color, #404040);
+}
+
+body.dark-mode .settings-title {
+  color: var(--text-color, #e0e0e0);
+}
+
+body.dark-mode .settings-toggle-btn:hover {
+  background-color: var(--hover-background, #404040);
+}
+
+body.dark-mode .setting-label {
+  color: var(--text-color, #e0e0e0);
+}
+
+body.dark-mode .sensitivity-label {
+  color: var(--text-color, #e0e0e0);
+}
+
+body.dark-mode .label-balance {
+  color: var(--primary-color, #64b5f6);
+}
+
+body.dark-mode .current-mode-info {
+  background: var(--info-background, #1e1e1e);
+  border-left-color: var(--primary-color, #64b5f6);
+}
+
+body.dark-mode .mode-info-row {
+  color: var(--text-color, #e0e0e0);
+}
+
+body.dark-mode .mode-text strong {
+  color: var(--primary-color, #64b5f6);
+}
+
 /* 响应式设计 */
 @media (max-width: 400px) {
   .container {
