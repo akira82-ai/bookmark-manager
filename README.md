@@ -4,7 +4,7 @@
 
 ![Chrome Web Store](https://img.shields.io/badge/Chrome-Web%20Store-brightgreen?style=for-the-badge&logo=googlechrome)
 ![Edge Add-ons](https://img.shields.io/badge/Edge-Add%20Ons-brightgreen?style=for-the-badge&logo=microsoftedge)
-![Version](https://img.shields.io/badge/Version-3.0.4-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.0.5-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![Stars](https://img.shields.io/github/stars/akira82-ai/bookmark-manager?style=for-the-badge&logo=github)
 
@@ -146,7 +146,12 @@ bookmark-manager/
 
 ## 📋 更新日志
 
-### 🌟 v3.0.4 - 界面优化和功能精简 (最新版本)
+### 🌟 v3.0.5 - 智能提醒弹窗界面优化 (最新版本)
+- 🗑️ **移除稍后提醒功能** - 简化智能提醒弹窗，移除无实际功能的「稍后提醒」按钮
+- 🎯 **按钮布局优化** - 将「不再提醒」按钮居右显示，提升界面简洁度和用户体验
+- ⚡ **代码清理优化** - 清理相关事件监听器代码，减少冗余逻辑
+
+### 🌟 v3.0.4 - 界面优化和功能精简
 - 🧹 **界面简化优化** - 移除冗余的版本历史显示组件，简化欢迎页面布局
 - ❌ **批量操作移除** - 删除批量更新、重新检测、批量删除按钮及相关功能
 - 📝 **文档完善更新** - 完善更新日志和版本发布记录，添加项目数据分析报告

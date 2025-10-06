@@ -288,7 +288,7 @@ function showReminderToast(data) {
     
     ${urlOptionsHTML}
     
-    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.15); display: flex; justify-content: space-between; align-items: center;">
+    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.15); display: flex; justify-content: flex-end; align-items: center;">
       <button id="btnNeverRemind" style="
         background: none;
         border: 1px solid rgba(255, 255, 255, 0.3);
@@ -302,20 +302,6 @@ function showReminderToast(data) {
         align-items: center;
         gap: 4px;
       ">🔕 不再提醒</button>
-      
-      <button id="btnRemindLater" style="
-        background: none;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 12px;
-        cursor: pointer;
-        padding: 6px 12px;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      ">⏰ 稍后提醒</button>
     </div>
   `;
   
@@ -435,15 +421,7 @@ function showReminderToast(data) {
     setTimeout(() => toast.remove(), 400);
   });
   
-  // 绑定稍后提醒按钮事件
-  document.getElementById('btnRemindLater').addEventListener('click', () => {
-    // 这里可以添加稍后提醒的逻辑
-    console.log('稍后提醒');
-    // 出场动画
-    toast.style.transform = 'translateX(400px)';
-    setTimeout(() => toast.remove(), 400);
-  });
-  
+    
   // 鼠标悬停暂停计时
   toast.addEventListener('mouseenter', pauseTimer);
   toast.addEventListener('mouseleave', resumeTimer);
