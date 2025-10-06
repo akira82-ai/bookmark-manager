@@ -2252,138 +2252,6 @@ body.dark-mode .modal-footer {
   font-weight: 500;
 }
 
-/* 版本迭代样式 */
-.version-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.version-item {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1rem;
-  border-left: 4px solid #667eea;
-}
-
-.version-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  font-weight: 600;
-  color: #667eea;
-}
-
-.version-date {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-.version-changes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* 更新日志 - 极简列表风格 */
-.version-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.version-item {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid #f0f0f0;
-  transition: all 0.3s ease;
-}
-
-.version-item:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-.version-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #f8f9fa;
-}
-
-.version-date {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  letter-spacing: 0.5px;
-}
-
-.version-count {
-  font-size: 0.8rem;
-  color: #6c757d;
-  background: #f8f9fa;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.version-changes {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-}
-
-.version-change {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #495057;
-  line-height: 1.4;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-}
-
-.version-change:hover {
-  background: #f8f9fa;
-}
-
-.version-change .change-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-  margin-top: 0.1rem;
-}
-
-.version-change .change-text {
-  flex: 1;
-}
-
-.version-change.full-width {
-  grid-column: 1 / -1;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .version-changes {
-    grid-template-columns: 1fr;
-  }
-  
-  .version-item {
-    padding: 1.25rem;
-  }
-  
-  .version-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-}
 
 /* 安装说明样式 */
 .installation-flow {
@@ -2543,8 +2411,7 @@ body.dark-mode .welcome-card h3 {
   color: var(--text-primary);
 }
 
-body.dark-mode .feature-box,
-body.dark-mode .version-item {
+body.dark-mode .feature-box {
   background: var(--bg-tertiary);
 }
 
@@ -2552,8 +2419,7 @@ body.dark-mode .feature-box:hover {
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-body.dark-mode .feature-subtitle,
-body.dark-mode .version-date {
+body.dark-mode .feature-subtitle {
   color: var(--text-secondary);
 }
 
@@ -2567,31 +2433,6 @@ body.dark-mode .tip-item {
   border-bottom-color: var(--border-color);
 }
 
-body.dark-mode .version-item {
-  background: var(--card-bg);
-  border-color: var(--border-color);
-}
-
-body.dark-mode .version-header {
-  border-bottom-color: var(--border-color);
-}
-
-body.dark-mode .version-date {
-  color: var(--text-primary);
-}
-
-body.dark-mode .version-count {
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
-}
-
-body.dark-mode .version-change {
-  color: var(--text-primary);
-}
-
-body.dark-mode .version-change:hover {
-  background: var(--bg-secondary);
-}
 
 /* 响应式设计 */
 @media (max-width: 768px) {

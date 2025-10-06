@@ -4,7 +4,7 @@
 
 ![Chrome Web Store](https://img.shields.io/badge/Chrome-Web%20Store-brightgreen?style=for-the-badge&logo=googlechrome)
 ![Edge Add-ons](https://img.shields.io/badge/Edge-Add%20Ons-brightgreen?style=for-the-badge&logo=microsoftedge)
-![Version](https://img.shields.io/badge/Version-3.0.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.0.4-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![Stars](https://img.shields.io/github/stars/akira82-ai/bookmark-manager?style=for-the-badge&logo=github)
 
@@ -146,11 +146,38 @@ bookmark-manager/
 
 ## 📋 更新日志
 
-### 🌟 v3.0.0 - 全新UI设计 (最新版本)
-- 🎨 优雅下划线选中状态 - 全新UI设计语言，现代化交互体验
-- 🎯 重要分类固定显示 - 「最近收藏」和「黑名单」固定在前两位
-- 🌳 多级目录手风琴效果 - 支持任意层级折叠展开
-- ⚡ 性能优化升级 - 事件驱动架构优化，响应速度提升
+### 🌟 v3.0.4 - 界面优化和功能精简 (最新版本)
+- 🧹 **界面简化优化** - 移除冗余的版本历史显示组件，简化欢迎页面布局
+- ❌ **批量操作移除** - 删除批量更新、重新检测、批量删除按钮及相关功能
+- 📝 **文档完善更新** - 完善更新日志和版本发布记录，添加项目数据分析报告
+- ⚡ **代码优化清理** - 清理约374行冗余代码，提升代码可维护性和性能
+- 🎯 **用户体验提升** - 检测结果分组只保留折叠展开功能，避免误操作风险
+
+### 🌟 v3.0.3 - Popup界面布局和智能提醒配置优化
+- 🖥️ **Popup界面布局优化** - 弹窗高度从500px提升至580px，提供更舒适的内容显示空间
+- 🎨 **自定义滚动条美化** - 统一设计风格的滚动条样式，支持hover状态交互
+- 🧠 **智能提醒配置迁移** - 完整迁移到popup界面，统一管理所有提醒设置
+- ⚡ **性能优化升级** - 减轻content.js负担，提升页面加载和响应性能
+- 🧹 **代码库清理** - 移除临时测试文件和调试代码，保持代码库整洁
+
+### 🚀 v3.0.2 - 智能提醒配置完整迁移
+- 🧠 **智能提醒配置模块** - 从content.js完整迁移至popup.js
+- 🎯 **UI界面重新设计** - 在popup中新增独立的智能提醒配置区域
+- ⚡ **事件监听器优化** - 重构事件绑定逻辑，提升性能
+- 🔄 **配置同步机制** - 确保popup和content script间配置实时同步
+
+### 🛠️ v3.0.1 - 优化书签删除交互体验和README文档
+- 🗑️ **删除确认机制** - 添加删除确认对话框，防止误操作
+- ✨ **视觉反馈优化** - 删除按钮hover状态和动画效果
+- 📚 **README文档优化** - 更新功能描述，准确反映当前版本特性
+- 📖 **使用指南完善** - 补充完整的使用说明和配置指导
+
+### 🎨 v3.0.0 - 全新UI设计：优雅下划线选中状态 (重大版本升级)
+- ✨ **优雅下划线选中状态** - 全新的UI设计语言，现代化交互体验
+- 🎯 **重要分类固定显示** - 「最近收藏」和「黑名单」固定在前两位
+- 🌳 **多级目录手风琴效果** - 支持任意层级折叠展开
+- ⚡ **技术架构全面升级** - CSS架构重构，组件化设计，性能优化
+- 📱 **响应式设计完善** - 适配更多设备和屏幕尺寸
 
 ### 📊 历史版本亮点
 - **v2.11.2** - 优化书签分类树UI设计和交互体验

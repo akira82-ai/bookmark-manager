@@ -2113,9 +2113,7 @@ bindCardEvents(card, bookmark) {
       groupedContainer.style.display = 'none';
     }
     
-    // 加载版本记录
-    this.loadVersionHistory();
-  }
+      }
   
   showBookmarksView() {
     const welcomePage = document.getElementById('welcome-page');
@@ -2131,229 +2129,9 @@ bindCardEvents(card, bookmark) {
     }
   }
   
-  async loadVersionHistory() {
-    try {
-      // 尝试从扩展目录读取release.md文件
-      const response = await fetch('release.md');
-      if (response.ok) {
-        const releaseContent = await response.text();
-        const versions = this.parseReleaseHistory(releaseContent);
-        this.renderVersionHistory(versions);
-      } else {
-        // 如果无法读取文件，使用预设的版本信息
-        this.loadDefaultVersionHistory();
-      }
-    } catch (error) {
-            this.loadDefaultVersionHistory();
-    }
-  }
-  
-  loadDefaultVersionHistory() {
-    const versions = [
-      {
-        date: '2025-09-21',
-        changes: [
-          { icon: '🔧', text: '实现三个核心参数计算规则完整功能' },
-          { icon: '🐛', text: '修复内存泄漏和消息传递超时问题' },
-          { icon: '📊', text: '添加右下角实时调试窗口显示' },
-          { icon: '🔒', text: '移除CSP配置避免功能冲突' },
-          { icon: '📝', text: '完善文档同步和用户体验优化' }
-        ]
-      },
-      {
-        date: '2025-09-19',
-        changes: [
-          { icon: '🌐', text: '实现URL组件提取和多选项收藏功能' },
-          { icon: '🎨', text: '设计个性化弹窗标题和引导文案' },
-          { icon: '🏗️', text: '重新设计弹窗布局和宽度优化' },
-          { icon: '🧠', text: '开发智能推荐矩阵决策模型' }
-        ]
-      },
-      {
-        date: '2025-09-18',
-        changes: [
-          { icon: '🗑️', text: '彻底清理智能提醒逻辑代码' },
-          { icon: '⌨️', text: '实现Ctrl+Shift+T全局快捷键' },
-          { icon: '💎', text: '设计三套酷炫弹窗UI方案' },
-          { icon: '🎯', text: '创建综合测试页面' }
-        ]
-      },
-      {
-        date: '2025-09-17',
-        changes: [
-          { icon: '🔍', text: '设计智能书签提醒完整架构' },
-          { icon: '📊', text: '实现访问记录和触发条件机制' },
-          { icon: '🚫', text: '添加排除列表和数据清理功能' },
-          { icon: '🎨', text: '开发非侵入式弹出提醒界面' }
-        ]
-      },
-      {
-        date: '2025-09-16',
-        changes: [
-          { icon: '🔧', text: '修复检测模式书签删除同步问题' },
-          { icon: '✨', text: '优化即时响应检测动画效果' },
-          { icon: '🎨', text: '实现书签编辑框现代化样式' },
-          { icon: '📱', text: '改进文件夹状态管理功能' }
-        ]
-      },
-      {
-        date: '2025-09-12',
-        changes: [
-          { icon: '🔍', text: '新增智能链接检测系统，支持批量检查链接有效性' },
-          { icon: '📊', text: '实现检测结果分组显示，包含有效、重定向、超时、无效分类' },
-          { icon: '🎨', text: '统一三页面视觉样式，彻底解决横向滚动条问题' },
-          { icon: '📱', text: '完善响应式设计，支持大、中、小三种屏幕尺寸' },
-          { icon: '🔧', text: '修复关键UI显示Bug，提升用户体验和界面稳定性' }
-        ]
-      }
-    ];
     
-    this.renderVersionHistory(versions);
-  }
-  
-  parseReleaseHistory(releaseContent) {
-    const versions = [];
-    const lines = releaseContent.split('\n');
-
-    // 查找每日开发进展部分
-    let inDailyProgress = false;
-    let dailyVersionsCount = 0;
-    const maxDailyVersions = 5; // 只显示近5天
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-
-      // 检查是否进入每日开发进展部分
-      if (line === '### 📅 每日开发进展') {
-        inDailyProgress = true;
-        continue;
-      }
-
-      // 如果离开每日开发进展部分或已经收集了足够的天数，停止
-      if ((inDailyProgress && line.startsWith('###') && line !== '### 📅 每日开发进展') ||
-          dailyVersionsCount >= maxDailyVersions) {
-        break;
-      }
-
-      if (inDailyProgress) {
-        // 匹配日期行，如 "**2025-09-21**"
-        const dateMatch = line.match(/^\*\*(\d{4})-(\d{1,2})-(\d{1,2})\*\*$/);
-        if (dateMatch) {
-          const year = dateMatch[1];
-          const month = dateMatch[2].padStart(2, '0');
-          const day = dateMatch[3].padStart(2, '0');
-          const dateStr = `${year}-${month}-${day}`;
-
-          // 查找该日期下的更新内容
-          const changes = [];
-
-          for (let j = i + 1; j < lines.length; j++) {
-            const nextLine = lines[j].trim();
-
-            // 如果遇到下一个日期或章节结束，停止
-            if (nextLine.match(/^\*\*\d{4}-\d{1,2}-\d{1,2}\*\*$/) ||
-                nextLine.startsWith('###') || j === lines.length - 1) {
-              break;
-            }
-
-            // 匹配图标+描述，如 "🔧 实现三个核心参数计算规则完整功能"
-            const changeMatch = nextLine.match(/^([^\s]+)\s+(.+)$/);
-            if (changeMatch) {
-              const icon = changeMatch[1];
-              const description = changeMatch[2];
-
-              // 不需要简化描述，因为已经很短
-              changes.push({
-                icon: icon,
-                text: description
-              });
-            }
-          }
-
-          if (changes.length > 0) {
-            versions.push({
-              date: dateStr,
-              changes: changes
-            });
-            dailyVersionsCount++;
-          }
-        }
-      }
-    }
-
-    return versions; // 已经在前面的逻辑中限制了近5天
-  }
-
-  getChangeIcon(description) {
-    const iconMap = {
-      '新增': '🚀',
-      '优化': '⚡', 
-      '修复': '🔧',
-      '实现': '✨',
-      '添加': '➕',
-      '改进': '🎨',
-      '更新': '🔄',
-      '重构': '🏗️',
-      '移除': '🗑️',
-      '完善': '✅',
-      '创建': '🏗️',
-      '支持': '🛡️',
-      '集成': '🔗',
-      '提升': '📈',
-      '增强': '💪',
-      '简化': '📝',
-      '统一': '🎯',
-      '解决': '🎯',
-      '建立': '🏗️',
-      '设计': '🎨',
-      '适配': '📱',
-      '美化': '✨',
-      '修复': '🔧'
-    };
     
-    // 根据描述内容匹配图标
-    for (const [keyword, icon] of Object.entries(iconMap)) {
-      if (description.includes(keyword)) {
-        return icon;
-      }
-    }
-    
-    // 默认图标
-    return '📝';
-  }
-  
-  renderVersionHistory(versions) {
-    const timeline = document.getElementById('version-timeline');
-    if (!timeline) return;
-    
-    timeline.innerHTML = '';
-    
-    versions.forEach(version => {
-      const versionItem = document.createElement('div');
-      versionItem.className = 'version-item';
       
-      let changesHtml = '';
-      if (version.changes && version.changes.length > 0) {
-        changesHtml = version.changes.map(change => 
-          `<div class="version-change">
-            <span class="change-icon">${change.icon}</span>
-            <span class="change-text">${change.text}</span>
-          </div>`
-        ).join('');
-      }
-      
-      versionItem.innerHTML = `
-        <div class="version-header">
-          <span class="version-date">${version.date}</span>
-        </div>
-        <div class="version-changes">
-          ${changesHtml}
-        </div>
-      `;
-      timeline.appendChild(versionItem);
-    });
-  }
-
   showLoading() {
     document.getElementById('loading').style.display = 'flex';
     document.getElementById('bookmarks-grid').style.display = 'none';
@@ -2991,87 +2769,9 @@ createSearchResultCard(bookmark) {
 
 
 
-  /**
-   * 清理无效书签
-   */
-  cleanupInvalidBookmarks() {
-    const invalidBookmarks = [];
-    this.checkResults.forEach((result, bookmarkId) => {
-      if (result.status === 'invalid' || result.status === 'timeout') {
-        invalidBookmarks.push(result);
-      }
-    });
-
-    if (invalidBookmarks.length === 0) {
-      return;
-    }
-
-    const timeoutCount = invalidBookmarks.filter(b => b.status === 'timeout').length;
-    const invalidCount = invalidBookmarks.filter(b => b.status === 'invalid').length;
-    
-    if (confirm(`确定要删除 ${invalidBookmarks.length} 个无效书签吗？\n(无效: ${invalidCount}, 超时: ${timeoutCount})`)) {
-      invalidBookmarks.forEach(bookmark => {
-        this.deleteBookmark(bookmark.id);
-      });
-    }
-  }
-
-  /**
-   * 更新单个书签的URL
-   */
-  async updateBookmarkUrl(bookmarkId, newUrl) {
-    try {
-      await chrome.bookmarks.update(bookmarkId, { url: newUrl });
-      
-      // 更新本地数据
-      const bookmark = this.bookmarks.find(b => b.id === bookmarkId);
-      if (bookmark) {
-        bookmark.url = newUrl;
-      }
-      
-      // 更新检测结果
-      if (this.checkResults.has(bookmarkId)) {
-        const result = this.checkResults.get(bookmarkId);
-        result.url = newUrl;
-        result.finalUrl = newUrl;
-        result.status = 'valid';
-      }
-      
-      // 重新渲染书签卡片
-      this.renderBookmarks();
-      
-    } catch (error) {
-            throw error;
-    }
-  }
-
-  /**
-   * 更新重定向链接
-   */
-  async updateRedirects() {
-    const redirects = [];
-    this.checkResults.forEach((result, bookmarkId) => {
-      if (result.status === 'redirect' && result.finalUrl && result.finalUrl !== result.url) {
-        redirects.push(result);
-      }
-    });
-
-    if (redirects.length === 0) {
-      return;
-    }
-
-    const confirmed = confirm(`发现 ${redirects.length} 个重定向链接，是否要更新为最终URL？`);
-    if (!confirmed) return;
-
-    for (const bookmark of redirects) {
-      try {
-        await this.updateBookmarkUrl(bookmark.id, bookmark.finalUrl);
-      } catch (error) {
-              }
-    }
-
-  }
-
+  
+  
+  
   /**
    * 导出检测结果
    */
@@ -3292,46 +2992,16 @@ createSearchResultCard(bookmark) {
     const groupedContainer = document.getElementById('results-grouped');
     if (groupedContainer) {
       groupedContainer.addEventListener('click', (e) => {
-        // 重定向分组 - 批量更新
-        if (e.target.closest('[data-status="redirect"] .group-action-btn')) {
-          this.updateRedirects();
-        }
-        
-        // 超时分组 - 重新检测
-        if (e.target.closest('[data-status="timeout"] .group-action-btn')) {
-          this.recheckTimeoutBookmarks();
-        }
-        
-        // 无效分组 - 批量删除
-        if (e.target.closest('[data-status="invalid"] .group-action-btn')) {
-          this.cleanupInvalidBookmarks();
+        // 折叠按钮功能保持不变
+        if (e.target.closest('.group-collapse-btn')) {
+          const group = e.target.closest('.result-group');
+          group.classList.toggle('collapsed');
         }
       });
     }
   }
 
-  /**
-   * 重新检测超时书签
-   */
-  async recheckTimeoutBookmarks() {
-    const timeoutBookmarks = Array.from(this.checkResults.values())
-      .filter(result => result.status === 'timeout');
-
-    if (timeoutBookmarks.length === 0) {
-      return;
-    }
-
-    if (confirm(`确定要重新检测 ${timeoutBookmarks.length} 个超时书签吗？`)) {
-      
-      // 从结果中移除超时书签，然后重新检测
-      timeoutBookmarks.forEach(bookmark => {
-        this.checkResults.delete(bookmark.id);
-      });
-
-      await this.performBatchCheck(timeoutBookmarks);
-    }
-  }
-
+  
   /**
    * 获取当前文件夹名称
    */
